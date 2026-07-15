@@ -1,0 +1,650 @@
+{
+  "pbtResults": {
+    "2.4 입력 정규화 및 검증 폐쇄성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784096654895
+    },
+    "2.5 schemaVersion 2 직렬화 round-trip 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784097353237
+    },
+    "2.7 손상 데이터 전체 복구 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784097505886
+    },
+    "2.8 저장 실패 메모리 보존 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784097689841
+    },
+    "3.7 Constellation draft 경계 속성 테스트 작성": {
+      "status": "not_run",
+      "failingExample": "Targeted Vitest execution did not start: the environment command-approval flow exceeded 20 approval rounds on both npm and direct Vitest invocations.",
+      "lastRunTimestamp": 1784100009667
+    },
+    "3.5 Soft Delete와 Restore 상호배타성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784100009720
+    },
+    "3.4 Hard Delete 영구 제거 속성 테스트 작성": {
+      "status": "not_run",
+      "lastRunTimestamp": 1784100083480
+    }
+  },
+  "executionHistory": {
+    "1.1 애플리케이션 프로젝트와 고정 버전 의존성 구성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095556844
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095571476
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096019377
+      }
+    ],
+    "1.2 자동화 테스트 기반과 결정론적 provider 구성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557057
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095586637
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096031818
+      }
+    ],
+    "2.1 도메인 타입, 정규화 함수 및 결정론적 기본 상태 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557091
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096053720
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096229660
+      }
+    ],
+    "2.2 schemaVersion 2 codec과 전체 문서 validator 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557126
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096242275
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096460747
+      }
+    ],
+    "2.3 schema codec과 기본 상태 단위 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557166
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096482205
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096917794
+      }
+    ],
+    "2.4 입력 정규화 및 검증 폐쇄성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557225
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096492222
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096929030
+      }
+    ],
+    "2.5 schemaVersion 2 직렬화 round-trip 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557267
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096509251
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098202235
+      }
+    ],
+    "2.6 localStorage 저장·복원 서비스와 autosave 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557302
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096515233
+      },
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096936489
+      }
+    ],
+    "2.7 손상 데이터 전체 복구 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557339
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098221287
+      }
+    ],
+    "2.8 저장 실패 메모리 보존 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557375
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098233722
+      }
+    ],
+    "3.1 Zustand Store, selector 경계 및 원자 command 실행기 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557416
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098253671
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098617080
+      }
+    ],
+    "3.2 Hard Delete, Soft Delete 및 Restore reducer와 command 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557452
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098642160
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099276930
+      }
+    ],
+    "3.3 사용자 command 원자성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557489
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099789651
+      }
+    ],
+    "3.4 Hard Delete 영구 제거 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557536
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099799052
+      }
+    ],
+    "3.5 Soft Delete와 Restore 상호배타성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557568
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099805355
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784100143149
+      }
+    ],
+    "3.6 Constellation draft와 수동·자동 생성 command 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557616
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098647521
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099298828
+      }
+    ],
+    "3.7 Constellation draft 경계 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557651
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099815239
+      }
+    ],
+    "3.8 자동 별자리 결정론과 멱등성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557688
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099820834
+      }
+    ],
+    "3.9 마일스톤 및 Achievement reconcile engine 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557727
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098661046
+      },
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784099767561
+      }
+    ],
+    "3.10 마일스톤 최초 해금과 멱등성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557768
+      }
+    ],
+    "3.11 Achievement 고유 작품 집계 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557801
+      }
+    ],
+    "3.12 Achievement 해금 단조성과 이벤트 단일성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557839
+      }
+    ],
+    "4. Checkpoint - 도메인과 영속화 검증": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557879
+      }
+    ],
+    "5.1 HUD, 업적 및 ListView selector 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557927
+      }
+    ],
+    "5.2 HUD 통계 정확성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095557962
+      }
+    ],
+    "5.3 ListView 전순서와 조건 일치 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558002
+      }
+    ],
+    "5.4 작품 추가 폼과 저장 오류 피드백 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558036
+      }
+    ],
+    "5.5 Card, 삭제 확인 대화상자 및 Blackhole Archive DOM UI 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558073
+      }
+    ],
+    "5.6 HUD, AchievementPanel, Filter 및 ListView 컴포넌트 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558111
+      }
+    ],
+    "5.7 Genre Filter 상태 전이와 멱등성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558151
+      }
+    ],
+    "5.8 핵심 DOM UI 단위·컴포넌트 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558186
+      }
+    ],
+    "6.1 SpaceCanvas, VisibilityClock, 배경 레이어와 Nebula 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558224
+      }
+    ],
+    "6.2 배경 파라랙스와 애니메이션 경계 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558267
+      }
+    ],
+    "6.3 8개 Genre Galaxy 테마 전략 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558302
+      }
+    ],
+    "6.4 Genre Galaxy 테마 수치 구별성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558345
+      }
+    ],
+    "6.5 CameraRig과 Star/Constellation focus 수학 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558378
+      }
+    ],
+    "6.6 Active Constellation 카메라 fit 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558418
+      }
+    ],
+    "7.1 개별 Star mesh, rating 시각 매핑 및 상호작용 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558451
+      }
+    ],
+    "7.2 Star 생성과 배치 불변식 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558492
+      }
+    ],
+    "7.3 Rating 시각 매핑과 Star 운동 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558529
+      }
+    ],
+    "7.4 51개 이상 InstancedMesh Star renderer 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558569
+      }
+    ],
+    "7.5 Constellation line, preview 및 active reference 렌더링 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558607
+      }
+    ],
+    "7.6 별자리 활성 참조와 순서 무결성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558643
+      }
+    ],
+    "8. Checkpoint - UI와 핵심 Scene 연결 검증": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558686
+      }
+    ],
+    "9.1 ParticleManager와 배경 유성 scheduler 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558724
+      }
+    ],
+    "9.2 파티클 사양과 수명주기 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558762
+      }
+    ],
+    "9.3 배경 유성 scheduler 안전성 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558802
+      }
+    ],
+    "9.4 Blackhole renderer와 Soft Delete/Restore 상호작용 연결": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558840
+      }
+    ],
+    "9.5 50편 행성, 100편 보상 은하 및 Achievement 알림 렌더링 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558877
+      }
+    ],
+    "9.6 Selective Bloom과 공유 Three.js resource registry 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558918
+      }
+    ],
+    "9.7 Selective Bloom 대상 집합 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558956
+      }
+    ],
+    "10.1 5초 FPS degradation controller 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095558992
+      }
+    ],
+    "10.2 렌더 모드와 성능 저하 순서 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559033
+      }
+    ],
+    "10.3 반응형 ArchiveShell과 Card viewport 배치 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559069
+      }
+    ],
+    "10.4 반응형 전환 상태 보존 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559108
+      }
+    ],
+    "10.5 Card viewport containment 속성 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559145
+      }
+    ],
+    "10.6 전체 키보드·스크린 리더·reduced motion 경로 구현": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559193
+      }
+    ],
+    "11.1 Zustand와 persistence 원자성 통합 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559233
+      }
+    ],
+    "11.2 Scene 상호작용과 resource lifecycle 통합 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559268
+      }
+    ],
+    "11.3 8개 Galaxy와 후처리 시각 회귀 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559309
+      }
+    ],
+    "11.4 반응형 및 접근성 브라우저 테스트 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559349
+      }
+    ],
+    "11.5 지정 환경 성능 및 WebGL resource benchmark 작성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559386
+      }
+    ],
+    "12. Final checkpoint - 전체 검증 완료": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784095559423
+      }
+    ],
+    "1. React + TypeScript 프로젝트 기반과 테스트 환경 구성": [
+      {
+        "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784096031874
+      }
+    ],
+    "2. 도메인 모델, 기본 상태 및 schemaVersion 2 영속화 구현": [
+      {
+        "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
+        "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
+        "timestamp": 1784098233771
+      }
+    ]
+  }
+}

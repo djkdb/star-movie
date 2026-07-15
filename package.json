@@ -1,0 +1,58 @@
+{
+  "name": "space-movie-archive",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run --project unit",
+    "test:component": "vitest run --project component --passWithNoTests",
+    "test:pbt": "vitest run --project pbt",
+    "test:integration": "playwright test --project=headless-integration --pass-with-no-tests",
+    "test:visual": "playwright test --project=visual-chromium --pass-with-no-tests",
+    "test:performance": "playwright test --project=performance-chromium --pass-with-no-tests",
+    "validate": "npm run typecheck && npm run test:unit && npm run test:component && npm run test:pbt && npm run test:integration",
+    "validate:visual-performance": "npm run test:visual && npm run test:performance"
+  },
+  "dependencies": {
+    "@react-three/drei": "9.117.3",
+    "@react-three/fiber": "8.17.10",
+    "@react-three/postprocessing": "2.16.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "0.170.0",
+    "zod": "3.23.8",
+    "zustand": "5.0.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.15.0",
+    "@playwright/test": "1.54.2",
+    "@react-three/test-renderer": "8.2.4",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "24.1.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@types/three": "0.170.0",
+    "@vitejs/plugin-react": "4.3.4",
+    "eslint": "9.15.0",
+    "eslint-plugin-react-hooks": "5.0.0",
+    "eslint-plugin-react-refresh": "0.4.14",
+    "fast-check": "4.2.0",
+    "globals": "15.12.0",
+    "jsdom": "26.1.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.38.0",
+    "vite": "5.4.11",
+    "vitest": "3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

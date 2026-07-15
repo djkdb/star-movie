@@ -1,0 +1,41 @@
+:root {
+  color: #f5f7ff;
+  background: #03040a;
+  font-family: Inter, system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.app-shell h1,
+.app-shell p {
+  margin: 0;
+}
+
+.app-shell p {
+  margin-top: 0.75rem;
+  color: #aeb8d8;
+}
