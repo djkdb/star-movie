@@ -5,14 +5,18 @@ import {
   type SceneArchiveContent,
 } from '../domain/defaultState';
 import type {
+  CameraRequest,
   Constellation,
   ConstellationDraft,
+  Genre,
   PersistedStateV2,
+  QualityLevel,
   RuntimeEvent,
   RuntimeStore,
   Star,
   Store,
 } from '../domain/models';
+import { degradeQualityLevel } from '../domain/qualityLevel';
 import {
   validateWorkInput,
   type WorkInput,
@@ -100,6 +104,13 @@ export interface ArchiveCommands {
   hardDelete(starId: string): CommandResult<DeleteWorkValue>;
   softDelete(starId: string): CommandResult<DeleteWorkValue>;
   restoreArchived(starId: string): CommandResult<RestoreWorkValue>;
+  toggleSelectedGenre(genre: Genre): void;
+  setAchievementPanelOpen(isOpen: boolean): void;
+  setListDrawerOpen(isOpen: boolean): void;
+  toggleListDrawer(): void;
+  degradeQuality(): QualityLevel;
+  requestCameraFocus(request: CameraRequest): CommandResult<CameraRequest>;
+  clearCameraRequest(request?: CameraRequest): void;
   startConstellationDraft(initialStarId?: string): CommandResult<ConstellationDraft>;
   selectConstellationStar(starId: string): CommandResult<ConstellationDraft>;
   finishConstellationDraft(): CommandResult<ConstellationDraft>;
@@ -241,6 +252,10 @@ class AtomicCommandExecutor {
     }
 
     this.store.setState((state) => {
+      const unlockNotifications = mutation.completionEvents.filter(
+        ({ type }) =>
+          type === 'milestone-unlocked' || type === 'achievement-unlocked',
+      );
       const committedRuntime: RuntimeStore = {
         ...state.runtime,
         hasPersistedRegistration: true,
@@ -248,6 +263,9 @@ class AtomicCommandExecutor {
           ...state.runtime.completionEvents,
           ...mutation.completionEvents,
         ],
+        // Keep notifications independent from completion effects: dismissing a
+        // toast must not consume an event needed by the Scene particle manager.
+        toastEvents: [...state.runtime.toastEvents, ...unlockNotifications],
       };
       return {
         persisted: candidate,
@@ -371,7 +389,6 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
     ...defaultProviders,
     ...options.providers,
   };
-  let executor: AtomicCommandExecutor;
   let completionSequence = 0;
   const completedAutoOperations = new Map<string, readonly string[]>();
 
@@ -552,6 +569,90 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
           };
         },
       }),
+    toggleSelectedGenre: (genre) => {
+      store.setState((state) => {
+        const selectedGenres = new Set(state.runtime.selectedGenres);
+        if (selectedGenres.has(genre)) selectedGenres.delete(genre);
+        else selectedGenres.add(genre);
+        return { runtime: { ...state.runtime, selectedGenres } };
+      });
+    },
+    setAchievementPanelOpen: (isOpen) => {
+      store.setState((state) => ({
+        runtime: { ...state.runtime, isAchievementPanelOpen: isOpen },
+      }));
+    },
+    setListDrawerOpen: (isOpen) => {
+      store.setState((state) => ({
+        runtime: { ...state.runtime, isListDrawerOpen: isOpen },
+      }));
+    },
+    toggleListDrawer: () => {
+      store.setState((state) => ({
+        runtime: {
+          ...state.runtime,
+          isListDrawerOpen: !state.runtime.isListDrawerOpen,
+        },
+      }));
+    },
+    degradeQuality: () => {
+      const current = store.getState().runtime.qualityLevel;
+      const next = degradeQualityLevel(current);
+      if (next !== current) {
+        store.setState((state) => ({
+          runtime: { ...state.runtime, qualityLevel: next },
+        }));
+      }
+      return next;
+    },
+    requestCameraFocus: (request) => {
+      const state = store.getState();
+      if (request.type === 'star') {
+        if (!state.persisted.stars.some(({ id }) => id === request.starId)) {
+          return validationFailure('선택한 작품을 찾을 수 없습니다.', {
+            starId: ['활성 작품만 카메라 대상으로 선택할 수 있습니다.'],
+          });
+        }
+      } else {
+        const constellation = state.persisted.constellations.find(
+          ({ id }) => id === request.constellationId,
+        );
+        if (constellation === undefined) {
+          return validationFailure('별자리를 찾을 수 없습니다.', {
+            constellationId: ['존재하는 별자리만 카메라 대상으로 선택할 수 있습니다.'],
+          });
+        }
+        const activeIds = new Set(state.persisted.stars.map(({ id }) => id));
+        const activeReferenceCount = new Set(
+          constellation.starIds.filter((starId) => activeIds.has(starId)),
+        ).size;
+        if (activeReferenceCount < 2) {
+          return validationFailure('활성 작품이 2개 이상 필요합니다', {
+            constellationId: ['활성 작품이 2개 이상 필요합니다'],
+          });
+        }
+      }
+
+      store.setState((current) => ({
+        runtime: { ...current.runtime, pendingCameraRequest: request },
+      }));
+      return { ok: true, value: request, completionEvents: [] };
+    },
+    clearCameraRequest: (request) => {
+      const pending = store.getState().runtime.pendingCameraRequest;
+      if (request !== undefined) {
+        if (pending === null || pending.type !== request.type) return;
+        if (
+          request.type === 'star'
+            ? pending.type !== 'star' || pending.starId !== request.starId
+            : pending.type !== 'constellation'
+              || pending.constellationId !== request.constellationId
+        ) return;
+      }
+      store.setState((state) => ({
+        runtime: { ...state.runtime, pendingCameraRequest: null },
+      }));
+    },
     startConstellationDraft: (initialStarId) => {
       if (
         initialStarId !== undefined &&
@@ -771,7 +872,7 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
     ...initial,
     commands,
   }));
-  executor = new AtomicCommandExecutor(
+  const executor = new AtomicCommandExecutor(
     store,
     options.persistence,
     providers.nowIso,

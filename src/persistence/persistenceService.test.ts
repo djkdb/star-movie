@@ -121,7 +121,6 @@ describe('PersistenceService', () => {
   it('R8.14-R8.18 serializes re-entrant autosave and user writes without stale overwrite', () => {
     const clock = new FakeClock();
     const writes: string[] = [];
-    let service: PersistenceService;
     const userState = stateWithTitle('User');
     const autosaveState = stateWithTitle('Autosave');
     const storage: StorageAdapter = {
@@ -134,7 +133,7 @@ describe('PersistenceService', () => {
         }
       },
     };
-    service = new PersistenceService({ storage, scheduler: clock });
+    const service = new PersistenceService({ storage, scheduler: clock });
 
     service.scheduleAutosave(autosaveState);
     clock.advanceBy(1_000);

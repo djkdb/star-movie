@@ -223,3 +223,23 @@ describe('archive Zustand store', () => {
     expect(state.persisted).toEqual(createDefaultStore().persisted);
   });
 });
+
+
+describe('runtime quality state', () => {
+  it('R13.3-R13.5 degrades one session-only level per command without persistence or skipped stages', () => {
+    const { storage, store } = createHarness();
+    const persisted = store.getState().persisted;
+
+    expect(store.getState().runtime.qualityLevel).toBe('full');
+    expect(store.getState().commands.degradeQuality()).toBe('reducedBackground');
+    expect(store.getState().commands.degradeQuality()).toBe('minimumParticles');
+    expect(store.getState().commands.degradeQuality()).toBe('reducedBloom');
+    expect(store.getState().commands.degradeQuality()).toBe('reducedBloom');
+
+    expect(store.getState().persisted).toBe(persisted);
+    expect(storage.getItem(PERSISTENCE_STORAGE_KEY)).toBeNull();
+
+    const freshSession = createHarness().store;
+    expect(freshSession.getState().runtime.qualityLevel).toBe('full');
+  });
+});

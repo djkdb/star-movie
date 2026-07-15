@@ -225,6 +225,11 @@ describe('archive store progress integration', () => {
       'work-added',
       'milestone-unlocked',
     ]);
+    const milestoneEvent = store.getState().runtime.completionEvents.find(
+      ({ type }) => type === 'milestone-unlocked',
+    );
+    expect(milestoneEvent).toBeDefined();
+    expect(store.getState().runtime.toastEvents).toEqual([milestoneEvent]);
     const firstUnlock = structuredClone(
       store.getState().persisted.milestoneUnlocks.fifty,
     );
@@ -237,6 +242,46 @@ describe('archive store progress integration', () => {
     expect(store.getState().persisted.stars).toHaveLength(49);
     expect(store.getState().persisted.milestoneUnlocks.fifty).toEqual(firstUnlock);
     expect(store.getState().persisted.constellations).toEqual([]);
+  });
+
+  it('R17.3-R17.5 routes the first achievement unlock to effects and toast queues exactly once', () => {
+    const initial: Store = createDefaultStore(true);
+    initial.persisted.stars = nolanStars(initial.persisted, 9);
+    const store = createArchiveStore({
+      persistence: persistence(),
+      initialState: initial,
+      providers: {
+        nextUuid: () => uuid(800),
+        nowIso: () => NOW,
+      },
+    });
+
+    const result = store.getState().commands.addWork({
+      title: 'Nolan Work 10',
+      genre: 'SF',
+      rating: 5,
+      review: '',
+      watchedDate: '2025-05-31',
+      director: 'Christopher Nolan',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(store.getState().persisted.achievements[0]).toMatchObject({
+      progress: 10,
+      unlocked: true,
+      unlockedAt: NOW,
+    });
+    const achievementEvents = store.getState().runtime.completionEvents.filter(
+      ({ type }) => type === 'achievement-unlocked',
+    );
+    expect(achievementEvents).toHaveLength(1);
+    expect(store.getState().runtime.toastEvents).toEqual(achievementEvents);
+
+    store.getState().commands.consumeToastEvent(achievementEvents[0]!.id);
+    expect(store.getState().runtime.toastEvents).toEqual([]);
+    expect(store.getState().runtime.completionEvents).toContainEqual(
+      achievementEvents[0],
+    );
   });
 
   it('R16.10 R17.11-R17.13 silently reconciles restored progress and reward duplicates without unlock events', () => {

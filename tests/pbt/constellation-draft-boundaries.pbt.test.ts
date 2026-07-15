@@ -1,3 +1,5 @@
+// Feature: space-movie-archive, Property 13: Constellation draft의 순서·유일성·경계
+// **Validates: Requirements 9.1, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.14**
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
@@ -80,8 +82,6 @@ const propertyInputArbitrary = fc.record({
   invalidName: invalidNameArbitrary,
 });
 
-// Feature: space-movie-archive, Property 13: Constellation draft의 순서·유일성·경계
-// **Validates: Requirements 9.1, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.14**
 describe('Property 13: constellation draft order, uniqueness, and boundaries', () => {
   it('R9.1 R9.3-R9.9 R9.14 preserves the ordered unique draft across duplicate, overflow, invalid-name, and invalid-count operations', () => {
     fc.assert(

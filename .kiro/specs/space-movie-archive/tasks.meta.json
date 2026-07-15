@@ -1,33 +1,113 @@
 {
   "pbtResults": {
     "2.4 입력 정규화 및 검증 폐쇄성 속성 테스트 작성": {
-      "status": "passed",
-      "lastRunTimestamp": 1784096654895
+      "status": "failed",
+      "failingExample": "RangeError: Invalid time value\nat tests/pbt/input-normalization-validation.pbt.test.ts:49:23 while mapping fc.date(...) with date.toISOString(); no property counterexample was produced because generation failed before the property body executed.",
+      "lastRunTimestamp": 1784139029125
     },
     "2.5 schemaVersion 2 직렬화 round-trip 속성 테스트 작성": {
       "status": "passed",
-      "lastRunTimestamp": 1784097353237
+      "lastRunTimestamp": 1784139098956
     },
     "2.7 손상 데이터 전체 복구 속성 테스트 작성": {
       "status": "passed",
-      "lastRunTimestamp": 1784097505886
+      "lastRunTimestamp": 1784139103715
     },
     "2.8 저장 실패 메모리 보존 속성 테스트 작성": {
       "status": "passed",
-      "lastRunTimestamp": 1784097689841
+      "lastRunTimestamp": 1784139108647
     },
     "3.7 Constellation draft 경계 속성 테스트 작성": {
-      "status": "not_run",
-      "failingExample": "Targeted Vitest execution did not start: the environment command-approval flow exceeded 20 approval rounds on both npm and direct Vitest invocations.",
-      "lastRunTimestamp": 1784100009667
+      "status": "passed",
+      "lastRunTimestamp": 1784139119557
     },
     "3.5 Soft Delete와 Restore 상호배타성 속성 테스트 작성": {
       "status": "passed",
-      "lastRunTimestamp": 1784100009720
+      "lastRunTimestamp": 1784139146523
     },
     "3.4 Hard Delete 영구 제거 속성 테스트 작성": {
-      "status": "not_run",
-      "lastRunTimestamp": 1784100083480
+      "status": "passed",
+      "lastRunTimestamp": 1784139070309
+    },
+    "3.12 Achievement 해금 단조성과 이벤트 단일성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139231973
+    },
+    "3.11 Achievement 고유 작품 집계 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139224250
+    },
+    "3.10 마일스톤 최초 해금과 멱등성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139215692
+    },
+    "5.2 HUD 통계 정확성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139074764
+    },
+    "5.3 ListView 전순서와 조건 일치 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139088567
+    },
+    "6.2 배경 파라랙스와 애니메이션 경계 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139039395
+    },
+    "6.4 Genre Galaxy 테마 수치 구별성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139206231
+    },
+    "6.6 Active Constellation 카메라 fit 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139236984
+    },
+    "3.8 자동 별자리 결정론과 멱등성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139130233
+    },
+    "3.3 사용자 command 원자성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139065617
+    },
+    "7.3 Rating 시각 매핑과 Star 운동 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139055501
+    },
+    "7.2 Star 생성과 배치 불변식 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139045263
+    },
+    "5.7 Genre Filter 상태 전이와 멱등성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139083630
+    },
+    "7.6 별자리 활성 참조와 순서 무결성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139138675
+    },
+    "9.7 Selective Bloom 대상 집합 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139177178
+    },
+    "9.2 파티클 사양과 수명주기 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139155039
+    },
+    "9.3 배경 유성 scheduler 안전성 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139163989
+    },
+    "10.2 렌더 모드와 성능 저하 순서 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139170623
+    },
+    "10.4 반응형 전환 상태 보존 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139189688
+    },
+    "10.5 Card viewport containment 속성 테스트 작성": {
+      "status": "passed",
+      "lastRunTimestamp": 1784139194971
     }
   },
   "executionHistory": {
@@ -235,6 +315,21 @@
         "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784099789651
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129309296
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129339715
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130072157
       }
     ],
     "3.4 Hard Delete 영구 제거 속성 테스트 작성": [
@@ -247,6 +342,21 @@
         "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784099799052
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129309452
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129351120
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130083438
       }
     ],
     "3.5 Soft Delete와 Restore 상호배타성 속성 테스트 작성": [
@@ -293,6 +403,21 @@
         "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784099815239
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129309607
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129362109
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130100620
       }
     ],
     "3.8 자동 별자리 결정론과 멱등성 속성 테스트 작성": [
@@ -305,6 +430,21 @@
         "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784099820834
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129309719
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129372525
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130118646
       }
     ],
     "3.9 마일스톤 및 Achievement reconcile engine 구현": [
@@ -329,6 +469,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095557768
+      },
+      {
+        "executionId": "9bfdf2c0-4e66-4a36-81c4-50be24c33279",
+        "chatSessionId": "sess_c62a5d3a-b811-4c73-bed7-846e10d47c5d",
+        "timestamp": 1784101988319
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129309833
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129382821
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130129028
       }
     ],
     "3.11 Achievement 고유 작품 집계 속성 테스트 작성": [
@@ -336,6 +496,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095557801
+      },
+      {
+        "executionId": "9bfdf2c0-4e66-4a36-81c4-50be24c33279",
+        "chatSessionId": "sess_c62a5d3a-b811-4c73-bed7-846e10d47c5d",
+        "timestamp": 1784101999800
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129309940
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130139825
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130767391
       }
     ],
     "3.12 Achievement 해금 단조성과 이벤트 단일성 속성 테스트 작성": [
@@ -343,6 +523,11 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095557839
+      },
+      {
+        "executionId": "9bfdf2c0-4e66-4a36-81c4-50be24c33279",
+        "chatSessionId": "sess_c62a5d3a-b811-4c73-bed7-846e10d47c5d",
+        "timestamp": 1784102006779
       }
     ],
     "4. Checkpoint - 도메인과 영속화 검증": [
@@ -350,6 +535,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095557879
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129310064
+      },
+      {
+        "executionId": "8bd75469-4ba7-4127-8bcd-7fa5664c3191",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784136171645
+      },
+      {
+        "executionId": "8bd75469-4ba7-4127-8bcd-7fa5664c3191",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784136268257
       }
     ],
     "5.1 HUD, 업적 및 ListView selector 구현": [
@@ -357,6 +557,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095557927
+      },
+      {
+        "executionId": "308ec7cf-4cb8-4a6d-9950-b17c380aabf5",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784119741248
+      },
+      {
+        "executionId": "308ec7cf-4cb8-4a6d-9950-b17c380aabf5",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120655484
       }
     ],
     "5.2 HUD 통계 정확성 속성 테스트 작성": [
@@ -364,6 +574,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095557962
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120953266
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784123359219
       }
     ],
     "5.3 ListView 전순서와 조건 일치 속성 테스트 작성": [
@@ -371,6 +591,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558002
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120959673
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784123369548
       }
     ],
     "5.4 작품 추가 폼과 저장 오류 피드백 구현": [
@@ -378,6 +608,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558036
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120969084
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784123374581
       }
     ],
     "5.5 Card, 삭제 확인 대화상자 및 Blackhole Archive DOM UI 구현": [
@@ -385,6 +625,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558073
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784125232352
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784128626165
       }
     ],
     "5.6 HUD, AchievementPanel, Filter 및 ListView 컴포넌트 구현": [
@@ -392,6 +642,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558111
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784125242811
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784128635369
       }
     ],
     "5.7 Genre Filter 상태 전이와 멱등성 속성 테스트 작성": [
@@ -399,6 +659,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558151
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784128996640
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129310178
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130781647
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131339867
       }
     ],
     "5.8 핵심 DOM UI 단위·컴포넌트 테스트 작성": [
@@ -406,6 +686,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558186
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129002757
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129310288
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130792375
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131356026
       }
     ],
     "6.1 SpaceCanvas, VisibilityClock, 배경 레이어와 Nebula 구현": [
@@ -413,6 +713,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558224
+      },
+      {
+        "executionId": "308ec7cf-4cb8-4a6d-9950-b17c380aabf5",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784119749152
+      },
+      {
+        "executionId": "308ec7cf-4cb8-4a6d-9950-b17c380aabf5",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120673582
       }
     ],
     "6.2 배경 파라랙스와 애니메이션 경계 속성 테스트 작성": [
@@ -420,6 +730,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558267
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120981438
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784123381016
       }
     ],
     "6.3 8개 Genre Galaxy 테마 전략 구현": [
@@ -427,6 +747,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558302
+      },
+      {
+        "executionId": "308ec7cf-4cb8-4a6d-9950-b17c380aabf5",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784119757576
+      },
+      {
+        "executionId": "308ec7cf-4cb8-4a6d-9950-b17c380aabf5",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120666121
       }
     ],
     "6.4 Genre Galaxy 테마 수치 구별성 속성 테스트 작성": [
@@ -434,6 +764,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558345
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784120992791
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784123392944
       }
     ],
     "6.5 CameraRig과 Star/Constellation focus 수학 구현": [
@@ -441,6 +781,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558378
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784123400344
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784125226439
       }
     ],
     "6.6 Active Constellation 카메라 fit 속성 테스트 작성": [
@@ -448,6 +798,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558418
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784125246892
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784128642063
       }
     ],
     "7.1 개별 Star mesh, rating 시각 매핑 및 상호작용 구현": [
@@ -455,6 +815,16 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558451
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784125252942
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784128991062
       }
     ],
     "7.2 Star 생성과 배치 불변식 속성 테스트 작성": [
@@ -462,6 +832,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558492
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129011846
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129310530
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130803491
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131369332
       }
     ],
     "7.3 Rating 시각 매핑과 Star 운동 속성 테스트 작성": [
@@ -469,6 +859,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558529
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129017674
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129310700
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130815792
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131385099
       }
     ],
     "7.4 51개 이상 InstancedMesh Star renderer 구현": [
@@ -476,6 +886,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558569
+      },
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129024939
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129310808
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130828155
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131397303
       }
     ],
     "7.5 Constellation line, preview 및 active reference 렌더링 구현": [
@@ -483,6 +913,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558607
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129310921
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131407706
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131822890
       }
     ],
     "7.6 별자리 활성 참조와 순서 무결성 속성 테스트 작성": [
@@ -490,6 +935,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558643
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311034
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131834803
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133112065
       }
     ],
     "8. Checkpoint - UI와 핵심 Scene 연결 검증": [
@@ -497,6 +957,31 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558686
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311147
+      },
+      {
+        "executionId": "8bd75469-4ba7-4127-8bcd-7fa5664c3191",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784136284793
+      },
+      {
+        "executionId": "63af8efd-b720-4ce0-82ba-2eabd0c9f834",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784136402816
+      },
+      {
+        "executionId": "63af8efd-b720-4ce0-82ba-2eabd0c9f834",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784136422545
+      },
+      {
+        "executionId": "63af8efd-b720-4ce0-82ba-2eabd0c9f834",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784137456566
       }
     ],
     "9.1 ParticleManager와 배경 유성 scheduler 구현": [
@@ -504,6 +989,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558724
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311255
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131847543
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133121822
       }
     ],
     "9.2 파티클 사양과 수명주기 속성 테스트 작성": [
@@ -511,6 +1011,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558762
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311427
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133168783
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133894587
       }
     ],
     "9.3 배경 유성 scheduler 안전성 속성 테스트 작성": [
@@ -518,6 +1033,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558802
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311567
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133176139
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133906414
       }
     ],
     "9.4 Blackhole renderer와 Soft Delete/Restore 상호작용 연결": [
@@ -525,6 +1055,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558840
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311673
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131856822
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133130598
       }
     ],
     "9.5 50편 행성, 100편 보상 은하 및 Achievement 알림 렌더링 구현": [
@@ -532,6 +1077,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558877
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311794
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131867055
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133139605
       }
     ],
     "9.6 Selective Bloom과 공유 Three.js resource registry 구현": [
@@ -539,6 +1099,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558918
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129311904
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131880133
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133149415
       }
     ],
     "9.7 Selective Bloom 대상 집합 속성 테스트 작성": [
@@ -546,6 +1121,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558956
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312028
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133182608
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133916354
       }
     ],
     "10.1 5초 FPS degradation controller 구현": [
@@ -553,6 +1143,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095558992
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312144
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133190231
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133925318
       }
     ],
     "10.2 렌더 모드와 성능 저하 순서 속성 테스트 작성": [
@@ -560,6 +1165,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559033
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312257
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133956370
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784134958687
       }
     ],
     "10.3 반응형 ArchiveShell과 Card viewport 배치 구현": [
@@ -567,6 +1187,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559069
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312380
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133197590
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133936188
       }
     ],
     "10.4 반응형 전환 상태 보존 속성 테스트 작성": [
@@ -574,6 +1209,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559108
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312489
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133965998
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784134968421
       }
     ],
     "10.5 Card viewport containment 속성 테스트 작성": [
@@ -581,6 +1231,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559145
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312608
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133974125
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784134981040
       }
     ],
     "10.6 전체 키보드·스크린 리더·reduced motion 경로 구현": [
@@ -588,6 +1253,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559193
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312721
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133981878
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784134990362
       }
     ],
     "11.1 Zustand와 persistence 원자성 통합 테스트 작성": [
@@ -595,6 +1275,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559233
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312846
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135009478
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135749673
       }
     ],
     "11.2 Scene 상호작용과 resource lifecycle 통합 테스트 작성": [
@@ -602,6 +1297,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559268
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129312980
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135017465
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135758323
       }
     ],
     "11.3 8개 Galaxy와 후처리 시각 회귀 테스트 작성": [
@@ -609,6 +1319,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559309
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129313097
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135025138
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135768580
       }
     ],
     "11.4 반응형 및 접근성 브라우저 테스트 작성": [
@@ -616,6 +1341,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559349
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129313216
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135034202
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135784760
       }
     ],
     "11.5 지정 환경 성능 및 WebGL resource benchmark 작성": [
@@ -623,6 +1363,21 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559386
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129313324
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135044257
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784135776450
       }
     ],
     "12. Final checkpoint - 전체 검증 완료": [
@@ -630,6 +1385,26 @@
         "executionId": "fa304b5d-205d-4a65-ac28-b2b900bfcf94",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784095559423
+      },
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784129313435
+      },
+      {
+        "executionId": "63af8efd-b720-4ce0-82ba-2eabd0c9f834",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784136402921
+      },
+      {
+        "executionId": "63af8efd-b720-4ce0-82ba-2eabd0c9f834",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784137471596
+      },
+      {
+        "executionId": "63af8efd-b720-4ce0-82ba-2eabd0c9f834",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784139298094
       }
     ],
     "1. React + TypeScript 프로젝트 기반과 테스트 환경 구성": [
@@ -644,6 +1419,48 @@
         "executionId": "4c2f5130-6072-4fd5-8d0f-cb1d3bdf83b0",
         "chatSessionId": "sess_b24d0e70-81cb-49d5-a413-c980046cb807",
         "timestamp": 1784098233771
+      }
+    ],
+    "6. R3F 우주 배경, 카메라 및 장르 은하 구현": [
+      {
+        "executionId": "863589a5-49c0-4d7e-aa24-8c442a874f06",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784128642208
+      }
+    ],
+    "3. Zustand transactional domain command 구현": [
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784130767504
+      }
+    ],
+    "5. 파생 selector와 DOM 기반 작품 관리 UI 구현": [
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784131356137
+      }
+    ],
+    "7. Star와 Constellation 3D 렌더링 구현": [
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133112175
+      }
+    ],
+    "9. 파티클, Blackhole, 보상 오브젝트 및 후처리 구현": [
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784133916476
+      }
+    ],
+    "10. 성능 저하와 반응형·접근성 구현": [
+      {
+        "executionId": "f93a90e4-a7bd-4121-9526-cbbeeab6738c",
+        "chatSessionId": "sess_626b378c-7c54-466b-b529-931e64b61064",
+        "timestamp": 1784134990467
       }
     ]
   }
