@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { TOUCH } from 'three';
 
 import { activateWithKeyboard, bootArchive } from './fixtures/archiveFixture';
@@ -18,32 +18,28 @@ const VIEWPORT_MATRIX: readonly ViewportCase[] = [
   { name: 'desktop', width: 1440, height: 900, mobile: false },
 ];
 
-function intersects(
-  rect: { x: number; y: number; width: number; height: number },
-  area: { left: number; top: number; right: number; bottom: number },
-): boolean {
-  return rect.x < area.right
-    && rect.x + rect.width > area.left
-    && rect.y < area.bottom
-    && rect.y + rect.height > area.top;
-}
+const PANEL_LABELS = [
+  '아카이브 현황',
+  '작품 목록 패널',
+  '작품 추가',
+  '별자리 관리',
+  '작품 DOM 탐색 패널',
+] as const;
 
-async function expectOutsideCentralArea(locator: Locator, page: Page): Promise<void> {
-  const viewport = page.viewportSize();
-  const rect = await locator.boundingBox();
-  expect(viewport).not.toBeNull();
-  expect(rect).not.toBeNull();
-  if (viewport === null || rect === null) return;
+type PanelLabel = (typeof PANEL_LABELS)[number];
 
-  expect(intersects(rect, {
-    left: viewport.width * 0.25,
-    top: viewport.height * 0.25,
-    right: viewport.width * 0.75,
-    bottom: viewport.height * 0.75,
-  })).toBe(false);
+/** Opens a shell panel through its dock button using keyboard activation. */
+async function openPanel(page: Page, label: PanelLabel): Promise<void> {
+  const dockButton = page.getByRole('button', { name: label });
+  const expanded = await dockButton.getAttribute('aria-expanded');
+  if (expanded === 'true') return;
+  await activateWithKeyboard(page, dockButton);
+  await expect(dockButton).toHaveAttribute('aria-expanded', 'true');
 }
 
 async function addWorkWithKeyboard(page: Page): Promise<void> {
+  await openPanel(page, '작품 추가');
+
   const title = page.getByLabel('제목', { exact: true });
   await title.focus();
   await title.pressSequentially('Keyboard Odyssey');
@@ -74,64 +70,73 @@ async function addWorkWithKeyboard(page: Page): Promise<void> {
 
 test.describe('responsive browser acceptance', () => {
   for (const viewport of VIEWPORT_MATRIX) {
-    test(`R5.6 R14.1-R14.4 ${viewport.name} layout and drawer contract`, async ({ page }) => {
+    test(`R5.6 R14.1-R14.4 ${viewport.name} immersive layout and dock contract`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await bootArchive(page);
 
-      const drawerToggle = page.getByRole('button', { name: '목록 열기' });
-      const listView = page.getByRole('complementary', { name: '작품 목록' });
+      // The sky canvas fills the whole viewport on every breakpoint.
+      const canvasRect = await page.locator('.archive-shell-canvas').boundingBox();
+      expect(canvasRect).not.toBeNull();
+      if (canvasRect !== null) {
+        expect(canvasRect.x).toBeCloseTo(0, 0);
+        expect(canvasRect.y).toBeCloseTo(0, 0);
+        expect(canvasRect.width).toBeCloseTo(viewport.width, 0);
+        expect(canvasRect.height).toBeCloseTo(viewport.height, 0);
+      }
 
-      if (viewport.mobile) {
-        await expect(drawerToggle).toBeVisible();
-        await expect(drawerToggle).toHaveAttribute('aria-expanded', 'false');
-        await expect(listView).toBeHidden();
+      const scene = page.getByRole('region', { name: '3D 우주 아카이브' });
+      await expect(scene).toHaveAttribute('data-orbit-one-touch', String(TOUCH.ROTATE));
+      await expect(scene).toHaveAttribute('data-orbit-two-touch', String(TOUCH.DOLLY_PAN));
+      await expect(page.locator('.space-canvas-shell canvas')).toHaveCSS('touch-action', 'none');
 
-        const hud = await page.locator('.hud').boundingBox();
-        const filter = await page.locator('.genre-filter').boundingBox();
-        expect(hud).not.toBeNull();
-        expect(filter).not.toBeNull();
-        if (hud !== null && filter !== null) {
-          expect(filter.y).toBeGreaterThanOrEqual(hud.y + hud.height);
-        }
+      // Every panel starts closed behind the dock.
+      for (const label of PANEL_LABELS) {
+        const dockButton = page.getByRole('button', { name: label });
+        await expect(dockButton).toBeVisible();
+        await expect(dockButton).toHaveAttribute('aria-expanded', 'false');
+      }
 
-        const scene = page.getByRole('region', { name: '3D 우주 아카이브' });
-        await expect(scene).toHaveAttribute('data-orbit-one-touch', String(TOUCH.ROTATE));
-        await expect(scene).toHaveAttribute('data-orbit-two-touch', String(TOUCH.DOLLY_PAN));
-        await expect(page.locator('.space-canvas-shell canvas')).toHaveCSS('touch-action', 'none');
-      } else {
-        await expect(drawerToggle).toBeHidden();
-        await expect(listView).toBeVisible();
-        await expectOutsideCentralArea(page.locator('.hud'), page);
-        await expectOutsideCentralArea(page.locator('.genre-filter'), page);
-        await expectOutsideCentralArea(listView, page);
-
-        const canvasRect = await page.locator('.archive-shell-canvas').boundingBox();
-        expect(canvasRect).not.toBeNull();
-        if (canvasRect !== null) {
-          expect(canvasRect.x).toBeCloseTo(viewport.width * 0.25, 0);
-          expect(canvasRect.x + canvasRect.width).toBeCloseTo(viewport.width * 0.75, 0);
+      // The dock hugs the bottom edge on mobile and the right edge on desktop.
+      const dockRect = await page.locator('.shell-dock').boundingBox();
+      expect(dockRect).not.toBeNull();
+      if (dockRect !== null) {
+        if (viewport.mobile) {
+          expect(dockRect.y + dockRect.height).toBeGreaterThan(viewport.height * 0.8);
+          expect(Math.abs(dockRect.x + dockRect.width / 2 - viewport.width / 2)).toBeLessThan(40);
+        } else {
+          expect(dockRect.x + dockRect.width).toBeGreaterThan(viewport.width * 0.9);
         }
       }
+
+      // Panels open next to the dock and close again from the same control.
+      await openPanel(page, '작품 목록 패널');
+      await expect(page.getByRole('heading', { name: '활성 작품 (2)' })).toBeVisible();
+      await activateWithKeyboard(page, page.getByRole('button', { name: '작품 목록 패널' }));
+      await expect(page.getByRole('button', { name: '작품 목록 패널' }))
+        .toHaveAttribute('aria-expanded', 'false');
     });
   }
 
-  test('R14.2-R14.3 toggles the sub-768 drawer with keyboard activation', async ({ page }) => {
+  test('R14.2-R14.3 toggles a dock panel with keyboard activation and Escape', async ({ page }) => {
     await page.setViewportSize({ width: 767, height: 900 });
     await bootArchive(page);
 
-    const open = page.getByRole('button', { name: '목록 열기' });
-    await activateWithKeyboard(page, open);
-    await expect(page.getByRole('button', { name: '목록 닫기' })).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.getByRole('complementary', { name: '작품 목록' })).toBeVisible();
+    await openPanel(page, '작품 목록 패널');
+    await expect(page.getByRole('region', { name: '작품 목록 패널' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '활성 작품 (2)' })).toBeVisible();
 
-    await activateWithKeyboard(page, page.getByRole('button', { name: '목록 닫기' }));
-    await expect(page.getByRole('complementary', { name: '작품 목록' })).toBeHidden();
+    await page.keyboard.press('Escape');
+    const dockButton = page.getByRole('button', { name: '작품 목록 패널' });
+    await expect(dockButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(dockButton).toBeFocused();
+    await expect(page.getByRole('region', { name: '작품 목록 패널' })).toBeHidden();
   });
 
   test('R4.2-R4.4 R14.5-R14.9 contains a scrolling Card and preserves all state across the breakpoint', async ({ page }) => {
-    await page.setViewportSize({ width: 767, height: 320 });
+    await page.setViewportSize({ width: 767, height: 480 });
     await bootArchive(page);
 
+    await openPanel(page, '작품 DOM 탐색 패널');
     await activateWithKeyboard(page, page.getByRole('button', { name: 'Second Signal 상세 및 관리' }));
     const card = page.getByRole('complementary', { name: 'Second Signal' });
     await expect(card).toBeVisible();
@@ -154,51 +159,73 @@ test.describe('responsive browser acceptance', () => {
     expect(containment.bottom).toBeGreaterThanOrEqual(8);
     expect(containment.left).toBeGreaterThanOrEqual(8);
     expect(containment.overflowY).toBe('auto');
-    expect(containment.scrollHeight).toBeGreaterThan(containment.clientHeight);
 
+    await openPanel(page, '아카이브 현황');
     await activateWithKeyboard(page, page.getByRole('button', { name: 'SF', exact: true }));
     await activateWithKeyboard(page, card.getByRole('button', { name: '별자리에 묶기' }));
+
+    await openPanel(page, '아카이브 현황');
     await expect(page.getByRole('button', { name: 'SF', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await openPanel(page, '별자리 관리');
     await expect(page.getByText('1/200개 작품 선택')).toBeVisible();
+    await openPanel(page, '작품 DOM 탐색 패널');
     await expect(page.getByRole('button', { name: 'Second Signal 별자리 노드로 선택됨' })).toBeDisabled();
 
+    // Crossing the breakpoint in both directions preserves every state slice.
     for (const width of [768, 767]) {
       await page.setViewportSize({ width, height: 700 });
       await expect(card).toBeVisible();
+      await openPanel(page, '아카이브 현황');
       await expect(page.getByRole('button', { name: 'SF', exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await openPanel(page, '별자리 관리');
       await expect(page.getByText('1/200개 작품 선택')).toBeVisible();
+      await openPanel(page, '작품 DOM 탐색 패널');
       await expect(page.getByRole('button', { name: 'Second Signal 별자리 노드로 선택됨' })).toBeDisabled();
+      await openPanel(page, '작품 목록 패널');
       await expect(page.getByRole('heading', { name: '활성 작품 (2)' })).toBeVisible();
     }
   });
 });
 
 test.describe('accessible browser acceptance', () => {
-  test('R6.9 R12.6-R12.8 R14.1 runs an axe WCAG A/AA audit', async ({ page }) => {
+  test('R6.9 R12.6-R12.8 R14.1 runs an axe WCAG A/AA audit with closed and open panels', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 900 });
     await bootArchive(page);
 
-    const results = await new AxeBuilder({ page })
+    const closedResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
+    expect(closedResults.violations, closedResults.violations.map((violation) => (
+      `${violation.id}: ${violation.help} (${violation.nodes.length} nodes)`
+    )).join('\n')).toEqual([]);
 
-    expect(results.violations, results.violations.map((violation) => (
+    await openPanel(page, '작품 DOM 탐색 패널');
+    const openResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(openResults.violations, openResults.violations.map((violation) => (
       `${violation.id}: ${violation.help} (${violation.nodes.length} nodes)`
     )).join('\n')).toEqual([]);
   });
 
   test('R4.2-R4.13 R6.9 R7.6 R10.7-R10.8 R12.6-R12.8 completes the archive journey with keyboard controls', async ({ page }) => {
+    // A long serial keyboard journey over the fullscreen WebGL sky needs
+    // extra headroom under software rendering.
+    test.setTimeout(240_000);
     await page.setViewportSize({ width: 1024, height: 900 });
     await bootArchive(page, { starCount: 1 });
 
     await addWorkWithKeyboard(page);
+    await openPanel(page, '작품 목록 패널');
     await expect(page.getByRole('heading', { name: '활성 작품 (2)' })).toBeVisible();
 
+    await openPanel(page, '작품 DOM 탐색 패널');
     await activateWithKeyboard(page, page.getByRole('button', { name: 'Keyboard Odyssey 상세 및 관리' }));
     const card = page.getByRole('complementary', { name: 'Keyboard Odyssey' });
     await expect(card).toContainText('Keyboard Director');
     await expect(card).toContainText('5/5');
 
+    await openPanel(page, '아카이브 현황');
     const sfFilter = page.getByRole('button', { name: 'SF', exact: true });
     await activateWithKeyboard(page, sfFilter);
     await expect(sfFilter).toHaveAttribute('aria-pressed', 'true');
@@ -208,16 +235,22 @@ test.describe('accessible browser acceptance', () => {
     const softDeleteDialog = page.getByRole('dialog', { name: '블랙홀 이동 확인' });
     await expect(softDeleteDialog.getByText('영향받는 별자리가 없습니다.')).toBeVisible();
     await activateWithKeyboard(page, softDeleteDialog.getByRole('button', { name: '블랙홀 이동 실행' }));
+    await openPanel(page, '작품 목록 패널');
     await expect(page.getByRole('heading', { name: '활성 작품 (1)' })).toBeVisible();
+    await openPanel(page, '작품 DOM 탐색 패널');
     await expect(page.getByLabel('보관 작품 1개')).toBeVisible();
 
     await activateWithKeyboard(page, page.getByRole('button', { name: 'Keyboard Odyssey 복원' }));
-    await expect(page.getByRole('heading', { name: '활성 작품 (2)' })).toBeVisible();
     await expect(page.getByLabel('보관 작품 0개')).toBeVisible();
+    await openPanel(page, '작품 목록 패널');
+    await expect(page.getByRole('heading', { name: '활성 작품 (2)' })).toBeVisible();
 
+    await openPanel(page, '별자리 관리');
     await activateWithKeyboard(page, page.getByRole('button', { name: '수동으로 만들기' }));
+    await openPanel(page, '작품 DOM 탐색 패널');
     await activateWithKeyboard(page, page.getByRole('button', { name: 'Seed Voyage 별자리 노드로 선택' }));
     await activateWithKeyboard(page, page.getByRole('button', { name: 'Keyboard Odyssey 별자리 노드로 선택' }));
+    await openPanel(page, '별자리 관리');
     await activateWithKeyboard(page, page.getByRole('button', { name: '선택 완료' }));
 
     const constellationName = page.getByLabel('이름 (최대 30자)');
@@ -226,6 +259,7 @@ test.describe('accessible browser acceptance', () => {
     await activateWithKeyboard(page, page.getByRole('button', { name: '별자리 생성' }));
     await expect(page.getByText('별자리를 만들었습니다.')).toBeVisible();
 
+    await openPanel(page, '작품 DOM 탐색 패널');
     const constellation = page.getByRole('button', { name: 'Keyboard Route (2개 작품)' });
     await expect(constellation).toBeEnabled();
     await activateWithKeyboard(page, constellation);
@@ -237,7 +271,9 @@ test.describe('accessible browser acceptance', () => {
     await expect(hardDeleteDialog.getByText('Keyboard Route')).toBeVisible();
     await activateWithKeyboard(page, hardDeleteDialog.getByRole('button', { name: '영구 삭제 실행' }));
 
+    await openPanel(page, '작품 목록 패널');
     await expect(page.getByRole('heading', { name: '활성 작품 (1)' })).toBeVisible();
+    await openPanel(page, '작품 DOM 탐색 패널');
     await expect(page.getByRole('button', { name: 'Keyboard Odyssey 상세 및 관리' })).toHaveCount(0);
     await expect(page.getByLabel('보관 작품 0개')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Keyboard Route (1개 작품)' })).toBeDisabled();

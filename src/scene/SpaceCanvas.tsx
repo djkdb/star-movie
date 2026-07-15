@@ -32,6 +32,7 @@ import {
   BACKGROUND_LAYER_DEFINITIONS,
   calculateParallaxOffset,
   createBackgroundStars,
+  createMilkyWayPatchConfigs,
   createNebulaConfigs,
   SPACE_BACKGROUND_COLOR,
   SPACE_CAMERA_FOV,
@@ -67,14 +68,17 @@ const BACKGROUND_VERTEX_SHADER = `
   attribute float aPhase;
   attribute float aBaseOpacity;
   attribute float aSize;
+  attribute vec3 aColor;
   uniform float uTime;
   uniform float uPixelRatio;
   uniform vec2 uParallax;
   varying float vOpacity;
+  varying vec3 vColor;
 
   void main() {
     float pulse = 1.0 + ${TWINKLE_AMPLITUDE.toFixed(1)} * sin((uTime / aPeriod) * 6.28318530718 + aPhase);
     vOpacity = aBaseOpacity * pulse;
+    vColor = aColor;
     vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
     viewPosition.xy += uParallax * max(1.0, -viewPosition.z);
     gl_Position = projectionMatrix * viewPosition;
@@ -85,12 +89,17 @@ const BACKGROUND_VERTEX_SHADER = `
 const BACKGROUND_FRAGMENT_SHADER = `
   precision highp float;
   varying float vOpacity;
+  varying vec3 vColor;
 
   void main() {
     float distanceFromCenter = distance(gl_PointCoord, vec2(0.5));
-    float alpha = 1.0 - smoothstep(0.2, 0.5, distanceFromCenter);
-    if (alpha <= 0.0) discard;
-    gl_FragColor = vec4(vec3(0.82, 0.88, 1.0), alpha * vOpacity);
+    // Sharp core with a faint halo so bright stars bloom slightly while dim
+    // ones stay pinpoint, echoing long-exposure sky photography.
+    float core = 1.0 - smoothstep(0.0, 0.3, distanceFromCenter);
+    float halo = 1.0 - smoothstep(0.12, 0.5, distanceFromCenter);
+    float alpha = clamp(core * 1.25 + halo * 0.4, 0.0, 1.0);
+    if (alpha <= 0.003) discard;
+    gl_FragColor = vec4(vColor, alpha * vOpacity);
   }
 `;
 
@@ -126,6 +135,7 @@ function createBackgroundGeometry(
 ): BufferGeometry {
   const stars = createBackgroundStars(definition);
   const positions = new Float32Array(stars.length * 3);
+  const colors = new Float32Array(stars.length * 3);
   const periods = new Float32Array(stars.length);
   const phases = new Float32Array(stars.length);
   const opacities = new Float32Array(stars.length);
@@ -133,6 +143,7 @@ function createBackgroundGeometry(
 
   stars.forEach((star, index) => {
     positions.set(star.position, index * 3);
+    colors.set(star.color, index * 3);
     periods[index] = star.twinklePeriodSeconds;
     phases[index] = star.twinklePhaseRadians;
     opacities[index] = star.baseOpacity;
@@ -141,6 +152,7 @@ function createBackgroundGeometry(
 
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('aColor', new Float32BufferAttribute(colors, 3));
   geometry.setAttribute('aPeriod', new Float32BufferAttribute(periods, 1));
   geometry.setAttribute('aPhase', new Float32BufferAttribute(phases, 1));
   geometry.setAttribute('aBaseOpacity', new Float32BufferAttribute(opacities, 1));
@@ -248,24 +260,67 @@ function NebulaField() {
   );
 }
 
+/**
+ * Diffuse unresolved-starlight ribbon along the galactic band. Together with
+ * the 'band' background star layer this reads as the Milky Way rather than a
+ * colored nebula.
+ */
+function MilkyWayField() {
+  const patches = useMemo(() => createMilkyWayPatchConfigs(), []);
+  const texture = useMemo(createNebulaTexture, []);
+
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  return (
+    <group name="milkyway-field">
+      {patches.map((patch) => (
+        <sprite
+          key={patch.id}
+          position={[patch.position[0], patch.position[1], patch.position[2]]}
+          scale={[patch.scale[0], patch.scale[1], 1]}
+        >
+          <spriteMaterial
+            blending={AdditiveBlending}
+            color={patch.color}
+            depthWrite={false}
+            map={texture}
+            opacity={patch.opacity}
+            transparent
+          />
+        </sprite>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Genre galaxies are marked with a barely-there radial glow instead of a
+ * wireframe sphere, keeping the sky photographic while still hinting where
+ * each genre region lives.
+ */
 function GalaxyMarkers({ galaxies }: { galaxies: readonly Galaxy[] }) {
+  const texture = useMemo(createNebulaTexture, []);
+
+  useEffect(() => () => texture.dispose(), [texture]);
+
   return (
     <group name="genre-galaxies">
       {galaxies.filter(({ kind, unlocked }) => kind.type === 'genre' && unlocked).map((galaxy) => (
-        <mesh
+        <sprite
           key={galaxy.id}
           name={`galaxy-${galaxy.id}`}
           position={[galaxy.center.x, galaxy.center.y, galaxy.center.z]}
+          scale={[galaxy.placementRadius * 2.6, galaxy.placementRadius * 2.6, 1]}
         >
-          <sphereGeometry args={[galaxy.placementRadius, 18, 12]} />
-          <meshBasicMaterial
+          <spriteMaterial
+            blending={AdditiveBlending}
             color={galaxy.primaryColor}
             depthWrite={false}
-            opacity={0.08}
+            map={texture}
+            opacity={0.035}
             transparent
-            wireframe
           />
-        </mesh>
+        </sprite>
       ))}
     </group>
   );
@@ -349,6 +404,7 @@ function SpaceScene({
         {backgroundLayers.map((definition) => (
           <BackgroundLayer definition={definition} key={definition.kind} />
         ))}
+        <MilkyWayField />
         <NebulaField />
         <GalaxyMarkers galaxies={viewModel.galaxies} />
         <MilestoneRewardRenderer rewards={viewModel.milestoneRewards} />
