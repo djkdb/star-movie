@@ -1,16 +1,29 @@
+import { Html } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
-import { DoubleSide, type Group, type ShaderMaterial } from 'three';
+import { useMemo, useRef, useState } from 'react';
+import {
+  AdditiveBlending,
+  Color,
+  DoubleSide,
+  type Group,
+  type ShaderMaterial,
+} from 'three';
 
+import type { ArchivedStar } from '../domain/models';
 import type { StarDragPayload } from './starVisualModel';
 import {
   BLACKHOLE_DISTORTION_MAX_STRENGTH,
   BLACKHOLE_DISTORTION_RADIUS,
   BLACKHOLE_POSITION,
+  EMBER_ORBIT_MAX_RADIUS,
+  getArchivedEmberOrbit,
+  getBlackholeMassScale,
   isBlackholeDropHit,
   isValidBlackholeDragPayload,
 } from './blackholeModel';
+import { GENRE_FIREWORK_COLORS } from './particleManagerModel';
+import { getStarHaloTexture } from './starSpriteTextures';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 
 /** Half-size of the billboarded quad; the event horizon sits at 0.30 of this. */
@@ -116,14 +129,119 @@ const GARGANTUA_FRAGMENT_SHADER = `
   }
 `;
 
+/** Ember tint per genre: the genre color dimmed toward a warm ember glow. */
+function emberColor(genre: string): string {
+  const base = new Color(GENRE_FIREWORK_COLORS[genre] ?? '#ffb37a');
+  return `#${base.lerp(new Color('#ff8a4a'), 0.35).multiplyScalar(0.85).getHexString()}`;
+}
+
+interface ArchivedEmberRingProps {
+  archivedWorks: readonly ArchivedStar[];
+  reducedMotion: boolean;
+  onOpenArchive(): void;
+}
+
+/**
+ * Every archived work is visible as a dim genre-tinted ember circling the
+ * accretion disk — the black hole holds your discarded works rather than
+ * deleting them. Hovering names the work; clicking opens the archive.
+ */
+function ArchivedEmberRing({
+  archivedWorks,
+  reducedMotion,
+  onOpenArchive,
+}: ArchivedEmberRingProps) {
+  const ringRef = useRef<Group>(null);
+  const elapsedVisibleSeconds = useVisibleElapsedSeconds();
+  const [hoveredWorkId, setHoveredWorkId] = useState<string | null>(null);
+  const embers = useMemo(
+    () => archivedWorks.map((work) => ({
+      work,
+      orbit: getArchivedEmberOrbit(work.id),
+      color: emberColor(work.genre),
+    })),
+    [archivedWorks],
+  );
+
+  useFrame(() => {
+    const ring = ringRef.current;
+    if (ring === null) return;
+    embers.forEach((ember, index) => {
+      const child = ring.children[index];
+      if (child === undefined) return;
+      const angle = ember.orbit.phaseRadians
+        + (reducedMotion ? 0 : elapsedVisibleSeconds.current * ember.orbit.angularSpeedRadiansPerSecond);
+      child.position.set(
+        Math.cos(angle) * ember.orbit.radius,
+        Math.sin(angle) * ember.orbit.radius * 0.36,
+        0.2,
+      );
+    });
+  });
+
+  const hovered = embers.find(({ work }) => work.id === hoveredWorkId);
+
+  return (
+    <group name="blackhole-embers" ref={ringRef}>
+      {embers.map((ember) => (
+        <sprite
+          key={ember.work.id}
+          name="blackhole-ember"
+          scale={[ember.orbit.size, ember.orbit.size, 1]}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenArchive();
+          }}
+          onPointerOut={(event) => {
+            event.stopPropagation();
+            setHoveredWorkId((current) =>
+              current === ember.work.id ? null : current);
+          }}
+          onPointerOver={(event) => {
+            event.stopPropagation();
+            setHoveredWorkId(ember.work.id);
+          }}
+          userData={{ archiveObjectType: 'blackhole-ember', workId: ember.work.id }}
+        >
+          <spriteMaterial
+            blending={AdditiveBlending}
+            color={ember.color}
+            depthWrite={false}
+            map={getStarHaloTexture()}
+            opacity={0.85}
+            transparent
+            toneMapped={false}
+          />
+        </sprite>
+      ))}
+      {hovered !== undefined && (
+        <Html
+          center
+          position={[0, EMBER_ORBIT_MAX_RADIUS * 0.55 + 1.6, 0.4]}
+          style={{ pointerEvents: 'none' }}
+          wrapperClass="star-title-label-anchor"
+        >
+          <span className="star-title-label" role="tooltip">
+            {hovered.work.title}
+          </span>
+        </Html>
+      )}
+    </group>
+  );
+}
+
 export interface BlackholeRendererProps {
   activeDragPayload?: StarDragPayload | null;
+  archivedWorks?: readonly ArchivedStar[];
+  reducedMotion?: boolean;
   onDropStar(payload: StarDragPayload): void;
   onOpenArchive(): void;
 }
 
 export function BlackholeRenderer({
   activeDragPayload = null,
+  archivedWorks = [],
+  reducedMotion = false,
   onDropStar,
   onOpenArchive,
 }: BlackholeRendererProps) {
@@ -136,6 +254,8 @@ export function BlackholeRenderer({
     () => [BLACKHOLE_POSITION.x, BLACKHOLE_POSITION.y, BLACKHOLE_POSITION.z] as const,
     [],
   );
+  // Everything the hole has swallowed adds visible mass.
+  const massScale = getBlackholeMassScale(archivedWorks.length);
 
   const dragActive = isValidBlackholeDragPayload(activeDragPayload);
 
@@ -153,10 +273,11 @@ export function BlackholeRenderer({
     const breathe = 0.04 * Math.sin(elapsedVisibleSeconds.current * 1.3);
     if (materialRef.current !== null) {
       materialRef.current.uniforms.uTime!.value = elapsedVisibleSeconds.current;
-      materialRef.current.uniforms.uArousal!.value = arousalRef.current + breathe;
+      materialRef.current.uniforms.uArousal!.value =
+        arousalRef.current + breathe + (massScale - 1) * 0.5;
     }
     if (billboard !== null) {
-      const scale = 1 + arousalRef.current * 0.08 + breathe * 0.5;
+      const scale = (1 + arousalRef.current * 0.08 + breathe * 0.5) * massScale;
       billboard.scale.setScalar(scale);
     }
   });
@@ -223,6 +344,11 @@ export function BlackholeRenderer({
             vertexShader={GARGANTUA_VERTEX_SHADER}
           />
         </mesh>
+        <ArchivedEmberRing
+          archivedWorks={archivedWorks}
+          onOpenArchive={onOpenArchive}
+          reducedMotion={reducedMotion}
+        />
       </group>
     </group>
   );

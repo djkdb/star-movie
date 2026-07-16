@@ -217,7 +217,11 @@ describe('Zustand and persistence atomic integration', () => {
       firstRunStore.getState().persisted,
       firstRunStore.getState().runtime.hasPersistedRegistration,
     );
-    expect(firstRunScene.archiveContent).toEqual({ stars: [], constellations: [] });
+    expect(firstRunScene.archiveContent).toEqual({
+      stars: [],
+      constellations: [],
+      archivedWorks: [],
+    });
     expect(firstRunScene.galaxies).toHaveLength(8);
 
     restoredStore.dispose();

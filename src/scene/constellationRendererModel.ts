@@ -1,6 +1,6 @@
 import type { Constellation, Star, Vec3 } from '../domain/models';
 import { getStarInstancePhase } from './starRendererModel';
-import { sampleStarDriftOffset } from './starVisualModel';
+import { sampleStarDisplayOffset } from './starVisualModel';
 
 export const CONSTELLATION_IDLE_OPACITY = 0.5;
 export const CONSTELLATION_HOVER_OPACITY = 1;
@@ -68,10 +68,10 @@ export function createConstellationLineViewModels(
 }
 
 /**
- * Recomputes constellation line endpoints with the current drift applied, using
- * the exact same `base + sampleStarDriftOffset(elapsed, getStarInstancePhase(id))`
- * formula as the star renderers so endpoints and stars can never diverge
- * (Requirements 2.1, 2.3). Under reduced motion the base positions are returned.
+ * Recomputes constellation line endpoints with the current display offset
+ * (drift + gravitational lean) applied, using the exact same shared formula as
+ * the star renderers so endpoints and stars can never diverge (Requirements
+ * 2.1, 2.3). Under reduced motion the base positions are returned.
  */
 export function sampleConstellationLinePoints(
   activeStars: readonly Star[],
@@ -80,7 +80,8 @@ export function sampleConstellationLinePoints(
 ): LinePoint[] {
   return activeStars.map((star) => {
     if (reducedMotion) return toPoint(star.position);
-    const offset = sampleStarDriftOffset(
+    const offset = sampleStarDisplayOffset(
+      star.position,
       elapsedVisibleSeconds,
       getStarInstancePhase(star.id),
     );

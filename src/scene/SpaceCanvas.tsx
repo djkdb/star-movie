@@ -20,6 +20,7 @@ import { BlackholeArchive } from '../components/BlackholeArchive';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useModalFocusTrap } from '../components/useModalFocusTrap';
 import type {
+  ArchivedStar,
   CameraPose,
   CameraRequest,
   Constellation,
@@ -109,6 +110,7 @@ const BACKGROUND_FRAGMENT_SHADER = `
 export interface SceneArchiveContent {
   stars: readonly Star[];
   constellations: readonly Constellation[];
+  archivedWorks: readonly ArchivedStar[];
 }
 
 export interface SpaceSceneViewModel {
@@ -128,8 +130,9 @@ export function createSpaceSceneViewModel(
       ? {
           stars: persisted.stars,
           constellations: persisted.constellations,
+          archivedWorks: persisted.blackholeArchive,
         }
-      : { stars: [], constellations: [] },
+      : { stars: [], constellations: [], archivedWorks: [] },
   };
 }
 
@@ -406,8 +409,10 @@ function SpaceScene({
         </Selection>
         <BlackholeRenderer
           activeDragPayload={activeDragPayload}
+          archivedWorks={viewModel.archiveContent.archivedWorks}
           onDropStar={onBlackholeDrop}
           onOpenArchive={onBlackholeOpen}
+          reducedMotion={reducedMotion}
         />
         <ParticleManager
           minimumParticleCounts={quality.minimumParticleCounts}

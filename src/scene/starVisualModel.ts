@@ -1,4 +1,5 @@
 import type { Rating, Star, Vec3 } from '../domain/models';
+import { BLACKHOLE_POSITION } from './blackholeModel';
 
 export interface RatingVisual {
   radius: number;
@@ -219,6 +220,64 @@ export function sampleStarDriftOffset(
   };
 }
 
+/** Stars within this distance of the black hole visibly lean toward it. */
+export const BLACKHOLE_GRAVITY_INFLUENCE_RADIUS = 30;
+/** Maximum visual displacement (units) for a star grazing the influence edge. */
+export const BLACKHOLE_GRAVITY_MAX_PULL = 2.6;
+
+/**
+ * Static gravitational lean: a bounded, deterministic offset pulling a star's
+ * rendered position toward the black hole, growing quadratically as the base
+ * position nears the hole. Time-independent, so it never fights the drift and
+ * constellation lines can apply the identical term.
+ */
+export function sampleBlackholeGravityPull(
+  basePosition: Vec3,
+  blackholePosition: Vec3 = BLACKHOLE_POSITION,
+): Vec3 {
+  const towardX = blackholePosition.x - basePosition.x;
+  const towardY = blackholePosition.y - basePosition.y;
+  const towardZ = blackholePosition.z - basePosition.z;
+  const distance = Math.hypot(towardX, towardY, towardZ);
+  if (
+    !Number.isFinite(distance)
+    || distance === 0
+    || distance >= BLACKHOLE_GRAVITY_INFLUENCE_RADIUS
+  ) {
+    return { x: 0, y: 0, z: 0 };
+  }
+
+  const proximity = 1 - distance / BLACKHOLE_GRAVITY_INFLUENCE_RADIUS;
+  // Never pull past the hole itself: cap by half the remaining distance.
+  const pull = Math.min(
+    BLACKHOLE_GRAVITY_MAX_PULL * proximity * proximity,
+    distance / 2,
+  );
+  return {
+    x: (towardX / distance) * pull,
+    y: (towardY / distance) * pull,
+    z: (towardZ / distance) * pull,
+  };
+}
+
+/**
+ * Full display offset (drift + gravitational lean) shared by both star
+ * renderers and the constellation line sampler, so nothing can diverge.
+ */
+export function sampleStarDisplayOffset(
+  basePosition: Vec3,
+  elapsedVisibleSeconds: number,
+  phaseSeed: number,
+): Vec3 {
+  const drift = sampleStarDriftOffset(elapsedVisibleSeconds, phaseSeed);
+  const gravity = sampleBlackholeGravityPull(basePosition);
+  return {
+    x: drift.x + gravity.x,
+    y: drift.y + gravity.y,
+    z: drift.z + gravity.z,
+  };
+}
+
 /**
  * Single transform shared by the individual and instanced renderers so both
  * paths drift identically. Under reduced motion the star is pinned to its
@@ -242,7 +301,11 @@ export function sampleStarRenderTransform(
     };
   }
 
-  const offset = sampleStarDriftOffset(elapsedVisibleSeconds, phaseSeed);
+  const offset = sampleStarDisplayOffset(
+    star.position,
+    elapsedVisibleSeconds,
+    phaseSeed,
+  );
   return {
     position: {
       x: star.position.x + offset.x,
