@@ -94,6 +94,7 @@ export function ArchiveShell({ canvas, panels }: ArchiveShellProps) {
             aria-controls={`shell-panel-${panel.id}`}
             aria-expanded={openPanelId === panel.id}
             className={`dock-button${openPanelId === panel.id ? ' is-active' : ''}`}
+            data-label={panel.label}
             key={panel.id}
             onClick={() => togglePanel(panel.id)}
             ref={(element) => {
