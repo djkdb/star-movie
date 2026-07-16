@@ -21,15 +21,24 @@ export const STAR_LABEL_FADE_SECONDS = 0.3;
 export const STAR_DRAG_PAYLOAD_TYPE = 'application/x-space-movie-star';
 
 /**
- * Per-axis drift amplitude (units). Bounds proof (design "표류 수학"):
- * magnitude ≤ A·√3 = 0.34·1.7320… = 0.5889 < 0.6 (Requirement 1.2);
- * speed ≤ A·‖ω‖ = 0.34·0.4179 = 0.1421 < 0.15 units/s (Requirements 1.3, 1.5).
+ * Per-axis free-roaming drift amplitude (units). Each axis sums a slow primary
+ * wave and a faster secondary wave whose weights add to 1, so the per-axis
+ * offset stays within ±A and the total wander is bounded by A·√3 ≈ 4.16 units.
+ * The two incommensurate frequencies keep the path from visibly repeating, so
+ * stars appear to roam the field freely rather than orbit a fixed point.
  */
-export const STAR_DRIFT_AMPLITUDE = 0.34;
+export const STAR_DRIFT_AMPLITUDE = 2.4;
+export const STAR_DRIFT_PRIMARY_WEIGHT = 0.62;
+export const STAR_DRIFT_SECONDARY_WEIGHT = 0.38;
 export const STAR_DRIFT_ANGULAR_FREQUENCIES = {
-  x: 0.21,
-  y: 0.24,
-  z: 0.27,
+  x: 0.09,
+  y: 0.108,
+  z: 0.123,
+} as const;
+export const STAR_DRIFT_SECONDARY_FREQUENCIES = {
+  x: 0.211,
+  y: 0.187,
+  z: 0.164,
 } as const;
 export const STAR_DRIFT_AXIS_PHASE_OFFSETS = {
   x: 0,
@@ -70,33 +79,52 @@ function assertDriftInputs(
  * time and a per-star phase seed. Sampling from the visibility clock means
  * hidden intervals cannot advance the phase (Requirement 1.8).
  */
+function driftAxis(
+  elapsedVisibleSeconds: number,
+  phaseSeed: number,
+  primaryFrequency: number,
+  secondaryFrequency: number,
+  phaseOffset: number,
+): number {
+  const primary = Math.sin(
+    primaryFrequency * elapsedVisibleSeconds + phaseSeed + phaseOffset,
+  );
+  const secondary = Math.sin(
+    secondaryFrequency * elapsedVisibleSeconds + phaseSeed * 1.7 + phaseOffset,
+  );
+  return (
+    STAR_DRIFT_AMPLITUDE
+    * (STAR_DRIFT_PRIMARY_WEIGHT * primary + STAR_DRIFT_SECONDARY_WEIGHT * secondary)
+  );
+}
+
 export function sampleStarDriftOffset(
   elapsedVisibleSeconds: number,
   phaseSeed: number,
 ): Vec3 {
   assertDriftInputs(elapsedVisibleSeconds, phaseSeed);
   return {
-    x:
-      STAR_DRIFT_AMPLITUDE
-      * Math.sin(
-        STAR_DRIFT_ANGULAR_FREQUENCIES.x * elapsedVisibleSeconds
-          + phaseSeed
-          + STAR_DRIFT_AXIS_PHASE_OFFSETS.x,
-      ),
-    y:
-      STAR_DRIFT_AMPLITUDE
-      * Math.sin(
-        STAR_DRIFT_ANGULAR_FREQUENCIES.y * elapsedVisibleSeconds
-          + phaseSeed
-          + STAR_DRIFT_AXIS_PHASE_OFFSETS.y,
-      ),
-    z:
-      STAR_DRIFT_AMPLITUDE
-      * Math.sin(
-        STAR_DRIFT_ANGULAR_FREQUENCIES.z * elapsedVisibleSeconds
-          + phaseSeed
-          + STAR_DRIFT_AXIS_PHASE_OFFSETS.z,
-      ),
+    x: driftAxis(
+      elapsedVisibleSeconds,
+      phaseSeed,
+      STAR_DRIFT_ANGULAR_FREQUENCIES.x,
+      STAR_DRIFT_SECONDARY_FREQUENCIES.x,
+      STAR_DRIFT_AXIS_PHASE_OFFSETS.x,
+    ),
+    y: driftAxis(
+      elapsedVisibleSeconds,
+      phaseSeed,
+      STAR_DRIFT_ANGULAR_FREQUENCIES.y,
+      STAR_DRIFT_SECONDARY_FREQUENCIES.y,
+      STAR_DRIFT_AXIS_PHASE_OFFSETS.y,
+    ),
+    z: driftAxis(
+      elapsedVisibleSeconds,
+      phaseSeed,
+      STAR_DRIFT_ANGULAR_FREQUENCIES.z,
+      STAR_DRIFT_SECONDARY_FREQUENCIES.z,
+      STAR_DRIFT_AXIS_PHASE_OFFSETS.z,
+    ),
   };
 }
 

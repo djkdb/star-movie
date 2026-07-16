@@ -48,10 +48,10 @@ describe('individual Star visual model', () => {
     },
   );
 
-  it('R1.10 exposes drift constants and drops the old y oscillation API', async () => {
+  it('R1.10 exposes free-roaming drift constants and drops the old y oscillation API', async () => {
     expect(STAR_ROTATION_RADIANS_PER_SECOND).toBeCloseTo(Math.PI / 6);
-    expect(STAR_DRIFT_AMPLITUDE).toBe(0.34);
-    expect(STAR_DRIFT_ANGULAR_FREQUENCIES).toEqual({ x: 0.21, y: 0.24, z: 0.27 });
+    expect(STAR_DRIFT_AMPLITUDE).toBe(2.4);
+    expect(STAR_DRIFT_ANGULAR_FREQUENCIES).toEqual({ x: 0.09, y: 0.108, z: 0.123 });
     expect(STAR_DRIFT_AXIS_PHASE_OFFSETS).toEqual({
       x: 0,
       y: (2 * Math.PI) / 3,
@@ -64,11 +64,17 @@ describe('individual Star visual model', () => {
     expect('STAR_OSCILLATION_PERIOD_SECONDS' in model).toBe(false);
   });
 
-  it('R1.1-R1.3 drifts within the proven magnitude and speed bounds on all three axes', () => {
+  it('R1.1-R1.3 drifts within the bounded per-axis envelope on all three axes', () => {
+    // Each axis sums two weighted sines whose weights total 1, so |axis| ≤ A and
+    // the total wander is bounded by A·√3.
+    const maxTotal = STAR_DRIFT_AMPLITUDE * Math.sqrt(3) + 1e-9;
     const offsetStart = sampleStarDriftOffset(0, 0);
     const offsetLater = sampleStarDriftOffset(12.5, 1.2);
     for (const offset of [offsetStart, offsetLater]) {
-      expect(Math.hypot(offset.x, offset.y, offset.z)).toBeLessThanOrEqual(0.6);
+      expect(Math.abs(offset.x)).toBeLessThanOrEqual(STAR_DRIFT_AMPLITUDE + 1e-9);
+      expect(Math.abs(offset.y)).toBeLessThanOrEqual(STAR_DRIFT_AMPLITUDE + 1e-9);
+      expect(Math.abs(offset.z)).toBeLessThanOrEqual(STAR_DRIFT_AMPLITUDE + 1e-9);
+      expect(Math.hypot(offset.x, offset.y, offset.z)).toBeLessThanOrEqual(maxTotal);
     }
     // A generic sampled instant moves on every axis (not a single-axis wobble).
     expect(offsetLater.x).not.toBe(0);

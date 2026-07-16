@@ -39,14 +39,17 @@ const driftInputArbitrary = fc.record({
 });
 
 describe('Property 1: drift offset magnitude bound', () => {
-  it('R1.1 R1.2 keeps the offset finite, time-varying, and within 0.6 units of Base_Position', () => {
+  it('R1.1 R1.2 keeps the offset finite, time-varying, and within the free-roaming envelope', () => {
+    // Each axis sums two weighted sines whose weights total 1, so |axis| ≤ A and
+    // the total wander is bounded by A·√3.
+    const maxWander = 2.4 * Math.sqrt(3) + 1e-9;
     fc.assert(
       fc.property(driftInputArbitrary, ({ elapsedVisibleSeconds, phaseSeed }) => {
         const offset = sampleStarDriftOffset(elapsedVisibleSeconds, phaseSeed);
         expect(Number.isFinite(offset.x)).toBe(true);
         expect(Number.isFinite(offset.y)).toBe(true);
         expect(Number.isFinite(offset.z)).toBe(true);
-        expect(magnitude(offset)).toBeLessThanOrEqual(0.6);
+        expect(magnitude(offset)).toBeLessThanOrEqual(maxWander);
       }),
       { numRuns: 100 },
     );
@@ -54,7 +57,7 @@ describe('Property 1: drift offset magnitude bound', () => {
 });
 
 describe('Property 2: drift speed and continuity bound', () => {
-  it('R1.3 R1.5 keeps ‖offset(t+Δ) − offset(t)‖ ≤ 0.15·Δ (bounded speed, no discontinuous jump)', () => {
+  it('R1.3 R1.5 keeps ‖offset(t+Δ) − offset(t)‖ ≤ 0.6·Δ (bounded speed, no discontinuous jump)', () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -74,7 +77,7 @@ describe('Property 2: drift speed and continuity bound', () => {
             z: after.z - before.z,
           });
           // Small tolerance absorbs floating-point error at the Lipschitz bound.
-          expect(displacement).toBeLessThanOrEqual(0.15 * delta + 1e-9);
+          expect(displacement).toBeLessThanOrEqual(0.6 * delta + 1e-9);
         },
       ),
       { numRuns: 100 },

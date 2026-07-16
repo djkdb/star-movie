@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultStore } from '../domain/defaultState';
-import type { Genre, Vec3 } from '../domain/models';
+import type { Genre } from '../domain/models';
 import {
   AUTOSAVE_DEBOUNCE_MS,
   PERSISTENCE_STORAGE_KEY,
@@ -15,7 +15,11 @@ import {
   createArchiveStore,
   createArchiveStoreFromLoadResult,
 } from './archiveStore';
-import { createDeterministicStarPosition } from './deterministicPlacement';
+import {
+  createDeterministicStarPosition,
+  STAR_FIELD_CENTER,
+  STAR_FIELD_RADII,
+} from './deterministicPlacement';
 
 const STAR_ID = '10000000-0000-4000-8000-000000000001';
 const NOW = '2025-04-05T06:07:08.000Z';
@@ -44,28 +48,22 @@ function createHarness(options: { failWrites?: boolean } = {}) {
   return { clock, storage, persistence, store };
 }
 
-function distance(left: Vec3, right: Vec3): number {
-  return Math.hypot(left.x - right.x, left.y - right.y, left.z - right.z);
-}
-
 describe('deterministic star placement', () => {
   it('R2.9-R2.10 returns the same bounded 3D position for the same UUID and genre', () => {
-    const galaxy = {
-      center: { x: -45, y: 0, z: -45 },
-      placementRadius: 18,
-    };
-
-    const first = createDeterministicStarPosition(STAR_ID, 'SF', galaxy);
-    const second = createDeterministicStarPosition(STAR_ID, 'SF', galaxy);
-    const otherGenre = createDeterministicStarPosition(
-      STAR_ID,
-      '기타' as Genre,
-      galaxy,
-    );
+    const first = createDeterministicStarPosition(STAR_ID, 'SF');
+    const second = createDeterministicStarPosition(STAR_ID, 'SF');
+    const otherGenre = createDeterministicStarPosition(STAR_ID, '기타' as Genre);
 
     expect(first).toEqual(second);
     expect(first).not.toEqual(otherGenre);
-    expect(distance(first, galaxy.center)).toBeLessThanOrEqual(10);
+    // Stars are scattered across the shared field ellipsoid, not clustered by
+    // genre, so the position sits within the field bounds around the origin.
+    const normalized = Math.hypot(
+      (first.x - STAR_FIELD_CENTER.x) / STAR_FIELD_RADII.x,
+      (first.y - STAR_FIELD_CENTER.y) / STAR_FIELD_RADII.y,
+      (first.z - STAR_FIELD_CENTER.z) / STAR_FIELD_RADII.z,
+    );
+    expect(normalized).toBeLessThanOrEqual(1.0001);
   });
 });
 
