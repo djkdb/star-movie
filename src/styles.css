@@ -182,6 +182,10 @@ body {
     box-shadow 0.15s ease;
 }
 
+.form-field input[type='date'] {
+  color-scheme: dark;
+}
+
 .form-field input:hover,
 .form-field select:hover,
 .form-field textarea:hover {
