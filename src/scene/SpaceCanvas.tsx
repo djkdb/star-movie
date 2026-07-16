@@ -56,6 +56,7 @@ import {
   type FpsWindowMeasurement,
   type SceneBenchmarkSource,
 } from './performanceBenchmark';
+import { SmoothWheelZoom } from './SmoothWheelZoom';
 import { sceneResourceRegistry } from './threeResourceRegistry';
 import {
   createSelectiveBloomViewModel,
@@ -424,7 +425,14 @@ function SpaceScene({
         rotateSpeed={0.55}
         touches={ORBIT_TOUCH_GESTURES}
         zoomSpeed={0.75}
-        zoomToCursor
+      />
+      {/* Wheel dolly is intercepted and eased toward its target distance so
+          zooming glides like a rubber band instead of stepping per tick.
+          Touch pinch keeps OrbitControls' native dolly above. */}
+      <SmoothWheelZoom
+        controlsRef={controlsRef}
+        enabled={!reducedMotion}
+        maxDistance={SPACE_CAMERA_MAX_DISTANCE}
       />
       <CameraRig
         constellations={viewModel.archiveContent.constellations}
