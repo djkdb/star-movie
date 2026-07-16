@@ -79,6 +79,7 @@ const FIREWORK_VERTEX_SHADER = `
   uniform float uTime;
   uniform float uDuration;
   uniform float uPixelRatio;
+  uniform float uSpread;
   varying float vAlpha;
   varying vec3 vColor;
 
@@ -87,7 +88,7 @@ const FIREWORK_VERTEX_SHADER = `
     float life = clamp(t / uDuration, 0.0, 1.0);
     // Fast initial expansion easing out, like sparks losing momentum to drag.
     float expo = 1.0 - pow(1.0 - life, 2.3);
-    float dist = aSpeed * expo * 9.5;
+    float dist = aSpeed * expo * uSpread;
     vec3 gravity = vec3(0.0, -aGravity * t * t, 0.0);
     vec3 worldPos = position + aDir * dist + gravity;
 
@@ -161,19 +162,24 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
   const glitters = new Float32Array(total);
 
   const base = new Color(effect.color ?? DEFAULT_FIREWORK_COLOR);
-  // Multiple bursts spread across the sky for that "festival" panorama; a lone
-  // burst stays centered on the work's own position.
-  const spreadX = burstCount > 1 ? 22 : 0;
-  const spreadY = burstCount > 1 ? 12 : 0;
-  const spreadZ = burstCount > 1 ? 10 : 0;
+  const isArchiveShow = effect.celebrationScope === 'archive';
+  // Archive celebrations scatter shells across the whole visible sky so the
+  // show fills the screen; a lone single-scope burst stays on its own work.
+  const spreadX = isArchiveShow ? 52 : burstCount > 1 ? 22 : 0;
+  const spreadY = isArchiveShow ? 28 : burstCount > 1 ? 12 : 0;
+  const spreadZ = isArchiveShow ? 22 : burstCount > 1 ? 10 : 0;
+  const sparkScale = isArchiveShow ? 1.45 : 1;
 
   let index = 0;
   for (let burst = 0; burst < burstCount; burst += 1) {
     const originX = (random() - 0.5) * 2 * spreadX;
     const originY = (random() - 0.5) * 2 * spreadY + (burst > 0 ? 4 : 0);
     const originZ = (random() - 0.5) * 2 * spreadZ;
-    // Stagger the shells so they crackle open one after another.
-    const burstDelay = burst === 0 ? random() * 0.12 : 0.1 + random() * 0.65;
+    // Stagger the shells so they crackle open one after another; the archive
+    // show rolls its volleys across a longer window like a real finale.
+    const burstDelay = burst === 0
+      ? random() * (isArchiveShow ? 0.5 : 0.12)
+      : 0.1 + random() * (isArchiveShow ? 1.4 : 0.65);
     // Each shell opens with its own character: classic spherical peony, a
     // tilted ring, or a drooping willow with heavy trailing sparks.
     const shape = pickBurstShape(random());
@@ -238,7 +244,7 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
       directions[index * 3 + 1] = dirY;
       directions[index * 3 + 2] = dirZ;
       speeds[index] = radial;
-      sizes[index] = 4.5 + random() * 7;
+      sizes[index] = (4.5 + random() * 7) * sparkScale;
       delays[index] = burstDelay + random() * 0.08;
       gravities[index] = gravity;
       glitters[index] = random() < 0.3 ? 1 : 0;
@@ -280,6 +286,7 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
   const pointsRef = useRef<Points>(null);
   const elapsedRef = useRef(0);
   const pixelRatio = useThree((state) => state.viewport.dpr);
+  const isArchiveShow = effect.celebrationScope === 'archive';
 
   const geometry = useMemo(() => buildFireworkGeometry(effect), [effect]);
   const material = useMemo(
@@ -294,9 +301,11 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
           uTime: { value: 0 },
           uDuration: { value: effect.durationSeconds },
           uPixelRatio: { value: pixelRatio },
+          // Show shells balloon far wider so a burst can swallow the screen.
+          uSpread: { value: isArchiveShow ? 17 : 9.5 },
         },
       }),
-    [effect.durationSeconds, pixelRatio],
+    [effect.durationSeconds, isArchiveShow, pixelRatio],
   );
 
   useEffect(() => {
@@ -313,17 +322,23 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
     material.uniforms.uPixelRatio!.value = pixelRatio;
   });
 
+  // The personal show centers on the sky as a whole, not the new work.
+  const origin: readonly [number, number, number] = isArchiveShow
+    ? [0, 6, -10]
+    : [effect.origin.x, effect.origin.y, effect.origin.z];
+
   return (
     <points
       geometry={geometry}
       material={material}
       name="particle-effect-fireworks"
-      position={[effect.origin.x, effect.origin.y, effect.origin.z]}
+      position={origin}
       ref={pointsRef}
       userData={{
         effectId: effect.id,
         particleCount: effect.particleCount,
         burstCount: effect.burstCount ?? 1,
+        celebrationScope: effect.celebrationScope ?? 'single',
       }}
     />
   );

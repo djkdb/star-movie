@@ -27,6 +27,37 @@ export function fireworkBurstCount(genreCount: number): number {
   if (!Number.isFinite(genreCount) || genreCount < 1) return 1;
   return Math.min(FIREWORK_MAX_BURSTS, 1 + Math.floor((genreCount - 1) / 2));
 }
+
+/** Total shell budget for the whole-archive "personal show" across genres. */
+export const PERSONAL_SHOW_MAX_TOTAL_BURSTS = 20;
+/** Longer window so staggered show shells finish their full fade. */
+export const PERSONAL_SHOW_DURATION_SECONDS = 3.6;
+
+/**
+ * Shell counts for the personal show: every genre with at least one star gets
+ * a shell group sized by its count, then the largest groups shed shells until
+ * the total fits the global budget (each genre always keeps one).
+ */
+export function personalShowBurstCounts(
+  genreCounts: readonly number[],
+): number[] {
+  const bursts = genreCounts.map((count) =>
+    Number.isFinite(count) && count >= 1
+      ? Math.min(FIREWORK_MAX_BURSTS, 1 + Math.floor(count / 2))
+      : 1,
+  );
+  let total = bursts.reduce((sum, value) => sum + value, 0);
+  while (total > PERSONAL_SHOW_MAX_TOTAL_BURSTS) {
+    let largestIndex = 0;
+    bursts.forEach((value, index) => {
+      if (value > bursts[largestIndex]!) largestIndex = index;
+    });
+    if (bursts[largestIndex]! <= 1) break;
+    bursts[largestIndex] = bursts[largestIndex]! - 1;
+    total -= 1;
+  }
+  return bursts;
+}
 export const METEOR_SHOWER_TRAIL_RANGE = [2, 3] as const;
 export const METEOR_SHOWER_DURATION_SECONDS = 1.5;
 export const ASTEROID_DEBRIS_RANGE = [20, 40] as const;
@@ -62,6 +93,11 @@ export interface ParticleEffectDescriptor {
   color?: string;
   /** Number of simultaneous burst shells (grandeur), defaults to one. */
   burstCount?: number;
+  /**
+   * 'archive' marks a whole-archive celebration shell group: renderers spread
+   * it across the entire visible sky instead of the work's own position.
+   */
+  celebrationScope?: 'single' | 'archive';
 }
 
 export interface ParticleTimer {
@@ -283,7 +319,26 @@ function descriptor(
     scaleTo: values.scaleTo ?? 1,
     ...(values.color === undefined ? {} : { color: values.color }),
     ...(values.burstCount === undefined ? {} : { burstCount: values.burstCount }),
+    ...(values.celebrationScope === undefined
+      ? {}
+      : { celebrationScope: values.celebrationScope }),
   };
+}
+
+/** Reads the whole-archive genre distribution, if the event carries one. */
+function readGenreCounts(
+  payload: Readonly<Record<string, unknown>>,
+): ReadonlyArray<readonly [string, number]> | null {
+  const counts = payload.genreCounts;
+  if (typeof counts !== 'object' || counts === null) return null;
+  const entries = Object.entries(counts).filter(
+    (entry): entry is [string, number] =>
+      entry[0] in GENRE_FIREWORK_COLORS
+      && typeof entry[1] === 'number'
+      && Number.isFinite(entry[1])
+      && entry[1] >= 1,
+  );
+  return entries.length === 0 ? null : entries;
 }
 
 function readGenreColor(payload: Readonly<Record<string, unknown>>): string {
@@ -323,23 +378,49 @@ export function createParticleEffectsForEvent(
   const minimumCounts = quality.minimumCounts ?? false;
   switch (event.type) {
     case 'work-added': {
-      const effects = [
-        descriptor(event, 'fireworks', 0, random, {
-          particleCount: boundedEffectCount(
-            random,
-            FIREWORK_PARTICLE_RANGE,
-            minimumCounts,
-          ),
-          durationSeconds: FIREWORK_DURATION_SECONDS,
-          color: readGenreColor(event.payload),
-          burstCount: minimumCounts
-            ? 1
-            : fireworkBurstCount(readGenreCount(event.payload)),
-        }),
-      ];
+      const genreEntries = readGenreCounts(event.payload);
+      let effects: ParticleEffectDescriptor[];
+
+      if (genreEntries === null || minimumCounts) {
+        // Legacy payloads and degraded quality fall back to one modest burst.
+        effects = [
+          descriptor(event, 'fireworks', 0, random, {
+            particleCount: boundedEffectCount(
+              random,
+              FIREWORK_PARTICLE_RANGE,
+              minimumCounts,
+            ),
+            durationSeconds: FIREWORK_DURATION_SECONDS,
+            color: readGenreColor(event.payload),
+            burstCount: minimumCounts
+              ? 1
+              : fireworkBurstCount(readGenreCount(event.payload)),
+          }),
+        ];
+      } else {
+        // The personal show: every genre in the archive fires its own
+        // genre-colored shell group, scaled by how many stars it holds.
+        const burstCounts = personalShowBurstCounts(
+          genreEntries.map(([, count]) => count),
+        );
+        effects = genreEntries.map(([genre], index) =>
+          descriptor(event, 'fireworks', index, random, {
+            particleCount: boundedEffectCount(
+              random,
+              FIREWORK_PARTICLE_RANGE,
+              minimumCounts,
+            ),
+            durationSeconds: PERSONAL_SHOW_DURATION_SECONDS,
+            color: GENRE_FIREWORK_COLORS[genre] ?? DEFAULT_FIREWORK_COLOR,
+            burstCount: burstCounts[index] ?? 1,
+            celebrationScope: 'archive',
+          }),
+        );
+      }
+
       if (event.payload.rating === 5) {
         effects.push(
-          descriptor(event, 'meteor-shower', 1, random, {
+          descriptor(event, 'meteor-shower', effects.length, random, {
             trailCount: boundedEffectCount(
               random,
               METEOR_SHOWER_TRAIL_RANGE,

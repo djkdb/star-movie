@@ -332,6 +332,7 @@ function createWorkAddedEvent(
   star: Star,
   sequence: number,
   genreCount: number,
+  genreCounts: Readonly<Record<string, number>>,
 ): RuntimeEvent {
   return {
     id: `work-added:${star.id}:${sequence}`,
@@ -344,6 +345,9 @@ function createWorkAddedEvent(
       genre: star.genre,
       // Drives the grandeur (burst count) of the genre-colored fireworks.
       genreCount,
+      // Whole-archive genre distribution: every registration celebrates the
+      // entire collection with one genre-colored shell group per genre.
+      genreCounts,
       particleEffects:
         star.rating === 5 ? ['fireworks', 'meteor-shower'] : ['fireworks'],
     },
@@ -460,13 +464,16 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
             nowIso: createdAt,
             nextRewardId: providers.nextUuid,
           });
-          const genreCount = progress.candidate.stars.filter(
-            (candidateStar) => candidateStar.genre === star.genre,
-          ).length;
+          const genreCounts: Record<string, number> = {};
+          for (const candidateStar of progress.candidate.stars) {
+            genreCounts[candidateStar.genre] =
+              (genreCounts[candidateStar.genre] ?? 0) + 1;
+          }
           const completionEvent = createWorkAddedEvent(
             star,
             ++completionSequence,
-            genreCount,
+            genreCounts[star.genre] ?? 1,
+            genreCounts,
           );
           return {
             candidate: progress.candidate,

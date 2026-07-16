@@ -30,15 +30,16 @@ export const STAR_DRAG_PAYLOAD_TYPE = 'application/x-space-movie-star';
 export const STAR_DRIFT_AMPLITUDE = 2.4;
 export const STAR_DRIFT_PRIMARY_WEIGHT = 0.62;
 export const STAR_DRIFT_SECONDARY_WEIGHT = 0.38;
+/** Frequencies carry a 3x speed multiplier so stars visibly roam the sky. */
 export const STAR_DRIFT_ANGULAR_FREQUENCIES = {
-  x: 0.09,
-  y: 0.108,
-  z: 0.123,
+  x: 0.27,
+  y: 0.324,
+  z: 0.369,
 } as const;
 export const STAR_DRIFT_SECONDARY_FREQUENCIES = {
-  x: 0.211,
-  y: 0.187,
-  z: 0.164,
+  x: 0.633,
+  y: 0.561,
+  z: 0.492,
 } as const;
 export const STAR_DRIFT_AXIS_PHASE_OFFSETS = {
   x: 0,

@@ -57,7 +57,7 @@ describe('Property 1: drift offset magnitude bound', () => {
 });
 
 describe('Property 2: drift speed and continuity bound', () => {
-  it('R1.3 R1.5 keeps ‖offset(t+Δ) − offset(t)‖ ≤ 0.6·Δ (bounded speed, no discontinuous jump)', () => {
+  it('R1.3 R1.5 keeps ‖offset(t+Δ) − offset(t)‖ ≤ 1.75·Δ (bounded speed, no discontinuous jump)', () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -76,8 +76,9 @@ describe('Property 2: drift speed and continuity bound', () => {
             y: after.y - before.y,
             z: after.z - before.z,
           });
-          // Small tolerance absorbs floating-point error at the Lipschitz bound.
-          expect(displacement).toBeLessThanOrEqual(0.6 * delta + 1e-9);
+          // Per-axis speed ≤ A·(w1·ω1 + w2·ω2) < 1.0, so ‖v‖ < 1.75 after the
+          // 3x speed multiplier. Small tolerance absorbs floating-point error.
+          expect(displacement).toBeLessThanOrEqual(1.75 * delta + 1e-9);
         },
       ),
       { numRuns: 100 },
