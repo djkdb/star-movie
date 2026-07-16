@@ -30,6 +30,20 @@ export function fireworkBurstCount(genreCount: number): number {
 
 /** Total shell budget for the whole-archive "personal show" across genres. */
 export const PERSONAL_SHOW_MAX_TOTAL_BURSTS = 20;
+
+/**
+ * Sparks per shell, tapered by shell count so a many-shell show grows in
+ * breadth without multiplying GPU fill cost linearly. A lone shell keeps its
+ * full spark budget; a 16-shell show uses a quarter per shell.
+ */
+export function fireworkSparksPerBurst(
+  particleCount: number,
+  burstCount: number,
+): number {
+  const base = Math.max(1, Math.floor(particleCount));
+  const shells = Math.max(1, Math.floor(burstCount));
+  return Math.max(24, Math.round(base / Math.sqrt(shells)));
+}
 /** Longer window so staggered show shells finish their full fade. */
 export const PERSONAL_SHOW_DURATION_SECONDS = 3.6;
 

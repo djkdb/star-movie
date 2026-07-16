@@ -584,7 +584,7 @@ export function SpaceCanvas({
         <SceneErrorBoundary navigationTargetId="archive-dom-navigation">
           <Canvas
             aria-hidden="true"
-            dpr={[1, 2]}
+            dpr={[1, 1.5]}
             frameloop={getSceneFrameLoop(reducedMotion)}
             gl={{ antialias: true }}
             onCreated={createBenchmarkSource}

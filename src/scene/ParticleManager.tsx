@@ -24,6 +24,7 @@ import {
   EffectLifecycleRegistry,
   ParticleEffectController,
   browserParticleTimer,
+  fireworkSparksPerBurst,
   type DisposalDiagnostic,
   type ParticleEffectDescriptor,
   type ParticleTimer,
@@ -110,7 +111,10 @@ const FIREWORK_VERTEX_SHADER = `
     vColor = mix(tinted, ember, smoothstep(0.62, 1.0, life));
 
     float shrink = 1.0 - 0.45 * life;
-    gl_PointSize = aSize * shrink * uPixelRatio * (210.0 / max(1.0, -mvPosition.z));
+    // Cap the screen-space size: nearby sparks otherwise balloon into huge
+    // additive quads whose overdraw stalls weaker GPUs into dropped frames.
+    float px = aSize * shrink * uPixelRatio * (210.0 / max(1.0, -mvPosition.z));
+    gl_PointSize = min(px, 42.0 * uPixelRatio);
   }
 `;
 
@@ -149,7 +153,7 @@ function pickBurstShape(roll: number): FireworkBurstShape {
 function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry {
   const random = fireworkRandom(effect.seed);
   const burstCount = Math.max(1, effect.burstCount ?? 1);
-  const perBurst = Math.max(1, effect.particleCount);
+  const perBurst = fireworkSparksPerBurst(effect.particleCount, burstCount);
   const total = perBurst * burstCount;
 
   const positions = new Float32Array(total * 3);
@@ -168,7 +172,7 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
   const spreadX = isArchiveShow ? 52 : burstCount > 1 ? 22 : 0;
   const spreadY = isArchiveShow ? 28 : burstCount > 1 ? 12 : 0;
   const spreadZ = isArchiveShow ? 22 : burstCount > 1 ? 10 : 0;
-  const sparkScale = isArchiveShow ? 1.45 : 1;
+  const sparkScale = isArchiveShow ? 1.25 : 1;
 
   let index = 0;
   for (let burst = 0; burst < burstCount; burst += 1) {
@@ -653,6 +657,88 @@ function EffectVisual({ controller, effect }: EffectVisualProps) {
   );
 }
 
+/**
+ * Compiles the firework and meteor shader programs (plus the sprite program)
+ * on the very first frame by drawing fully-transparent one-vertex stand-ins.
+ * Without this, the first burst or shooting star pays the GLSL compile cost
+ * mid-animation, which can black-flash a frame on slower GPUs.
+ */
+function EffectShaderWarmup() {
+  const fireworkGeometry = useMemo(() => {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new Float32BufferAttribute([0, -900, 0], 3));
+    geometry.setAttribute('aDir', new Float32BufferAttribute([0, 1, 0], 3));
+    geometry.setAttribute('aSpeed', new Float32BufferAttribute([1], 1));
+    geometry.setAttribute('aSize', new Float32BufferAttribute([1], 1));
+    geometry.setAttribute('aDelay', new Float32BufferAttribute([9_999], 1));
+    geometry.setAttribute('aColor', new Float32BufferAttribute([1, 1, 1], 3));
+    geometry.setAttribute('aGravity', new Float32BufferAttribute([0], 1));
+    geometry.setAttribute('aGlitter', new Float32BufferAttribute([0], 1));
+    return geometry;
+  }, []);
+  const fireworkMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        vertexShader: FIREWORK_VERTEX_SHADER,
+        fragmentShader: FIREWORK_FRAGMENT_SHADER,
+        uniforms: {
+          uTime: { value: 0 },
+          uDuration: { value: 1 },
+          uPixelRatio: { value: 1 },
+          uSpread: { value: 1 },
+        },
+      }),
+    [],
+  );
+  const meteorGeometry = useMemo(() => new PlaneGeometry(0.01, 0.01), []);
+  const meteorMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        side: DoubleSide,
+        vertexShader: METEOR_VERTEX_SHADER,
+        fragmentShader: METEOR_FRAGMENT_SHADER,
+        uniforms: {
+          uTint: { value: new Color('#ffffff') },
+          uFade: { value: 0 },
+          uTime: { value: 0 },
+        },
+      }),
+    [],
+  );
+  const headMaterial = useMemo(
+    () =>
+      new SpriteMaterial({
+        map: getStarHaloTexture(),
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    [],
+  );
+
+  useEffect(() => () => {
+    fireworkGeometry.dispose();
+    fireworkMaterial.dispose();
+    meteorGeometry.dispose();
+    meteorMaterial.dispose();
+    headMaterial.dispose();
+  }, [fireworkGeometry, fireworkMaterial, headMaterial, meteorGeometry, meteorMaterial]);
+
+  return (
+    <group name="effect-shader-warmup" position={[0, -900, 0]}>
+      <points frustumCulled={false} geometry={fireworkGeometry} material={fireworkMaterial} />
+      <mesh frustumCulled={false} geometry={meteorGeometry} material={meteorMaterial} />
+      <sprite material={headMaterial} scale={[0.01, 0.01, 1]} />
+    </group>
+  );
+}
+
 export interface ParticleManagerProps {
   store: ArchiveStoreApi;
   minimumParticleCounts?: boolean;
@@ -723,6 +809,7 @@ export function ParticleManager({
 
   return (
     <group name="particle-effects">
+      <EffectShaderWarmup />
       {effects.map((effect) => {
         if (effect.kind === 'fireworks') {
           return <FireworksVisual controller={controller} effect={effect} key={effect.id} />;
