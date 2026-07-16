@@ -20,6 +20,8 @@ import { BlackholeArchive } from '../components/BlackholeArchive';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useModalFocusTrap } from '../components/useModalFocusTrap';
 import type {
+  CameraPose,
+  CameraRequest,
   Constellation,
   Galaxy,
   PersistedStore,
@@ -367,8 +369,15 @@ function SpaceScene({
     }));
     store.getState().commands.requestCameraFocus({ type: 'star', starId });
   }, [store]);
-  const completeCameraRequest = useCallback(() => {
-    store.getState().commands.clearCameraRequest();
+  const onCameraRequestSettled = useCallback((settledRequest: CameraRequest) => {
+    if (settledRequest.type === 'free') {
+      store.getState().commands.completeCameraReturn();
+    } else {
+      store.getState().commands.clearCameraRequest();
+    }
+  }, [store]);
+  const capturePreFocusPose = useCallback((pose: CameraPose) => {
+    store.getState().commands.capturePreFocusPose(pose);
   }, [store]);
   const bloom = useMemo(
     () => createSelectiveBloomViewModel(
@@ -412,12 +421,14 @@ function SpaceScene({
           <ConstellationRenderer
             constellations={viewModel.archiveContent.constellations}
             draft={constellationDraft}
+            reducedMotion={reducedMotion}
             stars={viewModel.archiveContent.stars}
           />
           <StarRenderer
             onDragEnd={onStarDragEnd}
             onDragStart={onStarDragStart}
             onSelect={selectStar}
+            reducedMotion={reducedMotion}
             selectedStarId={selectedStarId}
             stars={viewModel.archiveContent.stars}
           />
@@ -447,10 +458,12 @@ function SpaceScene({
       <CameraRig
         constellations={viewModel.archiveContent.constellations}
         controlsRef={controlsRef}
-        onRequestCompleted={completeCameraRequest}
-        onRequestRejected={completeCameraRequest}
+        onCapturePreFocusPose={capturePreFocusPose}
+        onRequestCompleted={onCameraRequestSettled}
+        onRequestRejected={(_, rejectedRequest) => onCameraRequestSettled(rejectedRequest)}
         reducedMotion={reducedMotion}
         request={pendingCameraRequest}
+        selectedStarId={selectedStarId}
         stars={viewModel.archiveContent.stars}
       />
     </>
@@ -513,6 +526,18 @@ export function SpaceCanvas({
     () => createSpaceSceneViewModel(persisted, hasPersistedRegistration),
     [hasPersistedRegistration, persisted],
   );
+
+  // Central free-viewpoint return: any non-null→null transition of the selected
+  // star (close button, ESC, outside click, soft/hard delete, DOM navigation)
+  // triggers the same return, since selectedStarId is the single source. Lives
+  // at the SpaceCanvas top level so it runs regardless of Canvas mount state.
+  const previousSelectedStarId = useRef<string | null>(selectedStarId);
+  useEffect(() => {
+    if (previousSelectedStarId.current !== null && selectedStarId === null) {
+      store.getState().commands.requestCameraReturn();
+    }
+    previousSelectedStarId.current = selectedStarId;
+  }, [selectedStarId, store]);
 
   const startStarDrag = useCallback((payload: StarDragPayload) => {
     setActiveDragPayload(payload);

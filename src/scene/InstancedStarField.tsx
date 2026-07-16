@@ -38,6 +38,7 @@ import {
 export interface InstancedStarFieldProps {
   stars: readonly Star[];
   selectedStarId: string | null;
+  reducedMotion: boolean;
   onSelect: (starId: string) => void;
   onDragStart?: (payload: StarDragPayload) => void;
   onDragEnd?: (payload: StarDragPayload) => void;
@@ -47,6 +48,7 @@ interface RatingInstancedMeshProps {
   bucket: InstancedStarBucket;
   hoveredStarId: string | null;
   selectedStarId: string | null;
+  reducedMotion: boolean;
   onHoverChange: (starId: string | null) => void;
   onSelect: (starId: string) => void;
   onDragStart?: (payload: StarDragPayload) => void;
@@ -57,6 +59,7 @@ function RatingInstancedMesh({
   bucket,
   hoveredStarId,
   selectedStarId,
+  reducedMotion,
   onHoverChange,
   onSelect,
   onDragStart,
@@ -87,8 +90,9 @@ function RatingInstancedMesh({
       elapsedSeconds,
       hoveredStarId,
       temporaryObject,
+      reducedMotion,
     );
-  }, [bucket, hoveredStarId, temporaryObject]);
+  }, [bucket, hoveredStarId, reducedMotion, temporaryObject]);
 
   useLayoutEffect(() => {
     const mesh = meshRef.current;
@@ -171,6 +175,7 @@ function RatingInstancedMesh({
 export function InstancedStarField({
   stars,
   selectedStarId,
+  reducedMotion,
   onSelect,
   onDragStart,
   onDragEnd,
@@ -205,6 +210,7 @@ export function InstancedStarField({
       elapsedVisibleSeconds.current,
       getStarInstancePhase(labelStar.id),
       hoveredStarId === labelStar.id,
+      reducedMotion,
     );
     const visual = getRatingVisual(labelStar.rating);
     group.position.set(
@@ -230,6 +236,7 @@ export function InstancedStarField({
           onDragStart={onDragStart}
           onHoverChange={handleHoverChange}
           onSelect={onSelect}
+          reducedMotion={reducedMotion}
           selectedStarId={selectedStarId}
         />
       ))}

@@ -5,12 +5,13 @@ import { useMemo, useRef, useState } from 'react';
 import type { Group, Mesh } from 'three';
 
 import type { Star } from '../domain/models';
+import { getStarInstancePhase } from './starRendererModel';
 import { useThreeResourceTracking } from './threeResourceRegistry';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 import {
   createStarDragPayload,
   getRatingVisual,
-  sampleStarMotion,
+  sampleStarRenderTransform,
   STAR_HOVER_SCALE,
   STAR_IDLE_SCALE,
   STAR_LABEL_FADE_SECONDS,
@@ -21,6 +22,7 @@ export interface IndividualStarMeshProps {
   star: Star;
   selected?: boolean;
   opacity?: number;
+  reducedMotion?: boolean;
   onSelect: (starId: string) => void;
   onDragStart?: (payload: StarDragPayload) => void;
   onDragEnd?: (payload: StarDragPayload) => void;
@@ -31,6 +33,7 @@ export function IndividualStarMesh({
   star,
   selected = false,
   opacity = 1,
+  reducedMotion = false,
   onSelect,
   onDragStart,
   onDragEnd,
@@ -40,6 +43,7 @@ export function IndividualStarMesh({
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
   const [hovered, setHovered] = useState(false);
   const visual = getRatingVisual(star.rating);
+  const phaseSeed = useMemo(() => getStarInstancePhase(star.id), [star.id]);
   const dragPayload = useMemo(
     () => createStarDragPayload(star.id, star.position),
     [star.id, star.position],
@@ -48,9 +52,19 @@ export function IndividualStarMesh({
   useFrame(() => {
     const group = groupRef.current;
     if (group === null) return;
-    const motion = sampleStarMotion(elapsedVisibleSeconds.current, star.position.y);
-    group.rotation.y = motion.rotationY;
-    group.position.y = motion.y;
+    const transform = sampleStarRenderTransform(
+      star,
+      elapsedVisibleSeconds.current,
+      phaseSeed,
+      hovered,
+      reducedMotion,
+    );
+    group.position.set(
+      transform.position.x,
+      transform.position.y,
+      transform.position.z,
+    );
+    group.rotation.y = transform.rotationY;
   });
 
   const stop = (event: ThreeEvent<PointerEvent>) => event.stopPropagation();

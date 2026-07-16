@@ -133,7 +133,10 @@ test.describe('responsive browser acceptance', () => {
   });
 
   test('R4.2-R4.4 R14.5-R14.9 contains a scrolling Card and preserves all state across the breakpoint', async ({ page }) => {
-    await page.setViewportSize({ width: 767, height: 480 });
+    // Height must be small enough that the WorkCard content overflows and the
+    // card becomes scroll-contained (overflow-y: auto); a taller viewport lets
+    // it fit and report overflow-y: visible.
+    await page.setViewportSize({ width: 767, height: 320 });
     await bootArchive(page);
 
     await openPanel(page, '작품 DOM 탐색 패널');

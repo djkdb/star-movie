@@ -5,6 +5,7 @@ import {
   type SceneArchiveContent,
 } from '../domain/defaultState';
 import type {
+  CameraPose,
   CameraRequest,
   Constellation,
   ConstellationDraft,
@@ -111,6 +112,9 @@ export interface ArchiveCommands {
   degradeQuality(): QualityLevel;
   requestCameraFocus(request: CameraRequest): CommandResult<CameraRequest>;
   clearCameraRequest(request?: CameraRequest): void;
+  capturePreFocusPose(pose: CameraPose): void;
+  requestCameraReturn(): void;
+  completeCameraReturn(): void;
   startConstellationDraft(initialStarId?: string): CommandResult<ConstellationDraft>;
   selectConstellationStar(starId: string): CommandResult<ConstellationDraft>;
   finishConstellationDraft(): CommandResult<ConstellationDraft>;
@@ -613,7 +617,7 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
             starId: ['활성 작품만 카메라 대상으로 선택할 수 있습니다.'],
           });
         }
-      } else {
+      } else if (request.type === 'constellation') {
         const constellation = state.persisted.constellations.find(
           ({ id }) => id === request.constellationId,
         );
@@ -631,6 +635,11 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
             constellationId: ['활성 작품이 2개 이상 필요합니다'],
           });
         }
+      } else {
+        // Free-viewpoint returns are issued only via requestCameraReturn.
+        return validationFailure('자유 시점 복귀는 직접 요청할 수 없습니다.', {
+          camera: ['자유 시점 복귀는 선택 해제로만 발생합니다.'],
+        });
       }
 
       store.setState((current) => ({
@@ -645,12 +654,46 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
         if (
           request.type === 'star'
             ? pending.type !== 'star' || pending.starId !== request.starId
-            : pending.type !== 'constellation'
-              || pending.constellationId !== request.constellationId
+            : request.type === 'constellation'
+              && (pending.type !== 'constellation'
+                || pending.constellationId !== request.constellationId)
         ) return;
       }
       store.setState((state) => ({
         runtime: { ...state.runtime, pendingCameraRequest: null },
+      }));
+    },
+    capturePreFocusPose: (pose) => {
+      // Capture-once: a star A→B switch must not overwrite the original pose.
+      if (store.getState().runtime.preFocusPose !== null) return;
+      store.setState((state) => ({
+        runtime: {
+          ...state.runtime,
+          preFocusPose: {
+            position: { ...pose.position },
+            target: { ...pose.target },
+          },
+        },
+      }));
+    },
+    requestCameraReturn: () => {
+      const preFocusPose = store.getState().runtime.preFocusPose;
+      if (preFocusPose === null) return;
+      store.setState((state) => ({
+        runtime: {
+          ...state.runtime,
+          pendingCameraRequest: { type: 'free', pose: preFocusPose },
+        },
+      }));
+    },
+    completeCameraReturn: () => {
+      store.setState((state) => ({
+        runtime: {
+          ...state.runtime,
+          pendingCameraRequest: null,
+          preFocusPose: null,
+          selectedStarId: null,
+        },
       }));
     },
     startConstellationDraft: (initialStarId) => {

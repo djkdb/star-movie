@@ -178,6 +178,7 @@ export function createDefaultRuntimeStore(hasPersistedRegistration = false): Run
     isAchievementPanelOpen: false,
     qualityLevel: 'full',
     pendingCameraRequest: null,
+    preFocusPose: null,
     completionEvents: [],
     toastEvents: [],
     storageDiagnostics: { lastAutosaveError: null, lastAutosaveErrorAt: null },

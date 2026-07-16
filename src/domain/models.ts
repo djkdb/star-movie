@@ -112,9 +112,15 @@ export interface ConstellationDraft {
   error: string | null;
 }
 
+export interface CameraPose {
+  position: Vec3;
+  target: Vec3;
+}
+
 export type CameraRequest =
   | { type: 'star'; starId: string }
-  | { type: 'constellation'; constellationId: string };
+  | { type: 'constellation'; constellationId: string }
+  | { type: 'free'; pose: CameraPose };
 
 export interface RuntimeEvent {
   id: string;
@@ -145,6 +151,8 @@ export interface RuntimeStore {
   isAchievementPanelOpen: boolean;
   qualityLevel: QualityLevel;
   pendingCameraRequest: CameraRequest | null;
+  /** Camera pose captured just before a star focus, restored on deselection. */
+  preFocusPose: CameraPose | null;
   completionEvents: RuntimeEvent[];
   toastEvents: RuntimeEvent[];
   storageDiagnostics: StorageDiagnostics;

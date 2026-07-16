@@ -20,8 +20,10 @@ export interface CameraRigProps {
   request: CameraRequest | null;
   stars: readonly Star[];
   constellations: readonly Constellation[];
+  selectedStarId?: string | null;
   controlsRef?: RefObject<CameraControlsLike | null>;
   reducedMotion?: boolean;
+  onCapturePreFocusPose?: (pose: CameraPose) => void;
   onRequestRejected?: (reason: string, request: CameraRequest) => void;
   onRequestCompleted?: (request: CameraRequest) => void;
 }
@@ -69,8 +71,10 @@ export function CameraRig({
   request,
   stars,
   constellations,
+  selectedStarId = null,
   controlsRef,
   reducedMotion = false,
+  onCapturePreFocusPose,
   onRequestRejected,
   onRequestCompleted,
 }: CameraRigProps) {
@@ -82,6 +86,23 @@ export function CameraRig({
   useEffect(() => {
     if (request === null) return;
 
+    const controls = controlsRef?.current ?? null;
+    const currentPose = readCurrentPose(camera.position, controls);
+
+    // Free-viewpoint returns carry a resolved pose and reuse the focus tween.
+    if (request.type === 'free') {
+      if (reducedMotion) {
+        tweenController.current.cancel();
+        activeRequest.current = null;
+        applyPose(request.pose, camera, controls);
+        onRequestCompleted?.(request);
+        return;
+      }
+      activeRequest.current = request;
+      tweenController.current.replace(currentPose, request.pose);
+      return;
+    }
+
     const resolution = resolveCameraFocusRequest(request, stars, constellations);
     if (!resolution.ok) {
       tweenController.current.cancel();
@@ -90,8 +111,13 @@ export function CameraRig({
       return;
     }
 
-    const controls = controlsRef?.current ?? null;
-    const currentPose = readCurrentPose(camera.position, controls);
+    // Capture the pose entered from a selection so deselection can restore it.
+    // The capture-once guard lives in the command, but the selection gate keeps
+    // pure focus (e.g. ListView) from ever capturing a pose.
+    if (resolution.request.type === 'star' && selectedStarId !== null) {
+      onCapturePreFocusPose?.(currentPose);
+    }
+
     const destination = resolution.request.type === 'star'
       ? calculateStarFocusPose(currentPose, resolution.request.position)
       : calculateBoundingBoxFitPose(
@@ -115,10 +141,12 @@ export function CameraRig({
     camera,
     constellations,
     controlsRef,
+    onCapturePreFocusPose,
     onRequestCompleted,
     onRequestRejected,
     reducedMotion,
     request,
+    selectedStarId,
     size.height,
     size.width,
     stars,

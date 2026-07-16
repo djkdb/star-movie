@@ -78,18 +78,32 @@ describe('Star renderer model', () => {
     expect(getStarInstancePhase('other-star')).not.toBe(phase);
   });
 
-  it('R3.2-R3.10 updates rotation, phase-offset y, and hover scale without changing stored coordinates', () => {
+  it('R1.6 R1.7 R1.9 drifts on three axes, keeps rotation and hover scale, and pins under reduced motion', () => {
     const star = createStar('moving-star', 4);
     const phase = Math.PI / 2;
-    const atStart = sampleStarInstanceTransform(star, 0, phase, false);
-    const onePeriodLater = sampleStarInstanceTransform(star, 3, phase, true);
+    const drifting = sampleStarInstanceTransform(star, 2, phase, false, false);
+    const hoveredLater = sampleStarInstanceTransform(star, 3, phase, true, false);
 
-    expect(atStart.position).toEqual({ x: 2, y: 7.1, z: -3 });
-    expect(atStart.rotationY).toBe(0);
-    expect(atStart.scale).toBe(1);
-    expect(onePeriodLater.position.y).toBeCloseTo(atStart.position.y);
-    expect(onePeriodLater.rotationY).toBeCloseTo(Math.PI / 2);
-    expect(onePeriodLater.scale).toBe(1.5);
+    // Every axis drifts away from the stored coordinate, bounded within 0.6.
+    expect(drifting.position.x).not.toBe(2);
+    expect(drifting.position.y).not.toBe(7);
+    expect(drifting.position.z).not.toBe(-3);
+    expect(
+      Math.hypot(
+        drifting.position.x - 2,
+        drifting.position.y - 7,
+        drifting.position.z + 3,
+      ),
+    ).toBeLessThanOrEqual(0.6);
+    expect(drifting.rotationY).toBeCloseTo(2 * (Math.PI / 6));
+    expect(drifting.scale).toBe(1);
+    expect(hoveredLater.rotationY).toBeCloseTo(Math.PI / 2);
+    expect(hoveredLater.scale).toBe(1.5);
+
+    // Reduced motion returns exactly the Base_Position with zero rotation.
+    const still = sampleStarInstanceTransform(star, 3, phase, false, true);
+    expect(still.position).toEqual({ x: 2, y: 7, z: -3 });
+    expect(still.rotationY).toBe(0);
     expect(star.position).toEqual({ x: 2, y: 7, z: -3 });
   });
 
@@ -104,7 +118,7 @@ describe('Star renderer model', () => {
 
     try {
       updateInstancedStarColors(mesh, bucket, color);
-      updateInstancedStarMatrices(mesh, bucket, 1.25, 'instance-b', scratch);
+      updateInstancedStarMatrices(mesh, bucket, 1.25, 'instance-b', scratch, false);
 
       bucket.stars.forEach((star, instanceId) => {
         const expectedTransform = sampleStarInstanceTransform(
@@ -112,6 +126,7 @@ describe('Star renderer model', () => {
           1.25,
           bucket.phases[instanceId]!,
           star.id === 'instance-b',
+          false,
         );
         const expectedObject = new Object3D();
         expectedObject.position.set(

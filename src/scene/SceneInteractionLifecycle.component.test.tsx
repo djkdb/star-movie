@@ -51,7 +51,7 @@ import {
   sampleStarInstanceTransform,
 } from './starRendererModel';
 import {
-  sampleStarMotion,
+  sampleStarRenderTransform,
   STAR_HOVER_SCALE,
   STAR_IDLE_SCALE,
   STAR_LABEL_FADE_SECONDS,
@@ -139,11 +139,12 @@ describe('Scene interaction and resource lifecycle integration', () => {
         background.twinklePeriodSeconds,
         background.twinklePhaseRadians,
       ),
-      individual: sampleStarMotion(visibleSeconds, star.position.y),
+      individual: sampleStarRenderTransform(star, visibleSeconds, instancePhase, false, false),
       instanced: sampleStarInstanceTransform(
         star,
         visibleSeconds,
         instancePhase,
+        false,
         false,
       ),
     };
@@ -156,11 +157,12 @@ describe('Scene interaction and resource lifecycle integration', () => {
         background.twinklePeriodSeconds,
         background.twinklePhaseRadians,
       ),
-      individual: sampleStarMotion(hiddenSeconds, star.position.y),
+      individual: sampleStarRenderTransform(star, hiddenSeconds, instancePhase, false, false),
       instanced: sampleStarInstanceTransform(
         star,
         hiddenSeconds,
         instancePhase,
+        false,
         false,
       ),
     };
@@ -171,10 +173,11 @@ describe('Scene interaction and resource lifecycle integration', () => {
     clock.setVisibility(true, 9_200);
     const resumedSeconds = clock.sample(9_900);
     expect(resumedSeconds).toBeCloseTo(1.9);
-    expect(sampleStarMotion(resumedSeconds, star.position.y))
+    expect(sampleStarRenderTransform(star, resumedSeconds, instancePhase, false, false))
       .not.toEqual(beforeHidden.individual);
-    expect(sampleStarInstanceTransform(star, resumedSeconds, instancePhase, false).position.y)
-      .not.toBe(beforeHidden.instanced.position.y);
+    expect(
+      sampleStarInstanceTransform(star, resumedSeconds, instancePhase, false, false).position.y,
+    ).not.toBe(beforeHidden.instanced.position.y);
   });
 
   it('R3.6-R3.10 R4.1 R10.2-R10.5 completes hover labels at 0.3s while camera focus continues to exactly 0.7s', () => {
@@ -237,6 +240,7 @@ describe('Scene interaction and resource lifecycle integration', () => {
       0.3,
       selectedBucket.phases[selectedInstanceId]!,
       true,
+      false,
     ).scale).toBe(STAR_HOVER_SCALE);
     expect(resolveCameraFocusRequest(cameraRequest, stars, [])).toMatchObject({
       ok: true,
