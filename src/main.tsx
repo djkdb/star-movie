@@ -1,6 +1,10 @@
 import { App } from './App';
 import { bootstrapApplication } from './bootstrap';
-import { bootstrapPersistedState } from './persistence/bootstrapPersistedState';
+import {
+  bootstrapPersistedState,
+  seedDemoArchiveIfFirstRun,
+} from './persistence/bootstrapPersistedState';
+import { createBrowserPersistenceService } from './persistence/persistenceService';
 
 const rootElement = document.getElementById('root');
 
@@ -11,5 +15,10 @@ if (rootElement === null) {
 void bootstrapApplication({
   rootElement,
   application: <App />,
-  bootstrapPersistedState,
+  bootstrapPersistedState: async () => {
+    const service = createBrowserPersistenceService();
+    // First-ever visit starts with the built-in demo archive already loaded.
+    seedDemoArchiveIfFirstRun(service);
+    return bootstrapPersistedState(service);
+  },
 });
