@@ -2,21 +2,24 @@ import { Html } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
-import type { Group, Mesh } from 'three';
+import { AdditiveBlending, type Group, type Mesh } from 'three';
 
 import type { Star } from '../domain/models';
 import { getStarInstancePhase } from './starRendererModel';
+import { getStarHaloTexture, getStarSpikeTexture } from './starSpriteTextures';
 import { useThreeResourceTracking } from './threeResourceRegistry';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 import {
   createStarDragPayload,
-  getRatingVisual,
+  getStarAppearance,
   sampleStarRenderTransform,
   STAR_HOVER_SCALE,
   STAR_IDLE_SCALE,
   STAR_LABEL_FADE_SECONDS,
   type StarDragPayload,
 } from './starVisualModel';
+
+const NO_RAYCAST = () => null;
 
 export interface IndividualStarMeshProps {
   star: Star;
@@ -42,7 +45,18 @@ export function IndividualStarMesh({
   const trackMeshResources = useThreeResourceTracking<Mesh>();
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
   const [hovered, setHovered] = useState(false);
-  const visual = getRatingVisual(star.rating);
+  const visual = useMemo(
+    () => getStarAppearance(star.id, star.rating),
+    [star.id, star.rating],
+  );
+  const spikeAngles = useMemo(() => {
+    if (visual.spikeCount === 0) return [] as number[];
+    const step = Math.PI / (visual.spikeCount / 2);
+    return Array.from(
+      { length: visual.spikeCount / 2 },
+      (_, index) => visual.spikeRotation + index * step,
+    );
+  }, [visual.spikeCount, visual.spikeRotation]);
   const phaseSeed = useMemo(() => getStarInstancePhase(star.id), [star.id]);
   const dragPayload = useMemo(
     () => createStarDragPayload(star.id, star.position),
@@ -126,6 +140,50 @@ export function IndividualStarMesh({
           toneMapped={false}
         />
       </mesh>
+      {/* Soft halo so every star glows like a long-exposure photograph. */}
+      <sprite
+        name="star-halo"
+        raycast={NO_RAYCAST}
+        scale={[
+          visual.radius * visual.haloScale,
+          visual.radius * visual.haloScale,
+          1,
+        ]}
+      >
+        <spriteMaterial
+          blending={AdditiveBlending}
+          color={visual.color}
+          depthWrite={false}
+          map={getStarHaloTexture()}
+          opacity={visual.haloOpacity * opacity}
+          transparent
+          toneMapped={false}
+        />
+      </sprite>
+      {/* Diffraction spikes: each elongated sprite draws two opposite points. */}
+      {spikeAngles.map((angle) => (
+        <sprite
+          key={`spike-${angle}`}
+          name="star-spike"
+          raycast={NO_RAYCAST}
+          scale={[
+            visual.radius * visual.spikeScale,
+            visual.radius * visual.spikeScale * 0.4,
+            1,
+          ]}
+        >
+          <spriteMaterial
+            blending={AdditiveBlending}
+            color={visual.color}
+            depthWrite={false}
+            map={getStarSpikeTexture()}
+            opacity={0.5 * opacity}
+            rotation={angle}
+            transparent
+            toneMapped={false}
+          />
+        </sprite>
+      ))}
       <Html
         center
         position={[0, visual.radius + 0.65, 0]}
