@@ -4,10 +4,16 @@ import type { RuntimeEvent } from '../domain/models';
 import {
   BLACKHOLE_DISTORTION_MAX_STRENGTH,
   BLACKHOLE_DISTORTION_RADIUS,
+  BLACKHOLE_MASS_SCALE_PER_WORK,
+  BLACKHOLE_MAX_MASS_SCALE,
   BLACKHOLE_POSITION,
   BLACKHOLE_SPIRAL_DURATION_SECONDS,
   collectPendingBlackholeEffects,
+  EMBER_ORBIT_MAX_RADIUS,
+  EMBER_ORBIT_MIN_RADIUS,
+  getArchivedEmberOrbit,
   getBlackholeEffectDescriptor,
+  getBlackholeMassScale,
   getBlackholeRotation,
   getBoundedLightDistortion,
   isBlackholeDropHit,
@@ -81,5 +87,22 @@ describe('blackhole scene model', () => {
       new Set([restore.id]),
     );
     expect(pending.map(({ eventId }) => eventId)).toEqual([softDelete.id]);
+  });
+it('grows bounded mass with the archive and keeps deterministic ember orbits', () => {
+    expect(getBlackholeMassScale(0)).toBe(1);
+    expect(getBlackholeMassScale(-3)).toBe(1);
+    expect(getBlackholeMassScale(4)).toBeCloseTo(1 + 4 * BLACKHOLE_MASS_SCALE_PER_WORK);
+    expect(getBlackholeMassScale(500)).toBe(BLACKHOLE_MAX_MASS_SCALE);
+    expect(getBlackholeMassScale(10)).toBeGreaterThan(getBlackholeMassScale(3));
+
+    const orbit = getArchivedEmberOrbit('10000000-0000-4000-8000-000000000001');
+    expect(getArchivedEmberOrbit('10000000-0000-4000-8000-000000000001')).toEqual(orbit);
+    expect(orbit.radius).toBeGreaterThanOrEqual(EMBER_ORBIT_MIN_RADIUS);
+    expect(orbit.radius).toBeLessThanOrEqual(EMBER_ORBIT_MAX_RADIUS);
+    expect(orbit.angularSpeedRadiansPerSecond).toBeGreaterThan(0);
+    expect(orbit.phaseRadians).toBeGreaterThanOrEqual(0);
+    expect(orbit.phaseRadians).toBeLessThanOrEqual(Math.PI * 2);
+    expect(getArchivedEmberOrbit('another-work')).not.toEqual(orbit);
+    expect(() => getArchivedEmberOrbit('')).toThrow(RangeError);
   });
 });

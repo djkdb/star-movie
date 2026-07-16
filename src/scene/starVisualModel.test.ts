@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Rating, Star } from '../domain/models';
+import { BLACKHOLE_POSITION } from './blackholeModel';
 import {
+  BLACKHOLE_GRAVITY_MAX_PULL,
   createStarDragPayload,
   getRatingVisual,
   getStarAppearance,
   getStarDisplayColor,
+  sampleBlackholeGravityPull,
   sampleStarDriftOffset,
   STAR_TINT_PALETTE,
   sampleStarRenderTransform,
@@ -100,6 +103,40 @@ describe('individual Star visual model', () => {
     expect(STAR_IDLE_SCALE).toBe(1);
     expect(STAR_HOVER_SCALE).toBe(1.5);
     expect(STAR_LABEL_FADE_SECONDS).toBe(0.3);
+  });
+
+  it('bends nearby stars toward the black hole within bounded influence', () => {
+    // Outside the influence radius: no pull at all.
+    expect(sampleBlackholeGravityPull({ x: 60, y: 40, z: 30 }))
+      .toEqual({ x: 0, y: 0, z: 0 });
+    // The hole's own position: no pull (avoids division by zero).
+    expect(sampleBlackholeGravityPull({ ...BLACKHOLE_POSITION }))
+      .toEqual({ x: 0, y: 0, z: 0 });
+
+    // A star above the hole leans downward toward it, bounded by the maximum.
+    const near = { x: BLACKHOLE_POSITION.x, y: BLACKHOLE_POSITION.y + 10, z: BLACKHOLE_POSITION.z };
+    const pull = sampleBlackholeGravityPull(near);
+    expect(pull.y).toBeLessThan(0);
+    expect(pull.x).toBe(0);
+    expect(Math.hypot(pull.x, pull.y, pull.z))
+      .toBeLessThanOrEqual(BLACKHOLE_GRAVITY_MAX_PULL + 1e-9);
+
+    // Closer stars lean harder, and the pull never crosses the hole itself.
+    const far = { ...near, y: BLACKHOLE_POSITION.y + 25 };
+    expect(Math.abs(pull.y))
+      .toBeGreaterThan(Math.abs(sampleBlackholeGravityPull(far).y));
+    const grazing = { ...near, y: BLACKHOLE_POSITION.y + 0.5 };
+    expect(Math.abs(sampleBlackholeGravityPull(grazing).y)).toBeLessThanOrEqual(0.25);
+
+    // The render transform applies the pull; reduced motion stays pinned.
+    const star = {
+      ...createStar(),
+      position: near,
+    };
+    const moving = sampleStarRenderTransform(star, 2, 1, false, false);
+    const drift = sampleStarDriftOffset(2, 1);
+    expect(moving.position.y - near.y - drift.y).toBeCloseTo(pull.y);
+    expect(sampleStarRenderTransform(star, 2, 1, false, true).position).toEqual(near);
   });
 
   it('derives varied but stable per-star appearances from identity', () => {

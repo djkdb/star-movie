@@ -28,6 +28,68 @@ export function getBlackholeRotation(elapsedSeconds: number): number {
   return elapsedSeconds * BLACKHOLE_ROTATION_RADIANS_PER_SECOND;
 }
 
+/** Visual growth per archived work and the ceiling the hole can reach. */
+export const BLACKHOLE_MASS_SCALE_PER_WORK = 0.035;
+export const BLACKHOLE_MAX_MASS_SCALE = 1.6;
+
+/**
+ * The black hole's rendered size grows with everything it has swallowed —
+ * each archived work adds a sliver of "mass" up to a bounded ceiling, so a
+ * long-lived archive reads as a visibly heavier black hole.
+ */
+export function getBlackholeMassScale(archivedCount: number): number {
+  if (!Number.isFinite(archivedCount) || archivedCount <= 0) return 1;
+  return Math.min(
+    BLACKHOLE_MAX_MASS_SCALE,
+    1 + Math.floor(archivedCount) * BLACKHOLE_MASS_SCALE_PER_WORK,
+  );
+}
+
+/** Ember orbit band, relative to the billboard's unit half-size (10 world units). */
+export const EMBER_ORBIT_MIN_RADIUS = 4.4;
+export const EMBER_ORBIT_MAX_RADIUS = 7.6;
+export const EMBER_MIN_ANGULAR_SPEED = 0.12;
+export const EMBER_MAX_ANGULAR_SPEED = 0.34;
+
+export interface ArchivedEmberOrbit {
+  radius: number;
+  angularSpeedRadiansPerSecond: number;
+  phaseRadians: number;
+  size: number;
+}
+
+function hashEmberSeed(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Deterministic orbit for an archived work circling the accretion disk. The
+ * same work always keeps the same orbit, so the ring of embers is stable
+ * across sessions and only changes when works enter or leave the archive.
+ */
+export function getArchivedEmberOrbit(workId: string): ArchivedEmberOrbit {
+  if (workId.length === 0) throw new RangeError('workId must not be empty');
+  const hash = hashEmberSeed(workId);
+  const radiusUnit = (hash & 0xffff) / 0xffff;
+  const speedUnit = ((hash >>> 16) & 0xff) / 0xff;
+  const phaseUnit = ((hash >>> 24) & 0xff) / 0xff;
+  return {
+    radius:
+      EMBER_ORBIT_MIN_RADIUS
+      + radiusUnit * (EMBER_ORBIT_MAX_RADIUS - EMBER_ORBIT_MIN_RADIUS),
+    angularSpeedRadiansPerSecond:
+      EMBER_MIN_ANGULAR_SPEED
+      + speedUnit * (EMBER_MAX_ANGULAR_SPEED - EMBER_MIN_ANGULAR_SPEED),
+    phaseRadians: phaseUnit * Math.PI * 2,
+    size: 0.8 + radiusUnit * 0.5,
+  };
+}
+
 /** Returns a finite radial lens strength and zero outside the halo boundary. */
 export function getBoundedLightDistortion(distanceFromCenter: number): number {
   if (!Number.isFinite(distanceFromCenter) || distanceFromCenter < 0) return 0;

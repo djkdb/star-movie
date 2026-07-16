@@ -126,7 +126,7 @@ describe('Property 6: rotation angular velocity preserved', () => {
 });
 
 describe('Property 7: constellation endpoints match rendered positions', () => {
-  it('R2.1 R2.3 places each line endpoint at Base_Position + the same drift offset', () => {
+  it('R2.1 R2.3 places each line endpoint exactly at its star\'s rendered position', () => {
     fc.assert(
       fc.property(
         fc.array(fc.tuple(idArbitrary, positionArbitrary), { minLength: 1, maxLength: 8 }),
@@ -137,12 +137,16 @@ describe('Property 7: constellation endpoints match rendered positions', () => {
           );
           const points = sampleConstellationLinePoints(stars, elapsed, false);
           stars.forEach((star, index) => {
-            const offset = sampleStarDriftOffset(elapsed, getStarInstancePhase(star.id));
-            expect(points[index]).toEqual([
-              star.position.x + offset.x,
-              star.position.y + offset.y,
-              star.position.z + offset.z,
-            ]);
+            // The strongest form of the invariant: endpoints equal the exact
+            // rendered star position (drift + gravitational lean included).
+            const rendered = sampleStarRenderTransform(
+              star,
+              elapsed,
+              getStarInstancePhase(star.id),
+              false,
+              false,
+            ).position;
+            expect(points[index]).toEqual([rendered.x, rendered.y, rendered.z]);
           });
 
           const reduced = sampleConstellationLinePoints(stars, elapsed, true);
