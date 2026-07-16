@@ -1,4 +1,7 @@
-import type { CameraRequest, Constellation, Star, Vec3 } from '../domain/models';
+import type { CameraPose, CameraRequest, Constellation, Star, Vec3 } from '../domain/models';
+
+/** Re-exported from the domain model so existing `./cameraMath` imports keep working. */
+export type { CameraPose } from '../domain/models';
 
 export const CAMERA_FOCUS_DURATION_SECONDS = 0.7;
 export const STAR_FOCUS_DISTANCE = 8;
@@ -8,11 +11,6 @@ export const CONSTELLATION_FIT_REJECTION_REASON =
 
 const MINIMUM_FIT_DISTANCE = 2;
 const VECTOR_EPSILON = 1e-9;
-
-export interface CameraPose {
-  position: Vec3;
-  target: Vec3;
-}
 
 export type ResolvedCameraFocusRequest =
   | {
@@ -225,6 +223,11 @@ export function resolveCameraFocusRequest(
             position: cloneVec3(star.position),
           },
         };
+  }
+
+  if (request.type !== 'constellation') {
+    // Free-viewpoint returns carry their own resolved pose and never reach here.
+    return { ok: false, reason: '해석할 수 없는 카메라 요청입니다' };
   }
 
   const constellation = constellations.find(({ id }) => id === request.constellationId);

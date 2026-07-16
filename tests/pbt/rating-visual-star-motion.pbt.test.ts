@@ -1,5 +1,7 @@
-// Feature: space-movie-archive, Property 4: Rating 시각 매핑과 Star 운동
-// **Validates: Requirements 3.1, 3.2, 3.3**
+// Feature: space-movie-archive, Property 4: Rating 시각 매핑
+// Feature: natural-star-drift-and-camera-return, Property 1: 표류 오프셋 크기 경계
+// Feature: natural-star-drift-and-camera-return, Property 2: 표류 속도·연속성 경계
+// **Validates: Requirements 3.1 (rating map); 1.1, 1.2, 1.3, 1.5 (drift)**
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -7,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import type { Rating } from '../../src/domain/models';
 import {
   getRatingVisual,
-  sampleStarMotion,
+  sampleStarDriftOffset,
 } from '../../src/scene/starVisualModel';
 
 const EXPECTED_VISUALS: ReadonlyArray<
@@ -20,35 +22,61 @@ const EXPECTED_VISUALS: ReadonlyArray<
   [5, 1.4, 1, '#fff8e0'],
 ];
 
-const visibleMotionInputArbitrary = fc.record({
-  elapsedVisibleSeconds: fc.double({ min: 0, max: 86_400, noNaN: true }),
-  baseY: fc.double({ min: -10_000, max: 10_000, noNaN: true }),
+const magnitude = (offset: { x: number; y: number; z: number }): number =>
+  Math.hypot(offset.x, offset.y, offset.z);
+
+describe('Property 4: Rating visual mapping', () => {
+  it('R3.1 preserves every exact Rating tuple', () => {
+    for (const [rating, radius, bloom, color] of EXPECTED_VISUALS) {
+      expect(getRatingVisual(rating)).toEqual({ radius, bloom, color });
+    }
+  });
 });
 
-describe('Property 4: Rating visual mapping and Star motion', () => {
-  it('R3.1-R3.3 preserves every exact Rating tuple, 30-degree rotation rate, and three-second ±0.1 y oscillation', () => {
+const driftInputArbitrary = fc.record({
+  elapsedVisibleSeconds: fc.double({ min: 0, max: 86_400, noNaN: true }),
+  phaseSeed: fc.double({ min: 0, max: Math.PI * 2, noNaN: true }),
+});
+
+describe('Property 1: drift offset magnitude bound', () => {
+  it('R1.1 R1.2 keeps the offset finite, time-varying, and within 0.6 units of Base_Position', () => {
     fc.assert(
-      fc.property(visibleMotionInputArbitrary, ({ elapsedVisibleSeconds, baseY }) => {
-        const motion = sampleStarMotion(elapsedVisibleSeconds, baseY);
-        const oneSecondLater = sampleStarMotion(elapsedVisibleSeconds + 1, baseY);
-        const onePeriodLater = sampleStarMotion(elapsedVisibleSeconds + 3, baseY);
-        const expectedY =
-          baseY + 0.1 * Math.sin((elapsedVisibleSeconds / 3) * Math.PI * 2);
-
-        for (const [rating, radius, bloom, color] of EXPECTED_VISUALS) {
-          expect(getRatingVisual(rating)).toEqual({ radius, bloom, color });
-        }
-
-        expect(motion.rotationY).toBe(elapsedVisibleSeconds * (Math.PI / 6));
-        expect(oneSecondLater.rotationY - motion.rotationY).toBeCloseTo(
-          Math.PI / 6,
-          10,
-        );
-        expect(motion.y).toBeCloseTo(expectedY, 10);
-        expect(motion.y).toBeGreaterThanOrEqual(baseY - 0.1);
-        expect(motion.y).toBeLessThanOrEqual(baseY + 0.1);
-        expect(onePeriodLater.y).toBeCloseTo(motion.y, 10);
+      fc.property(driftInputArbitrary, ({ elapsedVisibleSeconds, phaseSeed }) => {
+        const offset = sampleStarDriftOffset(elapsedVisibleSeconds, phaseSeed);
+        expect(Number.isFinite(offset.x)).toBe(true);
+        expect(Number.isFinite(offset.y)).toBe(true);
+        expect(Number.isFinite(offset.z)).toBe(true);
+        expect(magnitude(offset)).toBeLessThanOrEqual(0.6);
       }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('Property 2: drift speed and continuity bound', () => {
+  it('R1.3 R1.5 keeps ‖offset(t+Δ) − offset(t)‖ ≤ 0.15·Δ (bounded speed, no discontinuous jump)', () => {
+    fc.assert(
+      fc.property(
+        fc.record({
+          elapsedVisibleSeconds: fc.double({ min: 0, max: 86_400, noNaN: true }),
+          phaseSeed: fc.double({ min: 0, max: Math.PI * 2, noNaN: true }),
+          delta: fc.double({ min: 1e-4, max: 0.5, noNaN: true }),
+        }),
+        ({ elapsedVisibleSeconds, phaseSeed, delta }) => {
+          const before = sampleStarDriftOffset(elapsedVisibleSeconds, phaseSeed);
+          const after = sampleStarDriftOffset(
+            elapsedVisibleSeconds + delta,
+            phaseSeed,
+          );
+          const displacement = magnitude({
+            x: after.x - before.x,
+            y: after.y - before.y,
+            z: after.z - before.z,
+          });
+          // Small tolerance absorbs floating-point error at the Lipschitz bound.
+          expect(displacement).toBeLessThanOrEqual(0.15 * delta + 1e-9);
+        },
+      ),
       { numRuns: 100 },
     );
   });

@@ -9,6 +9,7 @@ import { getStarRenderMode } from './starRendererModel';
 export interface StarRendererProps {
   stars: readonly Star[];
   selectedStarId: string | null;
+  reducedMotion: boolean;
   onSelect: (starId: string) => void;
   onDragStart?: (payload: StarDragPayload) => void;
   onDragEnd?: (payload: StarDragPayload) => void;
@@ -21,6 +22,7 @@ export interface StarRendererProps {
 export function StarRenderer({
   stars,
   selectedStarId,
+  reducedMotion,
   onSelect,
   onDragStart,
   onDragEnd,
@@ -34,6 +36,7 @@ export function StarRenderer({
           onDragEnd={onDragEnd}
           onDragStart={onDragStart}
           onSelect={onSelect}
+          reducedMotion={reducedMotion}
           selectedStarId={selectedStarId}
           stars={stars}
         />
@@ -53,6 +56,7 @@ export function StarRenderer({
           onDragEnd={onDragEnd}
           onDragStart={onDragStart}
           onSelect={onSelect}
+          reducedMotion={reducedMotion}
           selected={selectedStarId === star.id}
           star={star}
         />

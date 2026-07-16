@@ -1,12 +1,9 @@
 import type { InstancedMesh, Object3D, Color } from 'three';
 
-import type { Rating, Star, Vec3 } from '../domain/models';
+import type { Rating, Star } from '../domain/models';
 import {
-  STAR_HOVER_SCALE,
-  STAR_IDLE_SCALE,
-  STAR_OSCILLATION_AMPLITUDE,
-  STAR_OSCILLATION_PERIOD_SECONDS,
-  STAR_ROTATION_RADIANS_PER_SECOND,
+  sampleStarRenderTransform,
+  type StarRenderTransform,
 } from './starVisualModel';
 
 export const INDIVIDUAL_STAR_LIMIT = 50;
@@ -21,11 +18,7 @@ export interface InstancedStarBucket {
   instanceIdToStarId: readonly string[];
 }
 
-export interface StarInstanceTransform {
-  position: Vec3;
-  rotationY: number;
-  scale: number;
-}
+export type StarInstanceTransform = StarRenderTransform;
 
 export function getStarRenderMode(activeWorkCount: number): StarRenderMode {
   if (!Number.isInteger(activeWorkCount) || activeWorkCount < 0) {
@@ -77,35 +70,25 @@ export function resolveStarIdFromInstance(
   return instanceIdToStarId[instanceId] ?? null;
 }
 
-/** Samples the per-instance matrix inputs from the shared visibility-aware clock. */
+/**
+ * Samples the per-instance matrix inputs from the shared visibility-aware
+ * clock via the single transform shared with the individual renderer, so both
+ * paths drift identically (Requirement 1.6).
+ */
 export function sampleStarInstanceTransform(
   star: Star,
   elapsedVisibleSeconds: number,
   phaseRadians: number,
   hovered: boolean,
+  reducedMotion: boolean,
 ): StarInstanceTransform {
-  if (!Number.isFinite(elapsedVisibleSeconds) || elapsedVisibleSeconds < 0) {
-    throw new RangeError('elapsedVisibleSeconds must be a non-negative finite number');
-  }
-  if (!Number.isFinite(phaseRadians)) {
-    throw new RangeError('phaseRadians must be finite');
-  }
-
-  return {
-    position: {
-      x: star.position.x,
-      y:
-        star.position.y
-        + STAR_OSCILLATION_AMPLITUDE
-          * Math.sin(
-            (elapsedVisibleSeconds / STAR_OSCILLATION_PERIOD_SECONDS) * Math.PI * 2
-              + phaseRadians,
-          ),
-      z: star.position.z,
-    },
-    rotationY: elapsedVisibleSeconds * STAR_ROTATION_RADIANS_PER_SECOND,
-    scale: hovered ? STAR_HOVER_SCALE : STAR_IDLE_SCALE,
-  };
+  return sampleStarRenderTransform(
+    star,
+    elapsedVisibleSeconds,
+    phaseRadians,
+    hovered,
+    reducedMotion,
+  );
 }
 
 /** Writes the current visibility-clock frame into one rating bucket without React allocations. */
@@ -115,6 +98,7 @@ export function updateInstancedStarMatrices(
   elapsedVisibleSeconds: number,
   hoveredStarId: string | null,
   temporaryObject: Object3D,
+  reducedMotion: boolean,
 ): void {
   bucket.stars.forEach((star, instanceId) => {
     const transform = sampleStarInstanceTransform(
@@ -122,6 +106,7 @@ export function updateInstancedStarMatrices(
       elapsedVisibleSeconds,
       bucket.phases[instanceId]!,
       hoveredStarId === star.id,
+      reducedMotion,
     );
     temporaryObject.position.set(
       transform.position.x,
