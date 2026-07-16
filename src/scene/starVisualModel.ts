@@ -62,6 +62,96 @@ export function getRatingVisual(rating: Rating): RatingVisual {
   return RATING_VISUALS[rating];
 }
 
+/**
+ * Stellar tint palette. Loosely spectral (ice blue → white → gold → ember)
+ * with a few fantasy pastels so the field reads as varied and jewel-like
+ * rather than uniformly warm. Rating keeps controlling size and brightness;
+ * identity controls hue.
+ */
+export const STAR_TINT_PALETTE = [
+  '#8fb7ff', // ice blue
+  '#7fd8ff', // cyan
+  '#dcebff', // blue-white
+  '#fff7ea', // warm white
+  '#ffe9a8', // champagne
+  '#ffc987', // amber
+  '#ffa98c', // peach
+  '#ff9fc0', // rose
+  '#d3a6ff', // lilac
+  '#96ecd2', // mint
+] as const;
+
+export type StarSpikeCount = 0 | 4 | 6;
+
+export interface StarAppearance {
+  /** Per-star hue; brightness still follows the rating visual. */
+  color: string;
+  radius: number;
+  bloom: number;
+  /** Soft additive halo, scaled relative to the core radius. */
+  haloScale: number;
+  haloOpacity: number;
+  /** Diffraction-spike styling; 0 spikes = plain glow orb. */
+  spikeCount: StarSpikeCount;
+  spikeRotation: number;
+  spikeScale: number;
+}
+
+function hashStarId(starId: string): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < starId.length; index += 1) {
+    hash ^= starId.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/** Scales a hex color's channels toward black (amount 0) or itself (amount 1). */
+function scaleHexColor(hex: string, amount: number): string {
+  const value = parseInt(hex.slice(1), 16);
+  const channels = [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff]
+    .map((channel) => Math.round(Math.min(255, channel * amount)))
+    .map((channel) => channel.toString(16).padStart(2, '0'));
+  return `#${channels.join('')}`;
+}
+
+/**
+ * Deterministic per-star look: hue, halo, and spike shape all derive from the
+ * stable star UUID, so a work keeps its exact appearance across sessions while
+ * the field as a whole shows varied colors and silhouettes.
+ */
+export function getStarAppearance(starId: string, rating: Rating): StarAppearance {
+  if (starId.length === 0) throw new RangeError('starId must not be empty');
+  const visual = RATING_VISUALS[rating];
+  const hash = hashStarId(starId);
+
+  const tint = STAR_TINT_PALETTE[hash % STAR_TINT_PALETTE.length]!;
+  // Roughly a quarter of stars stay plain orbs; half get classic 4-point
+  // diffraction spikes; the rest sparkle with 6 points.
+  const spikeRoll = (hash >>> 8) % 100;
+  const spikeCount: StarSpikeCount = spikeRoll < 25 ? 0 : spikeRoll < 75 ? 4 : 6;
+
+  return {
+    color: tint,
+    radius: visual.radius,
+    bloom: visual.bloom,
+    haloScale: 5 + visual.bloom * 3.5,
+    haloOpacity: 0.16 + visual.bloom * 0.3,
+    spikeCount,
+    spikeRotation: (((hash >>> 16) & 0xff) / 255) * Math.PI,
+    spikeScale: 2.6 + visual.bloom * 3.2,
+  };
+}
+
+/**
+ * Display color for the instanced renderer: the per-star tint dimmed by rating
+ * so low-rated stars fade toward the background while 5-star works blaze.
+ */
+export function getStarDisplayColor(starId: string, rating: Rating): string {
+  const appearance = getStarAppearance(starId, rating);
+  return scaleHexColor(appearance.color, 0.5 + appearance.bloom * 0.55);
+}
+
 function assertDriftInputs(
   elapsedVisibleSeconds: number,
   phaseSeed: number,

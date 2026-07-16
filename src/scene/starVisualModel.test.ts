@@ -4,7 +4,10 @@ import type { Rating, Star } from '../domain/models';
 import {
   createStarDragPayload,
   getRatingVisual,
+  getStarAppearance,
+  getStarDisplayColor,
   sampleStarDriftOffset,
+  STAR_TINT_PALETTE,
   sampleStarRenderTransform,
   STAR_DRIFT_AMPLITUDE,
   STAR_DRIFT_ANGULAR_FREQUENCIES,
@@ -97,6 +100,29 @@ describe('individual Star visual model', () => {
     expect(STAR_IDLE_SCALE).toBe(1);
     expect(STAR_HOVER_SCALE).toBe(1.5);
     expect(STAR_LABEL_FADE_SECONDS).toBe(0.3);
+  });
+
+  it('derives varied but stable per-star appearances from identity', () => {
+    const appearance = getStarAppearance('star-appearance', 3);
+    expect(getStarAppearance('star-appearance', 3)).toEqual(appearance);
+    expect(STAR_TINT_PALETTE).toContain(appearance.color);
+    expect([0, 4, 6]).toContain(appearance.spikeCount);
+
+    // Rating still controls size and brightness; identity controls hue.
+    expect(getStarAppearance('star-appearance', 5).radius).toBeGreaterThan(
+      getStarAppearance('star-appearance', 1).radius,
+    );
+    expect(getStarAppearance('star-appearance', 5).color).toBe(appearance.color);
+
+    // A modest sample of identities spreads across several palette hues.
+    const colors = new Set(
+      Array.from({ length: 40 }, (_, index) => getStarAppearance(`star-${index}`, 3).color),
+    );
+    expect(colors.size).toBeGreaterThanOrEqual(4);
+
+    // Display colors are valid hex and dimmer for low ratings.
+    expect(getStarDisplayColor('star-appearance', 4)).toMatch(/^#[0-9a-f]{6}$/);
+    expect(() => getStarAppearance('', 3)).toThrow(RangeError);
   });
 
   it('creates an immutable Blackhole drag payload with the Star identity and source position', () => {

@@ -71,7 +71,7 @@ function RatingInstancedMesh({
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
   const temporaryObject = useMemo(() => new Object3D(), []);
   const visual = getRatingVisual(bucket.rating);
-  const instanceColor = useMemo(() => new Color(visual.color), [visual.color]);
+  const scratchColor = useMemo(() => new Color(), []);
   const starsById = useMemo(
     () => new Map(bucket.stars.map((star) => [star.id, star])),
     [bucket.stars],
@@ -99,9 +99,9 @@ function RatingInstancedMesh({
     if (mesh === null) return;
 
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
-    updateInstancedStarColors(mesh, bucket, instanceColor);
+    updateInstancedStarColors(mesh, bucket, scratchColor);
     updateMatrices(elapsedVisibleSeconds.current);
-  }, [bucket, elapsedVisibleSeconds, instanceColor, updateMatrices]);
+  }, [bucket, elapsedVisibleSeconds, scratchColor, updateMatrices]);
 
   useFrame(() => updateMatrices(elapsedVisibleSeconds.current));
 
@@ -160,13 +160,9 @@ function RatingInstancedMesh({
       }}
     >
       <sphereGeometry args={[visual.radius, 24, 16]} />
-      <meshStandardMaterial
-        color="#ffffff"
-        emissive={visual.color}
-        emissiveIntensity={visual.bloom}
-        toneMapped={false}
-        vertexColors
-      />
+      {/* Unlit so each instance shows its identity tint; the selective bloom
+          pass supplies the glow, brighter tints blooming harder. */}
+      <meshBasicMaterial color="#ffffff" toneMapped={false} vertexColors />
     </instancedMesh>
   );
 }

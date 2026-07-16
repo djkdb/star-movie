@@ -2,6 +2,7 @@ import type { InstancedMesh, Object3D, Color } from 'three';
 
 import type { Rating, Star } from '../domain/models';
 import {
+  getStarDisplayColor,
   sampleStarRenderTransform,
   type StarRenderTransform,
 } from './starVisualModel';
@@ -121,12 +122,19 @@ export function updateInstancedStarMatrices(
   mesh.instanceMatrix.needsUpdate = true;
 }
 
-/** Writes the bucket color in instanceId order so color and raycast mappings stay aligned. */
+/**
+ * Writes per-star tints in instanceId order so color and raycast mappings stay
+ * aligned. Each instance receives its identity-derived display color rather
+ * than one shared bucket color; `scratchColor` is reused to avoid allocations.
+ */
 export function updateInstancedStarColors(
   mesh: InstancedMesh,
   bucket: InstancedStarBucket,
-  color: Color,
+  scratchColor: Color,
 ): void {
-  bucket.stars.forEach((_, instanceId) => mesh.setColorAt(instanceId, color));
+  bucket.stars.forEach((star, instanceId) => {
+    scratchColor.set(getStarDisplayColor(star.id, star.rating));
+    mesh.setColorAt(instanceId, scratchColor);
+  });
   if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true;
 }

@@ -21,6 +21,7 @@ import {
   updateInstancedStarColors,
   updateInstancedStarMatrices,
 } from './starRendererModel';
+import { getStarDisplayColor } from './starVisualModel';
 
 function createStar(id: string, rating: Rating): Star {
   return {
@@ -155,7 +156,10 @@ describe('Star renderer model', () => {
 
         const actualColor = new Color();
         mesh.getColorAt(instanceId, actualColor);
-        expect(actualColor.getHexString()).toBe(color.getHexString());
+        // Each instance carries its identity-derived tint, not a bucket color.
+        expect(`#${actualColor.getHexString()}`).toBe(
+          getStarDisplayColor(star.id, star.rating),
+        );
       });
     } finally {
       geometry.dispose();
