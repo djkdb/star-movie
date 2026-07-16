@@ -46,7 +46,9 @@ export function SelectiveBloomPass({
   if (!enabled) return null;
 
   return (
-    <EffectComposer autoClear={false} multisampling={0}>
+    // 4x MSAA keeps star cores crisp while the composer owns the render pass;
+    // degraded quality drops it together with the mipmap blur.
+    <EffectComposer autoClear={false} multisampling={reducedQuality ? 0 : 4}>
       <SelectiveBloom
         intensity={1}
         luminanceSmoothing={0.2}

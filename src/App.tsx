@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { AchievementPanel } from './components/AchievementPanel';
 import { AddWorkForm } from './components/AddWorkForm';
 import { ArchiveDomNavigation } from './components/ArchiveDomNavigation';
-import { ArchiveShell } from './components/ArchiveShell';
+import { ArchiveShell, type ShellPanelDefinition } from './components/ArchiveShell';
 import { ConstellationControls } from './components/ConstellationControls';
 import { GenreFilter } from './components/GenreFilter';
 import { HUD } from './components/HUD';
@@ -26,6 +26,60 @@ import {
   type ArchiveStoreApi,
 } from './store/archiveStore';
 import './styles.css';
+
+function DockGlyph({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      fill="none"
+      height="20"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 24 24"
+      width="20"
+    >
+      {children}
+    </svg>
+  );
+}
+
+const DOCK_ICONS = {
+  overview: (
+    <DockGlyph>
+      <path d="M3 20 L8 11 L12 15 L17 6 L21 12" />
+      <circle cx="17" cy="6" fill="currentColor" r="1.2" stroke="none" />
+    </DockGlyph>
+  ),
+  list: (
+    <DockGlyph>
+      <path d="M9 6 H20 M9 12 H20 M9 18 H20" />
+      <circle cx="4.5" cy="6" fill="currentColor" r="1.1" stroke="none" />
+      <circle cx="4.5" cy="12" fill="currentColor" r="1.1" stroke="none" />
+      <circle cx="4.5" cy="18" fill="currentColor" r="1.1" stroke="none" />
+    </DockGlyph>
+  ),
+  add: (
+    <DockGlyph>
+      <path d="M12 5 V19 M5 12 H19" />
+    </DockGlyph>
+  ),
+  constellation: (
+    <DockGlyph>
+      <path d="M5 17 L10.5 12.5 L15 14.5 L19 6" opacity="0.7" />
+      <circle cx="5" cy="17" fill="currentColor" r="1.4" stroke="none" />
+      <circle cx="10.5" cy="12.5" fill="currentColor" r="1.4" stroke="none" />
+      <circle cx="15" cy="14.5" fill="currentColor" r="1.4" stroke="none" />
+      <circle cx="19" cy="6" fill="currentColor" r="1.4" stroke="none" />
+    </DockGlyph>
+  ),
+  navigation: (
+    <DockGlyph>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M15.5 8.5 L13.5 13.5 L8.5 15.5 L10.5 10.5 Z" />
+    </DockGlyph>
+  ),
+} as const;
 
 let browserStore: ArchiveStoreApi | null = null;
 
@@ -84,12 +138,51 @@ export function App({ store }: AppProps) {
     };
   }, [archiveStore, benchmarkEnabled, benchmarkSource, sceneContentMounted]);
 
+  const panels: readonly ShellPanelDefinition[] = [
+    {
+      id: 'overview',
+      label: '아카이브 현황',
+      icon: DOCK_ICONS.overview,
+      content: (
+        <>
+          <HUD store={archiveStore} />
+          <GenreFilter store={archiveStore} />
+        </>
+      ),
+    },
+    {
+      id: 'list',
+      label: '작품 목록 패널',
+      icon: DOCK_ICONS.list,
+      content: <ListView store={archiveStore} />,
+    },
+    {
+      id: 'add',
+      label: '작품 추가',
+      icon: DOCK_ICONS.add,
+      content: <AddWorkForm store={archiveStore} />,
+      wide: true,
+    },
+    {
+      id: 'constellation',
+      label: '별자리 관리',
+      icon: DOCK_ICONS.constellation,
+      content: <ConstellationControls store={archiveStore} />,
+    },
+    {
+      id: 'navigation',
+      label: '작품 DOM 탐색 패널',
+      icon: DOCK_ICONS.navigation,
+      content: <ArchiveDomNavigation store={archiveStore} />,
+      wide: true,
+    },
+  ];
+
   return (
     <main className="app-shell">
-      <header className="app-header">
+      <header className="sky-brand">
         <p className="eyebrow">SPACE MOVIE ARCHIVE</p>
         <h1>나만의 밤하늘</h1>
-        <p>감상한 작품을 기록하고 우주 속 별로 남겨 보세요.</p>
       </header>
       <ArchiveShell
         canvas={(
@@ -100,17 +193,8 @@ export function App({ store }: AppProps) {
             store={archiveStore}
           />
         )}
-        dashboardOverlays={(
-          <>
-            <HUD store={archiveStore} />
-            <GenreFilter store={archiveStore} />
-          </>
-        )}
-        listView={<ListView store={archiveStore} />}
+        panels={panels}
       />
-      <ConstellationControls store={archiveStore} />
-      <AddWorkForm store={archiveStore} />
-      <ArchiveDomNavigation store={archiveStore} />
       <WorkCard store={archiveStore} />
       <AchievementPanel store={archiveStore} />
       <ToastRegion store={archiveStore} />

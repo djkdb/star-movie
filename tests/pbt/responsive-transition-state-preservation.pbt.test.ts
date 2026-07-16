@@ -152,8 +152,20 @@ function MountedRegion({ onMount }: { onMount(): void }) {
 function shell(onMount: () => void) {
   return createElement(ArchiveShell, {
     canvas: createElement(MountedRegion, { key: 'canvas', onMount }),
-    dashboardOverlays: createElement(MountedRegion, { key: 'overlays', onMount }),
-    listView: createElement(MountedRegion, { key: 'list', onMount }),
+    panels: [
+      {
+        id: 'overview',
+        label: '아카이브 현황',
+        icon: null,
+        content: createElement(MountedRegion, { key: 'overlays', onMount }),
+      },
+      {
+        id: 'list',
+        label: '작품 목록 패널',
+        icon: null,
+        content: createElement(MountedRegion, { key: 'list', onMount }),
+      },
+    ],
   });
 }
 

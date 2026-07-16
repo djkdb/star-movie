@@ -1,5 +1,5 @@
-export const SPACE_BACKGROUND_COLOR = '#03040a';
-export const SPACE_CAMERA_FOV = 75;
+export const SPACE_BACKGROUND_COLOR = '#000104';
+export const SPACE_CAMERA_FOV = 60;
 export const SPACE_CAMERA_MAX_DISTANCE = 1_000;
 export const TWINKLE_AMPLITUDE = 0.3;
 export const MIN_TWINKLE_PERIOD_SECONDS = 1;
@@ -14,22 +14,44 @@ export const NEBULA_COLOR_END = '#1a1550';
 const TWO_PI = Math.PI * 2;
 const PARALLAX_STRENGTH = 0.08;
 
-export type BackgroundLayerKind = 'far' | 'near';
+export type BackgroundLayerKind = 'far' | 'near' | 'band';
 
 export interface BackgroundLayerDefinition {
   kind: BackgroundLayerKind;
-  parallaxFactor: 1 | 1.5;
+  parallaxFactor: number;
   seed: number;
   starCount: number;
 }
 
 export const BACKGROUND_LAYER_DEFINITIONS: readonly BackgroundLayerDefinition[] = [
-  { kind: 'far', parallaxFactor: 1, seed: 0x4f1bbcdc, starCount: 700 },
-  { kind: 'near', parallaxFactor: 1.5, seed: 0x16a09e66, starCount: 350 },
+  { kind: 'far', parallaxFactor: 1, seed: 0x4f1bbcdc, starCount: 6_500 },
+  { kind: 'near', parallaxFactor: 1.5, seed: 0x16a09e66, starCount: 1_700 },
+  { kind: 'band', parallaxFactor: 1, seed: 0x7ede4a1b, starCount: 7_500 },
 ] as const;
+
+/**
+ * Realistic stellar tint distribution: mostly white and blue-white points with
+ * a warm minority of yellow, orange, and reddish stars, matching a naked-eye
+ * night sky rather than a uniformly blue starfield.
+ */
+const STAR_COLOR_PALETTE: readonly { color: readonly [number, number, number]; weight: number }[] = [
+  { color: [0.62, 0.72, 1.0], weight: 10 },  // hot blue-white
+  { color: [0.78, 0.84, 1.0], weight: 17 },  // blue-white
+  { color: [0.97, 0.96, 1.0], weight: 31 },  // white
+  { color: [1.0, 0.95, 0.9], weight: 21 },   // yellow-white
+  { color: [1.0, 0.89, 0.78], weight: 12 },  // yellow-orange
+  { color: [1.0, 0.8, 0.6], weight: 6 },     // orange
+  { color: [1.0, 0.66, 0.42], weight: 3 },   // reddish
+];
+
+const STAR_COLOR_TOTAL_WEIGHT = STAR_COLOR_PALETTE.reduce(
+  (total, entry) => total + entry.weight,
+  0,
+);
 
 export interface BackgroundStarSample {
   position: readonly [number, number, number];
+  color: readonly [number, number, number];
   twinklePeriodSeconds: number;
   twinklePhaseRadians: number;
   baseOpacity: number;
@@ -44,9 +66,23 @@ export interface NebulaConfig {
   color: string;
 }
 
+export interface MilkyWayPatchConfig {
+  id: string;
+  position: readonly [number, number, number];
+  scale: readonly [number, number];
+  opacity: number;
+  color: string;
+}
+
 interface DirectionLike {
   x: number;
   y: number;
+}
+
+interface Vec3Like {
+  x: number;
+  y: number;
+  z: number;
 }
 
 function createRandom(seed: number): () => number {
@@ -61,28 +97,132 @@ function createRandom(seed: number): () => number {
   };
 }
 
+/** Standard-normal sample via Box–Muller on the seeded generator. */
+function gaussian(random: () => number): number {
+  const u = Math.max(random(), 1e-9);
+  const v = random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(TWO_PI * v);
+}
+
+function pickStarColor(random: () => number): readonly [number, number, number] {
+  let remaining = random() * STAR_COLOR_TOTAL_WEIGHT;
+  for (const entry of STAR_COLOR_PALETTE) {
+    remaining -= entry.weight;
+    if (remaining <= 0) return entry.color;
+  }
+  return STAR_COLOR_PALETTE[STAR_COLOR_PALETTE.length - 1]!.color;
+}
+
+function normalizeVector(vector: Vec3Like): Vec3Like {
+  const length = Math.hypot(vector.x, vector.y, vector.z);
+  if (length === 0) return { x: 0, y: 1, z: 0 };
+  return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+}
+
+function cross(a: Vec3Like, b: Vec3Like): Vec3Like {
+  return {
+    x: a.y * b.z - a.z * b.y,
+    y: a.z * b.x - a.x * b.z,
+    z: a.x * b.y - a.y * b.x,
+  };
+}
+
+/** Uniform direction on the unit sphere. */
+function randomDirection(random: () => number): Vec3Like {
+  const cosPhi = 2 * random() - 1;
+  const sinPhi = Math.sqrt(Math.max(0, 1 - cosPhi * cosPhi));
+  const theta = TWO_PI * random();
+  return { x: sinPhi * Math.cos(theta), y: cosPhi, z: sinPhi * Math.sin(theta) };
+}
+
+/**
+ * The galactic band plane. The normal is tilted so the band sweeps a tall
+ * diagonal arc across the default camera framing, like the Milky Way in a
+ * wide-field sky photograph.
+ */
+const BAND_NORMAL = normalizeVector({ x: 0.92, y: 0.3, z: 0.25 });
+const BAND_U = normalizeVector(cross(BAND_NORMAL, { x: 0, y: 1, z: 0 }));
+const BAND_V = cross(BAND_NORMAL, BAND_U);
+
+interface LayerShape {
+  minimumRadius: number;
+  maximumRadius: number;
+  sizeBase: number;
+  sizeRange: number;
+  opacityBase: number;
+  opacityRange: number;
+}
+
+const LAYER_SHAPES: Readonly<Record<BackgroundLayerKind, LayerShape>> = {
+  far: {
+    minimumRadius: 700,
+    maximumRadius: 950,
+    sizeBase: 1.3,
+    sizeRange: 2.3,
+    opacityBase: 0.5,
+    opacityRange: 0.5,
+  },
+  near: {
+    minimumRadius: 380,
+    maximumRadius: 620,
+    sizeBase: 1.6,
+    sizeRange: 3.1,
+    opacityBase: 0.55,
+    opacityRange: 0.45,
+  },
+  band: {
+    minimumRadius: 780,
+    maximumRadius: 930,
+    sizeBase: 0.9,
+    sizeRange: 1.4,
+    opacityBase: 0.2,
+    opacityRange: 0.45,
+  },
+};
+
+function sampleStarPosition(
+  kind: BackgroundLayerKind,
+  random: () => number,
+  shape: LayerShape,
+): readonly [number, number, number] {
+  const radius =
+    shape.minimumRadius + random() * (shape.maximumRadius - shape.minimumRadius);
+
+  if (kind === 'band') {
+    // Cluster along the galactic great circle with gaussian thickness and a
+    // sparse wider halo so the band edge stays soft.
+    const angle = TWO_PI * random();
+    const thickness = random() < 0.82 ? 0.06 : 0.16;
+    const offset = gaussian(random) * radius * thickness;
+    return [
+      radius * (Math.cos(angle) * BAND_U.x + Math.sin(angle) * BAND_V.x) + BAND_NORMAL.x * offset,
+      radius * (Math.cos(angle) * BAND_U.y + Math.sin(angle) * BAND_V.y) + BAND_NORMAL.y * offset,
+      radius * (Math.cos(angle) * BAND_U.z + Math.sin(angle) * BAND_V.z) + BAND_NORMAL.z * offset,
+    ];
+  }
+
+  const direction = randomDirection(random);
+  return [direction.x * radius, direction.y * radius, direction.z * radius];
+}
+
 export function createBackgroundStars(
   definition: BackgroundLayerDefinition,
 ): BackgroundStarSample[] {
   const random = createRandom(definition.seed);
-  const isFar = definition.kind === 'far';
-  const minimumDepth = isFar ? 650 : 300;
-  const depthRange = isFar ? 180 : 100;
+  const shape = LAYER_SHAPES[definition.kind];
 
   return Array.from({ length: definition.starCount }, () => {
-    const depth = minimumDepth + random() * depthRange;
+    // A skewed size distribution: most stars stay tiny, a rare few flare up.
+    const magnitude = random() ** 2.6;
     return {
-      position: [
-        (random() - 0.5) * depth * 1.7,
-        (random() - 0.5) * depth * 1.15,
-        -depth,
-      ],
+      position: sampleStarPosition(definition.kind, random, shape),
+      color: pickStarColor(random),
       twinklePeriodSeconds:
         MIN_TWINKLE_PERIOD_SECONDS +
         random() * (MAX_TWINKLE_PERIOD_SECONDS - MIN_TWINKLE_PERIOD_SECONDS),
       twinklePhaseRadians: random() * TWO_PI,
-      baseOpacity: 0.45 + random() * 0.45,
-      size: (isFar ? 1 : 1.4) + random() * (isFar ? 1.5 : 2.2),
+      baseOpacity: shape.opacityBase + random() * shape.opacityRange,
+      size: shape.sizeBase + magnitude * shape.sizeRange,
     };
   });
 }
@@ -143,6 +283,46 @@ export function createNebulaConfigs(
         MIN_NEBULA_OPACITY +
         random() * (MAX_NEBULA_OPACITY - MIN_NEBULA_OPACITY),
       color: interpolateNebulaColor(random()),
+    };
+  });
+}
+
+const MILKY_WAY_PATCH_COUNT = 72;
+
+function interpolateMilkyWayColor(amount: number): string {
+  // Desaturated warm-gray range so the diffuse glow reads as unresolved
+  // starlight rather than a colored nebula.
+  const start = [0x4c, 0x51, 0x60] as const;
+  const end = [0x8b, 0x92, 0xa4] as const;
+  const channels = start.map((channel, index) =>
+    Math.round(channel + (end[index]! - channel) * amount),
+  );
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Deterministic diffuse-glow patches strung along the same great circle as the
+ * band star layer. Rendered as large additive sprites, they blend the resolved
+ * band stars into a continuous Milky Way ribbon.
+ */
+export function createMilkyWayPatchConfigs(seed = 0x7ede4a1b): MilkyWayPatchConfig[] {
+  const random = createRandom(seed ^ 0x51ed270b);
+  const radius = 860;
+
+  return Array.from({ length: MILKY_WAY_PATCH_COUNT }, (_, index) => {
+    const angle = (TWO_PI * index) / MILKY_WAY_PATCH_COUNT + (random() - 0.5) * 0.22;
+    const offset = gaussian(random) * radius * 0.035;
+    const width = 180 + random() * 240;
+    return {
+      id: `milkyway-${index}`,
+      position: [
+        radius * (Math.cos(angle) * BAND_U.x + Math.sin(angle) * BAND_V.x) + BAND_NORMAL.x * offset,
+        radius * (Math.cos(angle) * BAND_U.y + Math.sin(angle) * BAND_V.y) + BAND_NORMAL.y * offset,
+        radius * (Math.cos(angle) * BAND_U.z + Math.sin(angle) * BAND_V.z) + BAND_NORMAL.z * offset,
+      ],
+      scale: [width, width * (0.38 + random() * 0.28)],
+      opacity: 0.05 + random() * 0.075,
+      color: interpolateMilkyWayColor(random()),
     };
   });
 }

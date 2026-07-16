@@ -37,8 +37,8 @@ const DISTORTION_FRAGMENT_SHADER = `
     if (radius >= 1.0 || radius <= 0.32) discard;
     float boundedStrength = min(uMaxStrength, uMaxStrength * sin((radius - 0.32) / 0.68 * 3.14159265));
     float lensBand = 0.45 + 0.55 * sin(radius * 32.0 - uTime * 2.0);
-    float alpha = boundedStrength * lensBand * smoothstep(1.0, 0.74, radius);
-    gl_FragColor = vec4(0.25, 0.48, 1.0, alpha);
+    float alpha = boundedStrength * lensBand * smoothstep(1.0, 0.74, radius) * 0.3;
+    gl_FragColor = vec4(0.62, 0.68, 0.85, alpha);
   }
 `;
 
@@ -120,9 +120,25 @@ export function BlackholeRenderer({
           />
           <meshBasicMaterial
             blending={AdditiveBlending}
-            color="#8aa8ff"
+            color="#2b3a66"
             depthWrite={false}
-            opacity={0.58}
+            opacity={0.4}
+            side={DoubleSide}
+            transparent
+            toneMapped={false}
+          />
+        </mesh>
+        {/* A thin hot photon ring hugging the shadow gives the photographic
+            "Interstellar" read without a fat colored donut. */}
+        <mesh name="blackhole-photon-ring">
+          <ringGeometry
+            args={[BLACKHOLE_DISK_INNER_RADIUS, BLACKHOLE_DISK_INNER_RADIUS + 0.55, 96, 1]}
+          />
+          <meshBasicMaterial
+            blending={AdditiveBlending}
+            color="#ffe7c4"
+            depthWrite={false}
+            opacity={0.5}
             side={DoubleSide}
             transparent
             toneMapped={false}
