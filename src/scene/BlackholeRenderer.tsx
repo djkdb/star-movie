@@ -1,23 +1,29 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
-import { AdditiveBlending, DoubleSide, type Group, type ShaderMaterial } from 'three';
+import { DoubleSide, type Group, type ShaderMaterial } from 'three';
 
 import type { StarDragPayload } from './starVisualModel';
 import {
-  BLACKHOLE_CORE_RADIUS,
-  BLACKHOLE_DISK_INNER_RADIUS,
-  BLACKHOLE_DISK_OUTER_RADIUS,
   BLACKHOLE_DISTORTION_MAX_STRENGTH,
   BLACKHOLE_DISTORTION_RADIUS,
   BLACKHOLE_POSITION,
-  getBlackholeRotation,
   isBlackholeDropHit,
   isValidBlackholeDragPayload,
 } from './blackholeModel';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 
-const DISTORTION_VERTEX_SHADER = `
+/** Half-size of the billboarded quad; the event horizon sits at 0.30 of this. */
+const BLACKHOLE_PLANE_HALF = 10;
+
+/**
+ * A camera-facing "Gargantua" shader: pure-black event horizon, a hot photon
+ * ring hugging its edge, a lensed halo that reads as the accretion disk wrapping
+ * over and under the shadow, and an equatorial fan that streams outward with
+ * Doppler-beamed brightness and slowly churning turbulence. The billboard keeps
+ * the photographic front-on read no matter where the camera orbits.
+ */
+const GARGANTUA_VERTEX_SHADER = `
   varying vec2 vUv;
   void main() {
     vUv = uv;
@@ -25,20 +31,88 @@ const DISTORTION_VERTEX_SHADER = `
   }
 `;
 
-const DISTORTION_FRAGMENT_SHADER = `
+const GARGANTUA_FRAGMENT_SHADER = `
   precision highp float;
   varying vec2 vUv;
   uniform float uTime;
-  uniform float uMaxStrength;
+  uniform float uArousal;
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
+  }
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 4; i++) {
+      v += a * noise(p);
+      p *= 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
 
   void main() {
-    vec2 centered = vUv - vec2(0.5);
-    float radius = length(centered) * 2.0;
-    if (radius >= 1.0 || radius <= 0.32) discard;
-    float boundedStrength = min(uMaxStrength, uMaxStrength * sin((radius - 0.32) / 0.68 * 3.14159265));
-    float lensBand = 0.45 + 0.55 * sin(radius * 32.0 - uTime * 2.0);
-    float alpha = boundedStrength * lensBand * smoothstep(1.0, 0.74, radius) * 0.3;
-    gl_FragColor = vec4(0.62, 0.68, 0.85, alpha);
+    vec2 p = (vUv - 0.5) * 2.0;
+    float r = length(p);
+    float ang = atan(p.y, p.x);
+
+    float horizon = 0.30;
+    float ringR = 0.355;
+
+    // Inside the event horizon: pure black, fully opaque so it occludes.
+    if (r < horizon) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      return;
+    }
+
+    // Hot photon ring hugging the shadow.
+    float ring = exp(-pow((r - ringR) / 0.028, 2.0));
+    // Lensed halo: the disk appears to wrap over and under the shadow.
+    float halo = exp(-pow((r - ringR - 0.02) / 0.09, 2.0));
+    // Equatorial fan streaming outward on both sides, thin near the ring and
+    // widening as it goes.
+    float widen = 0.055 + 0.19 * max(0.0, abs(p.x) - ringR);
+    float equator = exp(-pow(p.y / widen, 2.0));
+    float radialFade = smoothstep(1.55, ringR, r);
+    float fan = equator * radialFade * step(ringR - 0.03, r);
+
+    // Slowly churning turbulence for the wispy accretion texture.
+    float swirl = fbm(vec2(ang * 1.7 + r * 4.0 - uTime * 0.22, r * 3.0 + uTime * 0.1));
+    float texture = 0.62 + 0.38 * swirl;
+
+    // Mild relativistic Doppler beaming: the approaching (right) side reads a
+    // touch brighter, but both sides of the disk stay clearly visible.
+    float doppler = 1.0 + 0.28 * (p.x / max(r, 0.001));
+
+    float brightness = (ring * 1.7 + halo * 0.85 + fan * 1.5 * texture) * doppler;
+    brightness *= 1.0 + uArousal * 0.9;
+
+    // Temperature gradient: white-hot at the ring, amber then deep-red outward.
+    vec3 hot = vec3(1.0, 0.98, 0.92);
+    vec3 warm = vec3(1.0, 0.63, 0.26);
+    vec3 deep = vec3(0.72, 0.26, 0.11);
+    float t = clamp((r - ringR) / 0.85, 0.0, 1.0);
+    vec3 col = mix(hot, warm, smoothstep(0.0, 0.5, t));
+    col = mix(col, deep, smoothstep(0.5, 1.0, t));
+    // A faint cool tint on the receding side sells the Doppler shift.
+    col = mix(col, vec3(0.55, 0.62, 0.95), clamp(-p.x / max(r, 0.001), 0.0, 1.0) * 0.18);
+
+    vec3 outColor = col * brightness;
+    float alpha = clamp(brightness, 0.0, 1.0);
+    alpha *= smoothstep(1.0, 0.8, r);
+
+    if (alpha <= 0.003) discard;
+    gl_FragColor = vec4(outColor, alpha);
   }
 `;
 
@@ -53,8 +127,9 @@ export function BlackholeRenderer({
   onDropStar,
   onOpenArchive,
 }: BlackholeRendererProps) {
-  const diskRef = useRef<Group>(null);
-  const distortionRef = useRef<ShaderMaterial>(null);
+  const billboardRef = useRef<Group>(null);
+  const materialRef = useRef<ShaderMaterial>(null);
+  const arousalRef = useRef(0);
   const didDropRef = useRef(false);
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
   const position = useMemo(
@@ -62,12 +137,27 @@ export function BlackholeRenderer({
     [],
   );
 
-  useFrame(() => {
-    if (diskRef.current !== null) {
-      diskRef.current.rotation.z = getBlackholeRotation(elapsedVisibleSeconds.current);
+  const dragActive = isValidBlackholeDragPayload(activeDragPayload);
+
+  useFrame((state, delta) => {
+    // Face the camera so the disk keeps its photographic front-on silhouette.
+    const billboard = billboardRef.current;
+    if (billboard !== null) {
+      billboard.quaternion.copy(state.camera.quaternion);
     }
-    if (distortionRef.current !== null) {
-      distortionRef.current.uniforms.uTime!.value = elapsedVisibleSeconds.current;
+    // The black hole "wakes up" — brightening and pulsing — when a star is
+    // brought close, giving it presence beyond a plain delete target.
+    const target = dragActive ? 1 : 0;
+    const rate = Math.min(1, delta * 3.5);
+    arousalRef.current += (target - arousalRef.current) * rate;
+    const breathe = 0.04 * Math.sin(elapsedVisibleSeconds.current * 1.3);
+    if (materialRef.current !== null) {
+      materialRef.current.uniforms.uTime!.value = elapsedVisibleSeconds.current;
+      materialRef.current.uniforms.uArousal!.value = arousalRef.current + breathe;
+    }
+    if (billboard !== null) {
+      const scale = 1 + arousalRef.current * 0.08 + breathe * 0.5;
+      billboard.scale.setScalar(scale);
     }
   });
 
@@ -101,71 +191,39 @@ export function BlackholeRenderer({
         maxDistortion: BLACKHOLE_DISTORTION_MAX_STRENGTH,
       }}
     >
+      {/* Axis-aligned, invisible interaction disc. Kept separate from the
+          billboard so world-space drop hit-testing stays stable while orbiting. */}
       <mesh
         name="blackhole-core"
         onClick={handleOpenArchive}
         onPointerUp={handleDrop}
       >
-        <sphereGeometry args={[BLACKHOLE_CORE_RADIUS, 32, 24]} />
-        <meshBasicMaterial color="#000006" toneMapped={false} />
+        <circleGeometry args={[BLACKHOLE_DISTORTION_RADIUS, 48]} />
+        <meshBasicMaterial colorWrite={false} depthWrite={false} transparent opacity={0} />
       </mesh>
-      <group ref={diskRef}>
+      <group ref={billboardRef}>
         <mesh
           name="blackhole-accretion-disk"
+          renderOrder={2}
           onClick={handleOpenArchive}
           onPointerUp={handleDrop}
         >
-          <ringGeometry
-            args={[BLACKHOLE_DISK_INNER_RADIUS, BLACKHOLE_DISK_OUTER_RADIUS, 96, 3]}
-          />
-          <meshBasicMaterial
-            blending={AdditiveBlending}
-            color="#2b3a66"
+          <planeGeometry args={[BLACKHOLE_PLANE_HALF * 2, BLACKHOLE_PLANE_HALF * 2]} />
+          <shaderMaterial
             depthWrite={false}
-            opacity={0.4}
+            fragmentShader={GARGANTUA_FRAGMENT_SHADER}
+            ref={materialRef}
             side={DoubleSide}
             transparent
             toneMapped={false}
-          />
-        </mesh>
-        {/* A thin hot photon ring hugging the shadow gives the photographic
-            "Interstellar" read without a fat colored donut. */}
-        <mesh name="blackhole-photon-ring">
-          <ringGeometry
-            args={[BLACKHOLE_DISK_INNER_RADIUS, BLACKHOLE_DISK_INNER_RADIUS + 0.55, 96, 1]}
-          />
-          <meshBasicMaterial
-            blending={AdditiveBlending}
-            color="#ffe7c4"
-            depthWrite={false}
-            opacity={0.5}
-            side={DoubleSide}
-            transparent
-            toneMapped={false}
+            uniforms={{
+              uTime: { value: 0 },
+              uArousal: { value: 0 },
+            }}
+            vertexShader={GARGANTUA_VERTEX_SHADER}
           />
         </mesh>
       </group>
-      <mesh
-        name="blackhole-bounded-distortion"
-        onClick={handleOpenArchive}
-        onPointerUp={handleDrop}
-        scale={[BLACKHOLE_DISTORTION_RADIUS * 2, BLACKHOLE_DISTORTION_RADIUS * 2, 1]}
-      >
-        <planeGeometry args={[1, 1, 1, 1]} />
-        <shaderMaterial
-          blending={AdditiveBlending}
-          depthWrite={false}
-          fragmentShader={DISTORTION_FRAGMENT_SHADER}
-          ref={distortionRef}
-          side={DoubleSide}
-          transparent
-          uniforms={{
-            uTime: { value: 0 },
-            uMaxStrength: { value: BLACKHOLE_DISTORTION_MAX_STRENGTH },
-          }}
-          vertexShader={DISTORTION_VERTEX_SHADER}
-        />
-      </mesh>
     </group>
   );
 }

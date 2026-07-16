@@ -84,7 +84,9 @@ describe('Star renderer model', () => {
     const drifting = sampleStarInstanceTransform(star, 2, phase, false, false);
     const hoveredLater = sampleStarInstanceTransform(star, 3, phase, true, false);
 
-    // Every axis drifts away from the stored coordinate, bounded within 0.6.
+    // Every axis drifts away from the stored coordinate, bounded within the
+    // free-roaming envelope (A·√3).
+    const maxWander = 2.4 * Math.sqrt(3) + 1e-9;
     expect(drifting.position.x).not.toBe(2);
     expect(drifting.position.y).not.toBe(7);
     expect(drifting.position.z).not.toBe(-3);
@@ -94,7 +96,7 @@ describe('Star renderer model', () => {
         drifting.position.y - 7,
         drifting.position.z + 3,
       ),
-    ).toBeLessThanOrEqual(0.6);
+    ).toBeLessThanOrEqual(maxWander);
     expect(drifting.rotationY).toBeCloseTo(2 * (Math.PI / 6));
     expect(drifting.scale).toBe(1);
     expect(hoveredLater.rotationY).toBeCloseTo(Math.PI / 2);

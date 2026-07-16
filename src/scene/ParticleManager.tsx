@@ -1,8 +1,13 @@
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AdditiveBlending,
+  BufferGeometry,
+  Color,
+  Float32BufferAttribute,
   Mesh,
+  Points,
+  ShaderMaterial,
   type Group,
 } from 'three';
 import { useStore } from 'zustand';
@@ -11,6 +16,7 @@ import type { ArchiveStoreApi } from '../store/archiveStore';
 import { BLACKHOLE_POSITION } from './blackholeModel';
 import {
   BackgroundMeteorScheduler,
+  DEFAULT_FIREWORK_COLOR,
   EffectLifecycleRegistry,
   ParticleEffectController,
   browserParticleTimer,
@@ -56,6 +62,192 @@ function effectColor(kind: ParticleEffectDescriptor['kind']): string {
     case 'achievement-celebration':
       return '#f0abfc';
   }
+}
+
+const FIREWORK_VERTEX_SHADER = `
+  attribute vec3 aDir;
+  attribute float aSpeed;
+  attribute float aSize;
+  attribute float aDelay;
+  attribute vec3 aColor;
+  uniform float uTime;
+  uniform float uDuration;
+  uniform float uPixelRatio;
+  varying float vAlpha;
+  varying vec3 vColor;
+
+  void main() {
+    float t = max(0.0, uTime - aDelay);
+    float life = clamp(t / uDuration, 0.0, 1.0);
+    // Fast initial expansion easing out, like sparks losing momentum to drag.
+    float expo = 1.0 - pow(1.0 - life, 2.3);
+    float dist = aSpeed * expo * 9.5;
+    vec3 gravity = vec3(0.0, -3.0 * t * t, 0.0);
+    vec3 worldPos = position + aDir * dist + gravity;
+
+    vec4 mvPosition = modelViewMatrix * vec4(worldPos, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+
+    float appear = smoothstep(0.0, 0.05, t);
+    float fade = 1.0 - smoothstep(0.5, 1.0, life);
+    float twinkle = 0.7 + 0.3 * sin(uTime * 42.0 + aDelay * 30.0 + aSpeed * 12.0);
+    vAlpha = appear * fade * twinkle;
+    vColor = aColor;
+    gl_PointSize = aSize * uPixelRatio * (210.0 / max(1.0, -mvPosition.z));
+  }
+`;
+
+const FIREWORK_FRAGMENT_SHADER = `
+  precision highp float;
+  varying float vAlpha;
+  varying vec3 vColor;
+
+  void main() {
+    float d = distance(gl_PointCoord, vec2(0.5));
+    float core = 1.0 - smoothstep(0.0, 0.5, d);
+    float alpha = pow(core, 1.6) * vAlpha;
+    if (alpha <= 0.002) discard;
+    gl_FragColor = vec4(vColor * (0.85 + 0.75 * core), alpha);
+  }
+`;
+
+function fireworkRandom(seed: number): () => number {
+  let state = (seed >>> 0) || 0x9e3779b9;
+  return () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 0x1_0000_0000;
+  };
+}
+
+function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry {
+  const random = fireworkRandom(effect.seed);
+  const burstCount = Math.max(1, effect.burstCount ?? 1);
+  const perBurst = Math.max(1, effect.particleCount);
+  const total = perBurst * burstCount;
+
+  const positions = new Float32Array(total * 3);
+  const directions = new Float32Array(total * 3);
+  const speeds = new Float32Array(total);
+  const sizes = new Float32Array(total);
+  const delays = new Float32Array(total);
+  const colors = new Float32Array(total * 3);
+
+  const base = new Color(effect.color ?? DEFAULT_FIREWORK_COLOR);
+  // Multiple bursts spread across the sky for that "festival" panorama; a lone
+  // burst stays centered on the work's own position.
+  const spreadX = burstCount > 1 ? 22 : 0;
+  const spreadY = burstCount > 1 ? 12 : 0;
+  const spreadZ = burstCount > 1 ? 10 : 0;
+
+  let index = 0;
+  for (let burst = 0; burst < burstCount; burst += 1) {
+    const originX = (random() - 0.5) * 2 * spreadX;
+    const originY = (random() - 0.5) * 2 * spreadY + (burst > 0 ? 4 : 0);
+    const originZ = (random() - 0.5) * 2 * spreadZ;
+    // Stagger the shells so they crackle open one after another.
+    const burstDelay = burst === 0 ? random() * 0.12 : 0.1 + random() * 0.65;
+
+    for (let particle = 0; particle < perBurst; particle += 1) {
+      const theta = 2 * Math.PI * random();
+      const cosinePhi = 2 * random() - 1;
+      const sinePhi = Math.sqrt(Math.max(0, 1 - cosinePhi * cosinePhi));
+      // Bias toward a shell (uniform-ish radius) with a few faster outliers.
+      const radial = 0.55 + random() * 0.5;
+
+      positions[index * 3] = originX;
+      positions[index * 3 + 1] = originY;
+      positions[index * 3 + 2] = originZ;
+      directions[index * 3] = sinePhi * Math.cos(theta);
+      directions[index * 3 + 1] = cosinePhi;
+      directions[index * 3 + 2] = sinePhi * Math.sin(theta);
+      speeds[index] = radial;
+      sizes[index] = 4.5 + random() * 7;
+      delays[index] = burstDelay + random() * 0.08;
+
+      // Per-spark brightness jitter plus a warm-white hot core minority.
+      const brightness = 0.7 + random() * 0.6;
+      const whiteHot = random() < 0.15 ? 0.5 : 0;
+      colors[index * 3] = Math.min(1, base.r * brightness + whiteHot);
+      colors[index * 3 + 1] = Math.min(1, base.g * brightness + whiteHot);
+      colors[index * 3 + 2] = Math.min(1, base.b * brightness + whiteHot);
+      index += 1;
+    }
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('aDir', new Float32BufferAttribute(directions, 3));
+  geometry.setAttribute('aSpeed', new Float32BufferAttribute(speeds, 1));
+  geometry.setAttribute('aSize', new Float32BufferAttribute(sizes, 1));
+  geometry.setAttribute('aDelay', new Float32BufferAttribute(delays, 1));
+  geometry.setAttribute('aColor', new Float32BufferAttribute(colors, 3));
+  return geometry;
+}
+
+interface FireworksVisualProps {
+  controller: ParticleEffectController;
+  effect: ParticleEffectDescriptor;
+}
+
+/**
+ * GPU-driven genre-colored fireworks. Each work bursts into one or more shells
+ * (more shells for genres you have watched more of) that fan out, arc down under
+ * gravity, twinkle, and fade — a wide, celebratory panorama rather than a single
+ * yellow pop.
+ */
+function FireworksVisual({ controller, effect }: FireworksVisualProps) {
+  const pointsRef = useRef<Points>(null);
+  const elapsedRef = useRef(0);
+  const pixelRatio = useThree((state) => state.viewport.dpr);
+
+  const geometry = useMemo(() => buildFireworkGeometry(effect), [effect]);
+  const material = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        vertexShader: FIREWORK_VERTEX_SHADER,
+        fragmentShader: FIREWORK_FRAGMENT_SHADER,
+        uniforms: {
+          uTime: { value: 0 },
+          uDuration: { value: effect.durationSeconds },
+          uPixelRatio: { value: pixelRatio },
+        },
+      }),
+    [effect.durationSeconds, pixelRatio],
+  );
+
+  useEffect(() => {
+    controller.addResource(effect.id, 'geometry', geometry);
+    controller.addResource(effect.id, 'material', material);
+    controller.addAnimation(effect.id, () => {
+      elapsedRef.current = 0;
+    });
+  }, [controller, effect.id, geometry, material]);
+
+  useFrame((_, delta) => {
+    elapsedRef.current += delta;
+    material.uniforms.uTime!.value = elapsedRef.current;
+    material.uniforms.uPixelRatio!.value = pixelRatio;
+  });
+
+  return (
+    <points
+      geometry={geometry}
+      material={material}
+      name="particle-effect-fireworks"
+      position={[effect.origin.x, effect.origin.y, effect.origin.z]}
+      ref={pointsRef}
+      userData={{
+        effectId: effect.id,
+        particleCount: effect.particleCount,
+        burstCount: effect.burstCount ?? 1,
+      }}
+    />
+  );
 }
 
 interface EffectVisualProps {
@@ -270,9 +462,13 @@ export function ParticleManager({
 
   return (
     <group name="particle-effects">
-      {effects.map((effect) => (
-        <EffectVisual controller={controller} effect={effect} key={effect.id} />
-      ))}
+      {effects.map((effect) =>
+        effect.kind === 'fireworks' ? (
+          <FireworksVisual controller={controller} effect={effect} key={effect.id} />
+        ) : (
+          <EffectVisual controller={controller} effect={effect} key={effect.id} />
+        ),
+      )}
     </group>
   );
 }

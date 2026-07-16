@@ -6,6 +6,10 @@ import {
   MINIMUM_GALAXY_CENTER_DISTANCE,
 } from '../../src/domain/defaultState';
 import { GENRES, type Vec3 } from '../../src/domain/models';
+import {
+  STAR_FIELD_CENTER,
+  STAR_FIELD_RADII,
+} from '../../src/store/deterministicPlacement';
 import { normalizeDisplayText, normalizeText } from '../../src/domain/normalization';
 import { PersistenceService } from '../../src/persistence/persistenceService';
 import { createArchiveStore } from '../../src/store/archiveStore';
@@ -114,8 +118,14 @@ describe('Property 3: Star creation and placement invariants', () => {
             expect(new Date(star.createdAt).toISOString()).toBe(star.createdAt);
             expect(Object.values(star.position).every(Number.isFinite)).toBe(true);
 
-            const maximumDistance = Math.min(galaxy.placementRadius, 10);
-            expect(distance(star.position, galaxy.center)).toBeLessThanOrEqual(maximumDistance + 1e-10);
+            // Stars scatter across the shared field ellipsoid, not per-genre
+            // regions, so the position sits within the field bounds.
+            const normalized = Math.hypot(
+              (star.position.x - STAR_FIELD_CENTER.x) / STAR_FIELD_RADII.x,
+              (star.position.y - STAR_FIELD_CENTER.y) / STAR_FIELD_RADII.y,
+              (star.position.z - STAR_FIELD_CENTER.z) / STAR_FIELD_RADII.z,
+            );
+            expect(normalized).toBeLessThanOrEqual(1 + 1e-9);
           }
 
           const genreGalaxies = store.getState().persisted.galaxies.filter(

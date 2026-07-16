@@ -1,7 +1,32 @@
 import type { RuntimeEvent, Vec3 } from '../domain/models';
 
-export const FIREWORK_PARTICLE_RANGE = [30, 60] as const;
-export const FIREWORK_DURATION_SECONDS = 1;
+export const FIREWORK_PARTICLE_RANGE = [90, 150] as const;
+export const FIREWORK_DURATION_SECONDS = 2.4;
+export const FIREWORK_MAX_BURSTS = 6;
+
+/** Default spark color when a firework carries no genre tint. */
+export const DEFAULT_FIREWORK_COLOR = '#ffe27a';
+
+/**
+ * Genre → firework tint, mirroring each genre galaxy's primary color so a burst
+ * instantly reads as "another SF work", "another romance", and so on.
+ */
+export const GENRE_FIREWORK_COLORS: Readonly<Record<string, string>> = {
+  SF: '#3B82F6',
+  로맨스: '#F472B6',
+  스릴러: '#DC2626',
+  드라마: '#F59E0B',
+  애니: '#A855F7',
+  코미디: '#FDE047',
+  액션: '#F97316',
+  기타: '#14B8A6',
+};
+
+/** More works in a genre → a grander, multi-shell burst, capped for sanity. */
+export function fireworkBurstCount(genreCount: number): number {
+  if (!Number.isFinite(genreCount) || genreCount < 1) return 1;
+  return Math.min(FIREWORK_MAX_BURSTS, 1 + Math.floor((genreCount - 1) / 2));
+}
 export const METEOR_SHOWER_TRAIL_RANGE = [2, 3] as const;
 export const METEOR_SHOWER_DURATION_SECONDS = 1.5;
 export const ASTEROID_DEBRIS_RANGE = [20, 40] as const;
@@ -33,6 +58,10 @@ export interface ParticleEffectDescriptor {
   seed: number;
   scaleFrom: number;
   scaleTo: number;
+  /** Hex tint for genre-colored fireworks; renderers fall back when absent. */
+  color?: string;
+  /** Number of simultaneous burst shells (grandeur), defaults to one. */
+  burstCount?: number;
 }
 
 export interface ParticleTimer {
@@ -252,7 +281,24 @@ function descriptor(
     seed: Math.floor(finiteUnit(random()) * 0x1_0000_0000) >>> 0,
     scaleFrom: values.scaleFrom ?? 1,
     scaleTo: values.scaleTo ?? 1,
+    ...(values.color === undefined ? {} : { color: values.color }),
+    ...(values.burstCount === undefined ? {} : { burstCount: values.burstCount }),
   };
+}
+
+function readGenreColor(payload: Readonly<Record<string, unknown>>): string {
+  const genre = payload.genre;
+  if (typeof genre === 'string' && genre in GENRE_FIREWORK_COLORS) {
+    return GENRE_FIREWORK_COLORS[genre] ?? DEFAULT_FIREWORK_COLOR;
+  }
+  return DEFAULT_FIREWORK_COLOR;
+}
+
+function readGenreCount(payload: Readonly<Record<string, unknown>>): number {
+  const count = payload.genreCount;
+  return typeof count === 'number' && Number.isFinite(count) && count >= 1
+    ? Math.floor(count)
+    : 1;
 }
 
 /** Quality overrides are cumulative and apply only to newly created effects. */
@@ -285,6 +331,10 @@ export function createParticleEffectsForEvent(
             minimumCounts,
           ),
           durationSeconds: FIREWORK_DURATION_SECONDS,
+          color: readGenreColor(event.payload),
+          burstCount: minimumCounts
+            ? 1
+            : fireworkBurstCount(readGenreCount(event.payload)),
         }),
       ];
       if (event.payload.rating === 5) {

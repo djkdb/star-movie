@@ -10,6 +10,13 @@ import {
 } from '../domain/models';
 import { normalizeDisplayText, normalizeText } from '../domain/normalization';
 
+/**
+ * Generous radius of the shared free-roaming star field. Any persisted star must
+ * sit within this distance of the origin; the bound is wide enough to also
+ * accept legacy per-genre placements from earlier schema-2 documents.
+ */
+export const STAR_FIELD_MAX_DISTANCE = 120;
+
 const UUID = z.string().uuid();
 const ISO_TIMESTAMP = z.string().datetime({ offset: true });
 const HEX_COLOR = z.string().regex(/^#[0-9a-fA-F]{6}$/);
@@ -281,23 +288,20 @@ function validateDocument(state: ParsedState, context: z.RefinementCtx): void {
     }
   }
 
-  const galaxyByGenre = new Map(
-    genreGalaxies.map((galaxy) => [galaxy.kind.genre, galaxy] as const),
-  );
+  // Stars now roam a single shared field instead of per-genre regions, so a
+  // position only needs to sit within the generous global field bound. The
+  // range is wide enough to also accept legacy per-genre placements.
+  const origin: Vec3 = { x: 0, y: 0, z: 0 };
   for (const [collectionName, stars] of [
     ['stars', state.stars],
     ['blackholeArchive', state.blackholeArchive],
   ] as const) {
     stars.forEach((star, index) => {
-      const galaxy = galaxyByGenre.get(star.genre);
-      if (
-        galaxy !== undefined &&
-        distance(star.position, galaxy.center) > Math.min(galaxy.placementRadius, 10) + 1e-10
-      ) {
+      if (distance(star.position, origin) > STAR_FIELD_MAX_DISTANCE) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: [collectionName, index, 'position'],
-          message: 'Star position exceeds its genre galaxy placement distance',
+          message: 'Star position is outside the shared star field bound',
         });
       }
     });

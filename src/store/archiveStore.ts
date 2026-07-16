@@ -328,7 +328,11 @@ class AtomicCommandExecutor {
   }
 }
 
-function createWorkAddedEvent(star: Star, sequence: number): RuntimeEvent {
+function createWorkAddedEvent(
+  star: Star,
+  sequence: number,
+  genreCount: number,
+): RuntimeEvent {
   return {
     id: `work-added:${star.id}:${sequence}`,
     type: 'work-added',
@@ -337,6 +341,9 @@ function createWorkAddedEvent(star: Star, sequence: number): RuntimeEvent {
       starId: star.id,
       position: star.position,
       rating: star.rating,
+      genre: star.genre,
+      // Drives the grandeur (burst count) of the genre-colored fireworks.
+      genreCount,
       particleEffects:
         star.rating === 5 ? ['fireworks', 'meteor-shower'] : ['fireworks'],
     },
@@ -444,11 +451,7 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
           const star: Star = {
             id,
             ...validation.data,
-            position: createDeterministicStarPosition(
-              id,
-              validation.data.genre,
-              galaxy,
-            ),
+            position: createDeterministicStarPosition(id, validation.data.genre),
             createdAt,
           };
           const candidate = structuredClone(snapshot);
@@ -457,9 +460,13 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
             nowIso: createdAt,
             nextRewardId: providers.nextUuid,
           });
+          const genreCount = progress.candidate.stars.filter(
+            (candidateStar) => candidateStar.genre === star.genre,
+          ).length;
           const completionEvent = createWorkAddedEvent(
             star,
             ++completionSequence,
+            genreCount,
           );
           return {
             candidate: progress.candidate,
