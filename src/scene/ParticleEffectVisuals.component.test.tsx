@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { FireworksVisual, MeteorVisual } from './ParticleManager';
 import {
   EffectLifecycleRegistry,
+  fireworkSparksPerBurst,
   ParticleEffectController,
   type ParticleEffectDescriptor,
   type ParticleTimer,
@@ -102,7 +103,9 @@ describe('FireworksVisual', () => {
     const points = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
       .instance as Points;
     const geometry = points.geometry;
-    expect(geometry.getAttribute('position').count).toBe(40 * 3);
+    // Sparks per shell taper with shell count to bound additive overdraw.
+    expect(geometry.getAttribute('position').count)
+      .toBe(fireworkSparksPerBurst(40, 3) * 3);
     for (const attribute of ['aDir', 'aSpeed', 'aSize', 'aDelay', 'aColor', 'aGravity', 'aGlitter']) {
       expect(geometry.getAttribute(attribute)).toBeDefined();
     }
