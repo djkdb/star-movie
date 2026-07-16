@@ -54,7 +54,7 @@ describe('individual Star visual model', () => {
   it('R1.10 exposes free-roaming drift constants and drops the old y oscillation API', async () => {
     expect(STAR_ROTATION_RADIANS_PER_SECOND).toBeCloseTo(Math.PI / 6);
     expect(STAR_DRIFT_AMPLITUDE).toBe(2.4);
-    expect(STAR_DRIFT_ANGULAR_FREQUENCIES).toEqual({ x: 0.09, y: 0.108, z: 0.123 });
+    expect(STAR_DRIFT_ANGULAR_FREQUENCIES).toEqual({ x: 0.27, y: 0.324, z: 0.369 });
     expect(STAR_DRIFT_AXIS_PHASE_OFFSETS).toEqual({
       x: 0,
       y: (2 * Math.PI) / 3,

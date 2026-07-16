@@ -113,4 +113,43 @@ describe('FireworksVisual', () => {
 
     await renderer.unmount();
   });
+
+  it('spreads archive-show shells across the whole sky with widened expansion', async () => {
+    const controller = createController();
+    const effect = descriptor({
+      kind: 'fireworks',
+      particleCount: 30,
+      burstCount: 4,
+      color: '#F97316',
+      celebrationScope: 'archive',
+      durationSeconds: 3.6,
+    });
+    controller.start(effect);
+
+    const renderer = await ReactThreeTestRenderer.create(
+      <FireworksVisual controller={controller} effect={effect} />,
+    );
+    await renderer.advanceFrames(1, 0.1);
+
+    const points = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
+      .instance as Points;
+    // The show centers on the sky, not the triggering work's position.
+    expect([points.position.x, points.position.y, points.position.z])
+      .toEqual([0, 6, -10]);
+
+    const material = points.material as ShaderMaterial;
+    expect(material.uniforms.uSpread!.value).toBe(17);
+
+    // Shell origins scatter across a screen-wide region.
+    const positions = points.geometry.getAttribute('position');
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    for (let index = 0; index < positions.count; index += 1) {
+      minX = Math.min(minX, positions.getX(index));
+      maxX = Math.max(maxX, positions.getX(index));
+    }
+    expect(maxX - minX).toBeGreaterThan(30);
+
+    await renderer.unmount();
+  });
 });

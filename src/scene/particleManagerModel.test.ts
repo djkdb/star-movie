@@ -13,10 +13,14 @@ import {
   EffectLifecycleRegistry,
   FIREWORK_DURATION_SECONDS,
   FIREWORK_PARTICLE_RANGE,
+  GENRE_FIREWORK_COLORS,
   METEOR_SHOWER_DURATION_SECONDS,
   METEOR_SHOWER_TRAIL_RANGE,
   ParticleEffectController,
+  PERSONAL_SHOW_DURATION_SECONDS,
+  PERSONAL_SHOW_MAX_TOTAL_BURSTS,
   createParticleEffectsForEvent,
+  personalShowBurstCounts,
   type ParticleEffectDescriptor,
 } from './particleManagerModel';
 
@@ -107,6 +111,42 @@ describe('ParticleManager effect model', () => {
       scaleFrom: 1,
       scaleTo: 0,
     });
+  });
+
+  it('fires the whole-archive personal show: one genre-colored shell group per genre', () => {
+    const position = { x: 1, y: 2, z: 3 };
+    const effects = createParticleEffectsForEvent(
+      event('work-added', {
+        rating: 5,
+        position,
+        genreCounts: { SF: 5, 로맨스: 1, 액션: 9, 잘못된장르: 3, 드라마: Number.NaN },
+      }),
+      constantRandom(0.5),
+    );
+
+    const fireworks = effects.filter(({ kind }) => kind === 'fireworks');
+    // Only known genres with valid counts fire: SF, 로맨스, 액션.
+    expect(fireworks).toHaveLength(3);
+    expect(fireworks.map(({ color }) => color)).toEqual([
+      GENRE_FIREWORK_COLORS.SF,
+      GENRE_FIREWORK_COLORS.로맨스,
+      GENRE_FIREWORK_COLORS.액션,
+    ]);
+    expect(fireworks.map(({ burstCount }) => burstCount)).toEqual([3, 1, 5]);
+    for (const shellGroup of fireworks) {
+      expect(shellGroup.celebrationScope).toBe('archive');
+      expect(shellGroup.durationSeconds).toBe(PERSONAL_SHOW_DURATION_SECONDS);
+    }
+    // The rating-5 meteor shower still tags along after the show.
+    expect(effects.at(-1)!.kind).toBe('meteor-shower');
+  });
+
+  it('caps the personal show at the global shell budget while keeping every genre', () => {
+    const bursts = personalShowBurstCounts([40, 40, 40, 1]);
+    expect(bursts.reduce((sum, value) => sum + value, 0))
+      .toBeLessThanOrEqual(PERSONAL_SHOW_MAX_TOTAL_BURSTS);
+    for (const value of bursts) expect(value).toBeGreaterThanOrEqual(1);
+    expect(bursts[3]).toBe(1);
   });
 
   it('creates completion celebrations for milestone and achievement unlock events', () => {
