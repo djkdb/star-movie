@@ -78,7 +78,6 @@ function ActiveConstellationLine({
     >
       <Line
         color={line.color}
-        dispose={null}
         lineWidth={6}
         opacity={opacity * 0.2}
         points={line.points}
@@ -93,7 +92,6 @@ function ActiveConstellationLine({
       />
       <Line
         color={line.color}
-        dispose={null}
         lineWidth={2}
         onPointerOut={(event) => {
           stop(event);
