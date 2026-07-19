@@ -10,7 +10,10 @@ export type PlanetSurfacePattern =
   | 'blotches'
   | 'swirl'
   | 'cracks'
-  | 'facets';
+  | 'facets'
+  | 'spots'
+  | 'poles'
+  | 'marble';
 
 export interface PlanetRing {
   color: string;
@@ -62,8 +65,8 @@ export const RARITY_COLORS: Readonly<Record<PlanetRarity, string>> = {
 };
 
 /**
- * The 28-species dex: 12 common, 8 rare, 5 epic, 3 legendary. Each species has a
- * distinctive silhouette, palette, and surface so a pull instantly reads as
+ * The 42-species dex: 18 common, 12 rare, 8 epic, 4 legendary. Each species has
+ * a distinctive silhouette, palette, and surface so a pull instantly reads as
  * "another rusty desert world" or "the legendary living star".
  */
 export const PLANET_SPECIES: readonly PlanetSpecies[] = [
@@ -431,6 +434,193 @@ export const PLANET_SPECIES: readonly PlanetSpecies[] = [
     emissiveIntensity: 1.4,
     atmosphere: '#ffd27a',
     moons: 3,
+  },
+
+  // ---- Common (extra 6) ----
+  {
+    id: 'basalt',
+    name: '바살트',
+    rarity: 'common',
+    flavor: '검은 현무암과 마른 용암 자국이 뒤덮은 세계.',
+    geometry: 'sphere',
+    pattern: 'blotches',
+    baseColor: '#37383f',
+    accentColor: '#7a4030',
+    emissiveColor: '#160b0a',
+    emissiveIntensity: 0.05,
+  },
+  {
+    id: 'tundra',
+    name: '툰드라',
+    rarity: 'common',
+    flavor: '갈색 평원 위로 흰 극관이 넓게 덮인 추운 세계.',
+    geometry: 'sphere',
+    pattern: 'poles',
+    baseColor: '#8a7458',
+    accentColor: '#eef2f6',
+    emissiveColor: '#232016',
+    emissiveIntensity: 0.04,
+  },
+  {
+    id: 'savanna',
+    name: '사바나',
+    rarity: 'common',
+    flavor: '초원과 마른 땅이 띠를 이루는 온난한 행성.',
+    geometry: 'sphere',
+    pattern: 'bands',
+    baseColor: '#9a7d3c',
+    accentColor: '#a7c46b',
+    emissiveColor: '#2c2510',
+    emissiveIntensity: 0.04,
+  },
+  {
+    id: 'mudball',
+    name: '머드볼',
+    rarity: 'common',
+    flavor: '온통 진흙빛 하나로 뒤덮인 밋밋한 세계.',
+    geometry: 'sphere',
+    pattern: 'solid',
+    baseColor: '#6f5638',
+    accentColor: '#8a6d49',
+    emissiveColor: '#20180d',
+    emissiveIntensity: 0.03,
+  },
+  {
+    id: 'chalk',
+    name: '초크',
+    rarity: 'common',
+    flavor: '창백한 백악질 대리석 무늬가 감도는 행성.',
+    geometry: 'sphere',
+    pattern: 'marble',
+    baseColor: '#c9cdd6',
+    accentColor: '#f4f7fb',
+    emissiveColor: '#2b2f38',
+    emissiveIntensity: 0.04,
+  },
+  {
+    id: 'copperdust',
+    name: '코퍼',
+    rarity: 'common',
+    flavor: '구릿빛 광맥이 표면을 얼기설기 가른 세계.',
+    geometry: 'sphere',
+    pattern: 'marble',
+    baseColor: '#8a512f',
+    accentColor: '#d9915a',
+    emissiveColor: '#2c1509',
+    emissiveIntensity: 0.05,
+  },
+
+  // ---- Rare (extra 4) ----
+  {
+    id: 'greatspot',
+    name: '그레이트스팟',
+    rarity: 'rare',
+    flavor: '크림빛 띠 위로 거대한 붉은 폭풍이 도는 가스 행성.',
+    geometry: 'sphere',
+    pattern: 'spots',
+    baseColor: '#c9a878',
+    accentColor: '#d5603f',
+    emissiveColor: '#3e2414',
+    emissiveIntensity: 0.1,
+  },
+  {
+    id: 'icecap',
+    name: '아이스캡',
+    rarity: 'rare',
+    flavor: '푸른 바다와 눈부신 극관이 대비되는 세계.',
+    geometry: 'sphere',
+    pattern: 'poles',
+    baseColor: '#2f6fa8',
+    accentColor: '#eef8ff',
+    emissiveColor: '#0e2c46',
+    emissiveIntensity: 0.1,
+    atmosphere: '#bfe6ff',
+  },
+  {
+    id: 'emerald',
+    name: '에메랄드',
+    rarity: 'rare',
+    flavor: '에메랄드빛 광물 대리석이 흐르는 영롱한 행성.',
+    geometry: 'sphere',
+    pattern: 'marble',
+    baseColor: '#1c8a5a',
+    accentColor: '#8ff0bd',
+    emissiveColor: '#0b3a26',
+    emissiveIntensity: 0.16,
+    atmosphere: '#9dffcf',
+  },
+  {
+    id: 'sunset',
+    name: '선셋',
+    rarity: 'rare',
+    flavor: '노을빛 띠가 층층이 물든 따뜻한 가스 행성.',
+    geometry: 'sphere',
+    pattern: 'bands',
+    baseColor: '#d4713e',
+    accentColor: '#ffd39a',
+    emissiveColor: '#4a2410',
+    emissiveIntensity: 0.14,
+    atmosphere: '#ffb98a',
+  },
+
+  // ---- Epic (extra 3) ----
+  {
+    id: 'ringlord',
+    name: '링로드',
+    rarity: 'epic',
+    flavor: '넓은 고리와 여러 위성을 거느린 대리석빛 거인.',
+    geometry: 'sphere',
+    pattern: 'marble',
+    baseColor: '#a9b6d8',
+    accentColor: '#eef2ff',
+    emissiveColor: '#2b3350',
+    emissiveIntensity: 0.22,
+    ring: { color: '#dbe4ff', innerScale: 1.5, outerScale: 3.0 },
+    moons: 3,
+  },
+  {
+    id: 'tempest',
+    name: '템페스트',
+    rarity: 'epic',
+    flavor: '거대한 폭풍 눈이 도는 사나운 폭풍 거인.',
+    geometry: 'sphere',
+    pattern: 'spots',
+    baseColor: '#4d6a86',
+    accentColor: '#cfe0f2',
+    emissiveColor: '#182636',
+    emissiveIntensity: 0.28,
+    ring: { color: '#c6d8ee', innerScale: 1.5, outerScale: 2.3 },
+    atmosphere: '#bcd6f2',
+  },
+  {
+    id: 'obsidian',
+    name: '옵시디언',
+    rarity: 'epic',
+    flavor: '검은 흑요석 결정이 보랏빛으로 번뜩이는 광물 세계.',
+    geometry: 'crystal',
+    pattern: 'facets',
+    baseColor: '#2a2340',
+    accentColor: '#a98bff',
+    emissiveColor: '#6b3fd0',
+    emissiveIntensity: 0.55,
+    atmosphere: '#c9b0ff',
+  },
+
+  // ---- Legendary (extra 1) ----
+  {
+    id: 'galaxion',
+    name: '갈락시온',
+    rarity: 'legendary',
+    flavor: '작은 나선 은하를 두른 채 소용돌이치는 신비의 세계.',
+    geometry: 'sphere',
+    pattern: 'swirl',
+    baseColor: '#2a2f6e',
+    accentColor: '#8be0ff',
+    emissiveColor: '#4a5ad0',
+    emissiveIntensity: 0.85,
+    ring: { color: '#bfe0ff', innerScale: 1.6, outerScale: 3.2 },
+    atmosphere: '#a0c8ff',
+    moons: 2,
   },
 ] as const;
 
