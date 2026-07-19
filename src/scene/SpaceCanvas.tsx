@@ -1,5 +1,4 @@
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
-import { Selection } from '@react-three/postprocessing';
 import { Canvas, useFrame, useThree, type RootState } from '@react-three/fiber';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { useStore } from 'zustand';
@@ -461,26 +460,24 @@ function SpaceScene({
         <MilkyWayField />
         <NebulaField />
         <MilestoneRewardRenderer rewards={viewModel.milestoneRewards} />
-        <Selection enabled={bloom.enabled}>
-          <ConstellationRenderer
-            constellations={viewModel.archiveContent.constellations}
-            draft={constellationDraft}
-            reducedMotion={reducedMotion}
-            stars={viewModel.archiveContent.stars}
-          />
-          <StarRenderer
-            onDragEnd={onStarDragEnd}
-            onDragStart={onStarDragStart}
-            onSelect={selectStar}
-            reducedMotion={reducedMotion}
-            selectedStarId={selectedStarId}
-            stars={viewModel.archiveContent.stars}
-          />
-          <SelectiveBloomPass
-            enabled={bloom.enabled}
-            reducedQuality={quality.reducedBloom}
-          />
-        </Selection>
+        <ConstellationRenderer
+          constellations={viewModel.archiveContent.constellations}
+          draft={constellationDraft}
+          reducedMotion={reducedMotion}
+          stars={viewModel.archiveContent.stars}
+        />
+        <StarRenderer
+          onDragEnd={onStarDragEnd}
+          onDragStart={onStarDragStart}
+          onSelect={selectStar}
+          reducedMotion={reducedMotion}
+          selectedStarId={selectedStarId}
+          stars={viewModel.archiveContent.stars}
+        />
+        <SelectiveBloomPass
+          enabled={bloom.enabled}
+          reducedQuality={quality.reducedBloom}
+        />
         <BlackholeRenderer
           activeDragPayload={activeDragPayload}
           archivedWorks={viewModel.archiveContent.archivedWorks}
@@ -669,7 +666,10 @@ export function SpaceCanvas({
             aria-hidden="true"
             dpr={[1, 1.5]}
             frameloop={getSceneFrameLoop(reducedMotion)}
-            gl={{ antialias: true }}
+            // Anti-aliasing is owned by the post-processing composer; enabling it
+            // on the Canvas too makes both resolve MSAA and alias the shared
+            // depth-stencil buffer, which flickers/blacks out the scene.
+            gl={{ antialias: false }}
             onCreated={createBenchmarkSource}
           >
             {sceneContentMounted ? (

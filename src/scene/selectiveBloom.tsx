@@ -1,7 +1,4 @@
-import {
-  EffectComposer,
-  SelectiveBloom,
-} from '@react-three/postprocessing';
+import { Bloom, EffectComposer } from '@react-three/postprocessing';
 
 import type { Constellation, Star } from '../domain/models';
 import { createConstellationLineViewModels } from './constellationRendererModel';
@@ -46,13 +43,18 @@ export function SelectiveBloomPass({
   if (!enabled) return null;
 
   return (
-    // 4x MSAA keeps star cores crisp while the composer owns the render pass;
-    // degraded quality drops it together with the mipmap blur.
-    <EffectComposer autoClear={false} multisampling={reducedQuality ? 0 : 4}>
-      <SelectiveBloom
-        intensity={1}
-        luminanceSmoothing={0.2}
-        luminanceThreshold={0}
+    // A plain threshold bloom, not SelectiveBloom. SelectiveBloom re-renders the
+    // selected objects sharing the scene depth buffer, and its depth blit aliases
+    // the read/write depth-stencil attachment ("cannot be the same image"), which
+    // flickered or blacked out the scene on real GPUs whenever an effect added
+    // geometry. A luminance threshold keeps only genuinely bright things — star
+    // cores, constellation lines, fireworks, the accretion ring — glowing while
+    // the dim nebula stays matte.
+    <EffectComposer multisampling={reducedQuality ? 0 : 4}>
+      <Bloom
+        intensity={0.9}
+        luminanceThreshold={0.35}
+        luminanceSmoothing={0.25}
         mipmapBlur={!reducedQuality}
       />
     </EffectComposer>

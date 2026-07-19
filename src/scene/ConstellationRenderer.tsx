@@ -1,5 +1,4 @@
 import { Html, Line } from '@react-three/drei';
-import { Select } from '@react-three/postprocessing';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useCallback, useMemo, useRef, useState, type ComponentRef } from 'react';
 import type { Group, Object3D } from 'three';
@@ -67,8 +66,7 @@ function ActiveConstellationLine({
   });
 
   return (
-    <Select enabled>
-      <group
+    <group
       name={`constellation-${line.id}`}
       userData={{
         activeStarIds: line.activeStarIds,
@@ -134,8 +132,7 @@ function ActiveConstellationLine({
         </span>
       </Html>
       </group>
-      </group>
-    </Select>
+    </group>
   );
 }
 
