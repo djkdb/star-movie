@@ -1,12 +1,28 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createDefaultStore } from '../domain/defaultState';
 import { PersistenceService } from '../persistence/persistenceService';
 import { createArchiveStore, type ArchiveStoreApi } from '../store/archiveStore';
 import { FakeClock, FakeLocalStorageAdapter } from '../test/providers';
 import { PlanetCodexPanel } from './PlanetCodexPanel';
+
+// The reveal mounts a real WebGL Canvas; stub it so jsdom can render the panel.
+vi.mock('../scene/PlanetPullReveal', () => ({
+  PlanetPullReveal: ({
+    species,
+    isNewSpecies,
+  }: {
+    species: { name: string };
+    isNewSpecies: boolean;
+  }) => (
+    <div data-testid="pull-reveal">
+      {species.name}
+      {isNewSpecies ? ' NEW' : ''}
+    </div>
+  ),
+}));
 
 function createStoreWithTickets(lifetimeStarsAdded: number): ArchiveStoreApi {
   const persistence = new PersistenceService({
@@ -53,8 +69,9 @@ describe('PlanetCodexPanel', () => {
     // One ticket spent, one distinct species collected.
     expect(screen.getByText(/가챠 티켓/).textContent).toContain('1');
     expect(screen.getByText('수집 1/42')).toBeTruthy();
-    // The reveal card announces the pulled species as new.
-    expect(screen.getByText('NEW')).toBeTruthy();
+    // The reveal overlay fired and announced the pulled species as new.
+    const reveal = screen.getByTestId('pull-reveal');
+    expect(reveal.textContent).toContain('NEW');
     expect(store.getState().persisted.planetCollection.planets).toHaveLength(1);
   });
 
