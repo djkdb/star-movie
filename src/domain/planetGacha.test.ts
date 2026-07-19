@@ -144,6 +144,6 @@ describe('collection summaries', () => {
     expect([...counts.values()].reduce((sum, value) => sum + value, 0)).toBe(3);
     const rate = collectionRate(collection);
     expect(rate.collected).toBe(1);
-    expect(rate.total).toBe(28);
+    expect(rate.total).toBe(42);
   });
 });

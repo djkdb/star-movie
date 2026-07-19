@@ -39,8 +39,8 @@ describe('PlanetCodexPanel', () => {
     render(<PlanetCodexPanel store={store} />);
 
     expect(screen.getByText(/가챠 티켓/).textContent).toContain('2');
-    expect(screen.getByText('수집 0/28')).toBeTruthy();
-    expect(screen.getAllByText('미발견')).toHaveLength(28);
+    expect(screen.getByText('수집 0/42')).toBeTruthy();
+    expect(screen.getAllByText('미발견')).toHaveLength(42);
   });
 
   it('pulls a planet, revealing it and updating the dex', async () => {
@@ -52,7 +52,7 @@ describe('PlanetCodexPanel', () => {
 
     // One ticket spent, one distinct species collected.
     expect(screen.getByText(/가챠 티켓/).textContent).toContain('1');
-    expect(screen.getByText('수집 1/28')).toBeTruthy();
+    expect(screen.getByText('수집 1/42')).toBeTruthy();
     // The reveal card announces the pulled species as new.
     expect(screen.getByText('NEW')).toBeTruthy();
     expect(store.getState().persisted.planetCollection.planets).toHaveLength(1);

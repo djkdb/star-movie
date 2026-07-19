@@ -11,12 +11,12 @@ import {
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 describe('planet catalog integrity', () => {
-  it('holds exactly 28 species with the required rarity distribution', () => {
-    expect(TOTAL_SPECIES_COUNT).toBe(28);
-    expect(speciesByRarity('common')).toHaveLength(12);
-    expect(speciesByRarity('rare')).toHaveLength(8);
-    expect(speciesByRarity('epic')).toHaveLength(5);
-    expect(speciesByRarity('legendary')).toHaveLength(3);
+  it('holds exactly 42 species with the required rarity distribution', () => {
+    expect(TOTAL_SPECIES_COUNT).toBe(42);
+    expect(speciesByRarity('common')).toHaveLength(18);
+    expect(speciesByRarity('rare')).toHaveLength(12);
+    expect(speciesByRarity('epic')).toHaveLength(8);
+    expect(speciesByRarity('legendary')).toHaveLength(4);
   });
 
   it('has unique ids and unique names', () => {

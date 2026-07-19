@@ -114,6 +114,36 @@ function buildTexture(species: PlanetSpecies): DataTexture {
           t = 0.3 + 0.7 * hash2(cell, cell + 1, seed);
           break;
         }
+        case 'spots': {
+          // Cloud bands with a couple of large oval storms riding on them.
+          const wobble = (fbm(u, v, seed, 3) - 0.5) * 0.4;
+          t = 0.5 + 0.38 * Math.sin((v * 5 + wobble) * Math.PI);
+          for (const storm of [
+            { su: 0.5, sv: 0.6, ru: 2.6, rv: 5 },
+            { su: 0.82, sv: 0.42, ru: 4, rv: 7 },
+          ]) {
+            const du = Math.min(Math.abs(u - storm.su), 1 - Math.abs(u - storm.su)) * storm.ru;
+            const dv = (v - storm.sv) * storm.rv;
+            t = Math.max(t, Math.exp(-(du * du + dv * dv) * 3.2));
+          }
+          break;
+        }
+        case 'poles': {
+          // Latitude bands brightening into bright polar caps.
+          const wobble = (fbm(u, v, seed, 4) - 0.5) * 0.08;
+          const band = 0.5 + 0.32 * Math.sin((v + wobble) * Math.PI * 6);
+          const capEdge = 0.34 + (fbm(u, v, seed + 3, 4) - 0.5) * 0.06;
+          const cap = smooth(Math.min(1, Math.max(0, (Math.abs(v - 0.5) - capEdge) / 0.16)));
+          t = Math.min(1, band * (1 - cap) + cap);
+          break;
+        }
+        case 'marble': {
+          // Veined marble: sharp ridges of accent threading through the base.
+          const n = fbm(u, v, seed, 5);
+          const vein = 1 - Math.abs(Math.sin((u * 3 + n * 4 + v * 2) * Math.PI));
+          t = 0.25 + 0.75 * Math.pow(Math.max(0, vein), 2);
+          break;
+        }
         case 'solid':
         default: {
           t = 0.35 * fbm(u, v, seed, 4);
