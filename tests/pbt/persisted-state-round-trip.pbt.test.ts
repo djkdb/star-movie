@@ -11,9 +11,11 @@ import {
   type Genre,
   type Milestone,
   type PersistedStateV2,
+  type PlanetCollection,
   type Rating,
   type Star,
 } from '../../src/domain/models';
+import { PLANET_SPECIES_IDS } from '../../src/domain/planetCatalog';
 import { normalizeDisplayText, normalizeText } from '../../src/domain/normalization';
 import {
   decodePersistedV2,
@@ -129,6 +131,40 @@ const achievementArbitrary: fc.Arbitrary<Achievement[]> = fc
     })),
   );
 
+const planetCollectionArbitrary: fc.Arbitrary<PlanetCollection> = fc
+  .nat({ max: 6 })
+  .chain((pullsPerformed) =>
+    fc
+      .record({
+        lifetimeStarsAdded: fc.integer({
+          min: pullsPerformed * 5,
+          max: pullsPerformed * 5 + 4,
+        }),
+        speciesPicks: fc.array(fc.constantFrom(...PLANET_SPECIES_IDS), {
+          minLength: pullsPerformed,
+          maxLength: pullsPerformed,
+        }),
+        seeds: fc.array(fc.integer({ min: 0, max: 0xffffffff }), {
+          minLength: pullsPerformed,
+          maxLength: pullsPerformed,
+        }),
+        acquired: fc.array(isoTimestampArbitrary, {
+          minLength: pullsPerformed,
+          maxLength: pullsPerformed,
+        }),
+      })
+      .map(({ lifetimeStarsAdded, speciesPicks, seeds, acquired }) => ({
+        lifetimeStarsAdded,
+        pullsPerformed,
+        planets: speciesPicks.map((speciesId, index) => ({
+          id: makeUuid(7, index + 1),
+          speciesId,
+          acquiredAt: acquired[index]!,
+          orbitSeed: seeds[index]!,
+        })),
+      })),
+  );
+
 const persistedStateV2Arbitrary: fc.Arbitrary<PersistedStateV2> = fc
   .tuple(
     fc.array(starSeedArbitrary, { maxLength: 6 }),
@@ -137,8 +173,17 @@ const persistedStateV2Arbitrary: fc.Arbitrary<PersistedStateV2> = fc
     milestoneArbitrary(100, makeUuid(5, 100)),
     achievementArbitrary,
     fc.integer({ min: 1, max: 30 }),
+    planetCollectionArbitrary,
   )
-  .chain(([activeSeeds, archivedSeeds, fifty, hundred, achievements, placementRadius]) => {
+  .chain(([
+    activeSeeds,
+    archivedSeeds,
+    fifty,
+    hundred,
+    achievements,
+    placementRadius,
+    planetCollection,
+  ]) => {
     const defaults = createDefaultPersistedStore();
     const genreGalaxies = defaults.galaxies.map((galaxy) => ({
       ...galaxy,
@@ -202,6 +247,7 @@ const persistedStateV2Arbitrary: fc.Arbitrary<PersistedStateV2> = fc
           galaxies,
           milestoneUnlocks: { fifty, hundred },
           achievements,
+          planetCollection,
         };
       });
   });

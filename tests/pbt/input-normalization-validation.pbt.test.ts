@@ -45,7 +45,12 @@ const reviewArbitrary = fc.oneof(
 );
 
 const validDateArbitrary = fc
-  .date({ min: new Date('1900-01-01T00:00:00.000Z'), max: new Date('2100-12-31T00:00:00.000Z') })
+  .date({
+    min: new Date('1900-01-01T00:00:00.000Z'),
+    max: new Date('2100-12-31T00:00:00.000Z'),
+    // Without this, fc.date can yield an Invalid Date whose toISOString() throws.
+    noInvalidDate: true,
+  })
   .map((date) => date.toISOString().slice(0, 10));
 const invalidDateArbitrary = fc.oneof(
   fc.constantFrom('', '2024-2-29', '2023-02-29', '2024-00-10', '2024-13-01', '2024-04-31', 'not-a-date'),

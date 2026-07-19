@@ -25,6 +25,7 @@ import type {
   CameraRequest,
   Constellation,
   Galaxy,
+  OwnedPlanet,
   PersistedStore,
   QualityLevel,
   Star,
@@ -34,6 +35,7 @@ import type { ArchiveStoreApi } from '../store/archiveStore';
 import {
   BACKGROUND_LAYER_DEFINITIONS,
   calculateParallaxOffset,
+  CLOUD_TEXTURE_VARIANTS,
   createBackgroundStars,
   createMilkyWayPatchConfigs,
   createNebulaConfigs,
@@ -52,6 +54,7 @@ import { FpsDegradationMonitor } from './FpsDegradationController';
 import { MilestoneRewardRenderer, selectMilestoneRewardViewModels, type MilestoneRewardViewModel } from './MilestoneRewardRenderer';
 import { ORBIT_TOUCH_GESTURES } from './orbitControlsConfig';
 import { ParticleManager } from './ParticleManager';
+import { PlanetCollectionRenderer } from './PlanetCollectionRenderer';
 import {
   collectSceneResources,
   type FpsWindowMeasurement,
@@ -117,6 +120,7 @@ export interface SpaceSceneViewModel {
   galaxies: readonly Galaxy[];
   milestoneRewards: readonly MilestoneRewardViewModel[];
   archiveContent: SceneArchiveContent;
+  planets: readonly OwnedPlanet[];
 }
 
 export function createSpaceSceneViewModel(
@@ -133,6 +137,7 @@ export function createSpaceSceneViewModel(
           archivedWorks: persisted.blackholeArchive,
         }
       : { stars: [], constellations: [], archivedWorks: [] },
+    planets: hasPersistedRegistration ? persisted.planetCollection.planets : [],
   };
 }
 
@@ -216,19 +221,72 @@ function BackgroundLayer({ definition }: { definition: BackgroundLayerDefinition
   );
 }
 
-function createNebulaTexture(size = 64): DataTexture {
+/** Deterministic 2D value-noise lattice hash in [0, 1). */
+function cloudHash(ix: number, iy: number, seed: number): number {
+  let h = (ix * 374761393 + iy * 668265263 + seed * 2246822519) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 0x1_0000_0000;
+}
+
+/** Smooth (bilinear + fade) value noise sampled on the lattice. */
+function valueNoise(x: number, y: number, seed: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const a = cloudHash(ix, iy, seed);
+  const b = cloudHash(ix + 1, iy, seed);
+  const c = cloudHash(ix, iy + 1, seed);
+  const d = cloudHash(ix + 1, iy + 1, seed);
+  return (
+    a * (1 - ux) * (1 - uy) +
+    b * ux * (1 - uy) +
+    c * (1 - ux) * uy +
+    d * ux * uy
+  );
+}
+
+/** Fractal Brownian motion: layered noise octaves for wispy detail. */
+function cloudFbm(x: number, y: number, seed: number): number {
+  let value = 0;
+  let amplitude = 0.5;
+  let frequency = 1;
+  for (let octave = 0; octave < 5; octave += 1) {
+    value += amplitude * valueNoise(x * frequency, y * frequency, seed + octave * 1013);
+    frequency *= 2.03;
+    amplitude *= 0.5;
+  }
+  return value;
+}
+
+/**
+ * A wispy fractal cloud rather than a smooth disc: fbm density carved by a soft
+ * elliptical vignette, with domain warping so the silhouette is torn and
+ * irregular. Reads as a drifting galactic cloud instead of an obvious circle.
+ */
+function createCloudTexture(seed: number, size = 128): DataTexture {
   const data = new Uint8Array(size * size * 4);
+  const scale = 3.2;
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
-      const normalizedX = (x + 0.5) / size - 0.5;
-      const normalizedY = (y + 0.5) / size - 0.5;
-      const distance = Math.hypot(normalizedX, normalizedY) * 2;
-      const alpha = Math.max(0, 1 - distance) ** 2;
+      const nx = (x + 0.5) / size - 0.5;
+      const ny = (y + 0.5) / size - 0.5;
+      // Domain warp pushes the vignette edge in and out for a torn rim.
+      const warp = cloudFbm(nx * scale + 5.1, ny * scale + 2.7, seed ^ 0x9e37) - 0.5;
+      const distance = Math.hypot(nx, ny) * 2 + warp * 0.55;
+      const vignette = Math.max(0, 1 - distance);
+      const density = cloudFbm(nx * scale + 1.3, ny * scale - 4.2, seed);
+      // Multiply so the cloud only exists where both the vignette and the fbm
+      // are strong; the power sharpens filaments into wisps.
+      const alpha = vignette ** 1.4 * density ** 1.8 * 3.6;
       const index = (y * size + x) * 4;
       data[index] = 255;
       data[index + 1] = 255;
       data[index + 2] = 255;
-      data[index + 3] = Math.round(alpha * 255);
+      data[index + 3] = Math.round(Math.min(1, Math.max(0, alpha)) * 255);
     }
   }
   const texture = new DataTexture(data, size, size, RGBAFormat, UnsignedByteType);
@@ -238,11 +296,27 @@ function createNebulaTexture(size = 64): DataTexture {
   return texture;
 }
 
+/** A memoized bank of distinct cloud textures the fields index into. */
+function useCloudTextures(): DataTexture[] {
+  const textures = useMemo(
+    () =>
+      Array.from({ length: CLOUD_TEXTURE_VARIANTS }, (_, index) =>
+        createCloudTexture(0x1234 + index * 0x9d3f),
+      ),
+    [],
+  );
+  useEffect(
+    () => () => {
+      for (const texture of textures) texture.dispose();
+    },
+    [textures],
+  );
+  return textures;
+}
+
 function NebulaField() {
   const nebulas = useMemo(() => createNebulaConfigs(0x51a7, 2), []);
-  const texture = useMemo(createNebulaTexture, []);
-
-  useEffect(() => () => texture.dispose(), [texture]);
+  const textures = useCloudTextures();
 
   return (
     <group name="nebula-field">
@@ -256,8 +330,9 @@ function NebulaField() {
             blending={AdditiveBlending}
             color={nebula.color}
             depthWrite={false}
-            map={texture}
+            map={textures[nebula.variant % textures.length]}
             opacity={nebula.opacity}
+            rotation={nebula.rotation}
             transparent
           />
         </sprite>
@@ -273,9 +348,7 @@ function NebulaField() {
  */
 function MilkyWayField() {
   const patches = useMemo(() => createMilkyWayPatchConfigs(), []);
-  const texture = useMemo(createNebulaTexture, []);
-
-  useEffect(() => () => texture.dispose(), [texture]);
+  const textures = useCloudTextures();
 
   return (
     <group name="milkyway-field">
@@ -289,8 +362,9 @@ function MilkyWayField() {
             blending={AdditiveBlending}
             color={patch.color}
             depthWrite={false}
-            map={texture}
+            map={textures[patch.variant % textures.length]}
             opacity={patch.opacity}
+            rotation={patch.rotation}
             transparent
           />
         </sprite>
@@ -412,6 +486,10 @@ function SpaceScene({
           archivedWorks={viewModel.archiveContent.archivedWorks}
           onDropStar={onBlackholeDrop}
           onOpenArchive={onBlackholeOpen}
+          reducedMotion={reducedMotion}
+        />
+        <PlanetCollectionRenderer
+          planets={viewModel.planets}
           reducedMotion={reducedMotion}
         />
         <ParticleManager

@@ -85,6 +85,30 @@ export interface Achievement {
   unlockedAt: string | null;
 }
 
+export type PlanetRarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+/** One pulled planet instance. Duplicates of a species are allowed. */
+export interface OwnedPlanet {
+  id: string;
+  /** References a species in the planet catalog. */
+  speciesId: string;
+  acquiredAt: string;
+  /** Seeds the deterministic 3D orbit so every copy drifts on its own path. */
+  orbitSeed: number;
+}
+
+/**
+ * Gacha collection state. Tickets are derived, not stored: one ticket is earned
+ * per five stars ever added, and `pullsPerformed` counts tickets already spent.
+ */
+export interface PlanetCollection {
+  /** Monotonic count of stars ever added; never decreases on delete. */
+  lifetimeStarsAdded: number;
+  /** Number of gacha pulls performed (tickets spent). */
+  pullsPerformed: number;
+  planets: OwnedPlanet[];
+}
+
 export interface PersistedStore {
   schemaVersion: 2;
   stars: Star[];
@@ -96,6 +120,7 @@ export interface PersistedStore {
     hundred: Milestone;
   };
   achievements: Achievement[];
+  planetCollection: PlanetCollection;
 }
 
 export type PersistedStateV2 = PersistedStore;
@@ -149,6 +174,7 @@ export interface RuntimeStore {
   constellationDraft: ConstellationDraft;
   isListDrawerOpen: boolean;
   isAchievementPanelOpen: boolean;
+  isPlanetCodexOpen: boolean;
   qualityLevel: QualityLevel;
   pendingCameraRequest: CameraRequest | null;
   /** Camera pose captured just before a star focus, restored on deselection. */

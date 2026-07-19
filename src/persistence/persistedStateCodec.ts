@@ -9,6 +9,8 @@ import {
   type Vec3,
 } from '../domain/models';
 import { normalizeDisplayText, normalizeText } from '../domain/normalization';
+import { isKnownSpeciesId } from '../domain/planetCatalog';
+import { ticketsEarned } from '../domain/planetGacha';
 
 /**
  * Generous radius of the shared free-roaming star field. Any persisted star must
@@ -206,6 +208,45 @@ const achievementSchema = z
     }
   });
 
+const UINT32 = z.number().int().nonnegative().max(0xffffffff);
+
+const ownedPlanetSchema = z
+  .object({
+    id: UUID,
+    speciesId: z
+      .string()
+      .min(1)
+      .max(60)
+      .refine(isKnownSpeciesId, 'Unknown planet species'),
+    acquiredAt: ISO_TIMESTAMP,
+    orbitSeed: UINT32,
+  })
+  .strict();
+
+const planetCollectionSchema = z
+  .object({
+    lifetimeStarsAdded: z.number().int().nonnegative(),
+    pullsPerformed: z.number().int().nonnegative(),
+    planets: z.array(ownedPlanetSchema),
+  })
+  .strict()
+  .superRefine((collection, context) => {
+    if (collection.planets.length !== collection.pullsPerformed) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['planets'],
+        message: 'Owned planet count must equal the number of pulls performed',
+      });
+    }
+    if (collection.pullsPerformed > ticketsEarned(collection.lifetimeStarsAdded)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['pullsPerformed'],
+        message: 'Cannot perform more pulls than tickets earned',
+      });
+    }
+  });
+
 const persistedStateShapeSchema = z
   .object({
     schemaVersion: z.literal(2),
@@ -217,6 +258,7 @@ const persistedStateShapeSchema = z
       .object({ fifty: milestoneSchema, hundred: milestoneSchema })
       .strict(),
     achievements: z.array(achievementSchema),
+    planetCollection: planetCollectionSchema,
   })
   .strict();
 
@@ -314,6 +356,12 @@ function validateDocument(state: ParsedState, context: z.RefinementCtx): void {
   addDuplicateIssue(context, state.constellations.map(({ id }) => id), ['constellations'], 'Constellation IDs');
   addDuplicateIssue(context, state.galaxies.map(({ id }) => id), ['galaxies'], 'Galaxy IDs');
   addDuplicateIssue(context, state.achievements.map(({ id }) => id), ['achievements'], 'Achievement IDs');
+  addDuplicateIssue(
+    context,
+    state.planetCollection.planets.map(({ id }) => id),
+    ['planetCollection', 'planets'],
+    'Owned planet IDs',
+  );
 
   const activeIdSet = new Set(activeIds);
   if (archivedIds.some((id) => activeIdSet.has(id))) {
@@ -430,9 +478,38 @@ function validateAndRoundTrip(value: unknown): PersistedStateV2 {
   return decoded;
 }
 
+/**
+ * Backfills the planet-collection field for legacy schema-2 documents saved
+ * before the gacha feature existed. Existing works credit the collection with
+ * their gacha tickets (one per five stars) so no ticket history is lost. Only a
+ * plain object missing the field is touched; everything else falls through to
+ * strict validation unchanged.
+ */
+function backfillLegacyShape(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  if ('planetCollection' in record) return value;
+
+  const activeCount = Array.isArray(record.stars) ? record.stars.length : 0;
+  const archivedCount = Array.isArray(record.blackholeArchive)
+    ? record.blackholeArchive.length
+    : 0;
+  return {
+    ...record,
+    planetCollection: {
+      lifetimeStarsAdded: activeCount + archivedCount,
+      pullsPerformed: 0,
+      planets: [],
+    },
+  };
+}
+
 /** Decodes either parsed JSON or a JSON string and rejects the entire document on any violation. */
 export function decodePersistedV2(value: unknown): PersistedStateV2 {
-  return validateAndRoundTrip(typeof value === 'string' ? parseJson(value) : value);
+  const parsed = typeof value === 'string' ? parseJson(value) : value;
+  return validateAndRoundTrip(backfillLegacyShape(parsed));
 }
 
 /** Validates and canonically serializes a complete schemaVersion 2 document. */

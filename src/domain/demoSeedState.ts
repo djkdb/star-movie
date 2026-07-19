@@ -100,5 +100,12 @@ export function createDemoSeedPersistedStore(): PersistedStore {
       ? { ...achievement, progress: 2 }
       : achievement,
   );
+  // Credit the seeded collection so a first-run visitor already has a few gacha
+  // tickets to try the planet dex (one per five works, active + archived).
+  store.planetCollection = {
+    lifetimeStarsAdded: store.stars.length + store.blackholeArchive.length,
+    pullsPerformed: 0,
+    planets: [],
+  };
   return store;
 }
