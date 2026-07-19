@@ -24,7 +24,6 @@ import {
   EffectLifecycleRegistry,
   ParticleEffectController,
   browserParticleTimer,
-  fireworkSparksPerBurst,
   type DisposalDiagnostic,
   type ParticleEffectDescriptor,
   type ParticleTimer,
@@ -70,51 +69,53 @@ function effectColor(kind: ParticleEffectDescriptor['kind']): string {
 }
 
 const FIREWORK_VERTEX_SHADER = `
-  attribute vec3 aDir;
-  attribute float aSpeed;
   attribute float aSize;
   attribute float aDelay;
   attribute vec3 aColor;
-  attribute float aGravity;
   attribute float aGlitter;
+  attribute float aSeed;
   uniform float uTime;
   uniform float uDuration;
   uniform float uPixelRatio;
-  uniform float uSpread;
   varying float vAlpha;
   varying vec3 vColor;
 
   void main() {
-    float t = max(0.0, uTime - aDelay);
-    float life = clamp(t / uDuration, 0.0, 1.0);
-    // Fast initial expansion easing out, like sparks losing momentum to drag.
-    float expo = 1.0 - pow(1.0 - life, 2.3);
-    float dist = aSpeed * expo * uSpread;
-    vec3 gravity = vec3(0.0, -aGravity * t * t, 0.0);
-    vec3 worldPos = position + aDir * dist + gravity;
+    // Normalize each spark's life over the effect window, leaving headroom so
+    // the most-delayed spark still completes its full fade before cleanup.
+    float t = clamp((uTime - aDelay) / max(0.1, uDuration - 0.9), 0.0, 1.0);
+    // Formation: sparks race out from the shell's heart to their slot in the
+    // figure, easing to a stop like drones settling into a light show.
+    float form = 1.0 - pow(1.0 - clamp(t / 0.3, 0.0, 1.0), 3.0);
+    float settled = smoothstep(0.26, 0.4, t);
+    vec3 pos = position * form;
+    // The formed figure hovers and breathes like a drone constellation.
+    pos.x += sin(uTime * 1.3 + aSeed * 43.0) * 0.45 * settled;
+    pos.y += cos(uTime * 1.1 + aSeed * 57.0) * 0.45 * settled;
+    // Finale: the figure loosens, swells, and sinks as its sparks burn out.
+    float fall = smoothstep(0.72, 1.0, t);
+    pos *= 1.0 + fall * 0.22;
+    pos.y -= fall * fall * 8.0;
 
-    vec4 mvPosition = modelViewMatrix * vec4(worldPos, 1.0);
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPosition;
 
-    float appear = smoothstep(0.0, 0.04, t);
-    float fade = 1.0 - smoothstep(0.45, 1.0, life);
-    float twinkle = 0.72 + 0.28 * sin(uTime * 42.0 + aDelay * 30.0 + aSpeed * 12.0);
-    // Glitter sparks strobe hard through the back half of their life, like
-    // crackle stars in a real shell.
-    float strobe = step(0.4, fract(sin(floor(uTime * 24.0) + aDelay * 57.0) * 43758.5453));
-    float crackle = mix(1.0, strobe * 1.7, smoothstep(0.3, 0.55, life));
+    float appear = smoothstep(0.0, 0.05, t);
+    float fade = 1.0 - smoothstep(0.76, 1.0, t);
+    float twinkle = 0.8 + 0.2 * sin(uTime * 8.0 + aSeed * 89.0);
+    // Glitter sparks strobe once the figure has formed, like crackle stars.
+    float strobe = step(0.35, fract(sin(floor(uTime * 14.0) + aSeed * 61.0) * 43758.5453));
+    float crackle = mix(1.0, strobe * 1.6, settled);
     vAlpha = appear * fade * mix(twinkle, crackle, aGlitter);
 
-    // Color evolution: white-hot flash -> genre tint -> dim ember.
-    vec3 ember = aColor * vec3(0.6, 0.32, 0.16) + vec3(0.2, 0.05, 0.0);
-    vec3 tinted = mix(vec3(1.0), aColor, smoothstep(0.03, 0.28, life));
-    vColor = mix(tinted, ember, smoothstep(0.62, 1.0, life));
+    // Color evolution: white-hot launch flash -> figure tint -> dim ember.
+    vec3 tinted = mix(vec3(1.0), aColor, smoothstep(0.02, 0.3, t));
+    vec3 ember = aColor * 0.55 + vec3(0.12, 0.04, 0.0);
+    vColor = mix(tinted, ember, smoothstep(0.82, 1.0, t));
 
-    float shrink = 1.0 - 0.4 * life;
     // Cap the screen-space size: nearby sparks otherwise balloon into huge
     // additive quads whose overdraw stalls weaker GPUs into dropped frames.
-    // The cap is generous so a grand shell reads as big, glowing embers.
-    float px = aSize * shrink * uPixelRatio * (260.0 / max(1.0, -mvPosition.z));
+    float px = aSize * uPixelRatio * (300.0 / max(1.0, -mvPosition.z));
     gl_PointSize = min(px, 64.0 * uPixelRatio);
   }
 `;
@@ -143,18 +144,9 @@ function fireworkRandom(seed: number): () => number {
   };
 }
 
-type FireworkBurstShape = 'peony' | 'ring' | 'willow';
-
-function pickBurstShape(roll: number): FireworkBurstShape {
-  if (roll < 0.45) return 'peony';
-  if (roll < 0.75) return 'ring';
-  return 'willow';
-}
-
 /**
- * Cosmic accent hues layered over each shell's base tint so a burst shimmers
- * with nebula-like iridescence — teal, violet, rose, and gold drifting through
- * the sparks instead of one flat color.
+ * Cosmic accent hues blended lightly into each spark so the figure shimmers
+ * with nebula-like iridescence while its base color still reads clearly.
  */
 const COSMIC_ACCENTS: readonly Color[] = [
   new Color('#7cf5ff'), // ion teal
@@ -164,141 +156,188 @@ const COSMIC_ACCENTS: readonly Color[] = [
   new Color('#8fb6ff'), // deep-sky blue
 ];
 
+/** World-space radius of the backdrop figure (about 40% of the visible sky). */
+const FIGURE_RADIUS = 26;
+
+/** Backdrop stage: centered high in the sky, behind the stars and blackhole. */
+const FIGURE_STAGE: readonly [number, number, number] = [0, 10, -40];
+
+type ShapePoint = readonly [number, number];
+
+/**
+ * Evenly distributes `count` jittered points along a polyline (unit space),
+ * proportionally to segment length, so strokes read as crisp drawn lines.
+ */
+function samplePolyline(
+  vertices: readonly ShapePoint[],
+  count: number,
+  random: () => number,
+  thickness: number,
+  out: ShapePoint[],
+): void {
+  const segments: Array<{ ax: number; ay: number; bx: number; by: number; length: number }> = [];
+  let totalLength = 0;
+  for (let i = 0; i < vertices.length - 1; i += 1) {
+    const [ax, ay] = vertices[i]!;
+    const [bx, by] = vertices[i + 1]!;
+    const length = Math.hypot(bx - ax, by - ay);
+    segments.push({ ax, ay, bx, by, length });
+    totalLength += length;
+  }
+  if (totalLength === 0) return;
+  for (let i = 0; i < count; i += 1) {
+    let distance = ((i + random()) / count) * totalLength;
+    let segment = segments[segments.length - 1]!;
+    for (const candidate of segments) {
+      if (distance <= candidate.length) {
+        segment = candidate;
+        break;
+      }
+      distance -= candidate.length;
+    }
+    const t = segment.length === 0 ? 0 : distance / segment.length;
+    const nx = -(segment.by - segment.ay) / (segment.length || 1);
+    const ny = (segment.bx - segment.ax) / (segment.length || 1);
+    const jitter = (random() - 0.5) * 2 * thickness;
+    out.push([
+      segment.ax + (segment.bx - segment.ax) * t + nx * jitter,
+      segment.ay + (segment.by - segment.ay) * t + ny * jitter,
+    ]);
+  }
+}
+
+/** Closed circle/ellipse approximated as a polyline, optionally rotated. */
+function ellipseOutline(
+  radiusX: number,
+  radiusY: number,
+  rotation: number,
+  segments = 48,
+): ShapePoint[] {
+  const vertices: ShapePoint[] = [];
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  for (let i = 0; i <= segments; i += 1) {
+    const angle = (i / segments) * Math.PI * 2;
+    const x = Math.cos(angle) * radiusX;
+    const y = Math.sin(angle) * radiusY;
+    vertices.push([x * cos - y * sin, x * sin + y * cos]);
+  }
+  return vertices;
+}
+
+/** Classic five-pointed star outline, tip up, in unit space. */
+function starOutline(): ShapePoint[] {
+  const vertices: ShapePoint[] = [];
+  for (let k = 0; k <= 5; k += 1) {
+    const outer = Math.PI / 2 + (k * 2 * Math.PI) / 5;
+    vertices.push([Math.cos(outer), Math.sin(outer)]);
+    if (k < 5) {
+      const inner = outer + Math.PI / 5;
+      vertices.push([Math.cos(inner) * 0.42, Math.sin(inner) * 0.42]);
+    }
+  }
+  return vertices;
+}
+
+/** Crown silhouette: three peaks over a band, in unit space. */
+const CROWN_OUTLINE: readonly ShapePoint[] = [
+  [-0.85, -0.5], [-0.85, 0.1], [-0.45, -0.12], [0, 0.55],
+  [0.45, -0.12], [0.85, 0.1], [0.85, -0.5], [-0.85, -0.5],
+];
+
+/** Jewel dots hovering over the crown's three peak tips. */
+const CROWN_JEWELS: readonly ShapePoint[] = [[-0.85, 0.24], [0, 0.7], [0.85, 0.24]];
+
+/** Samples every spark's slot in the requested figure (unit space). */
+function sampleShapeTargets(
+  shape: NonNullable<ParticleEffectDescriptor['shape']>,
+  count: number,
+  random: () => number,
+): ShapePoint[] {
+  const targets: ShapePoint[] = [];
+  switch (shape) {
+    case 'star':
+      samplePolyline(starOutline(), count, random, 0.035, targets);
+      break;
+    case 'planet': {
+      // Planet body plus a wide tilted ring, like the gacha's ringed worlds.
+      const bodyCount = Math.round(count * 0.55);
+      samplePolyline(ellipseOutline(0.58, 0.58, 0), bodyCount, random, 0.03, targets);
+      samplePolyline(
+        ellipseOutline(1.05, 0.3, -0.32),
+        count - bodyCount,
+        random,
+        0.025,
+        targets,
+      );
+      break;
+    }
+    case 'crown': {
+      const jewelCount = Math.round(count * 0.12);
+      samplePolyline(CROWN_OUTLINE, count - jewelCount, random, 0.03, targets);
+      // Jewels are small filled discs above the peaks.
+      for (let i = 0; i < jewelCount; i += 1) {
+        const [cx, cy] = CROWN_JEWELS[i % CROWN_JEWELS.length]!;
+        const angle = random() * Math.PI * 2;
+        const r = Math.sqrt(random()) * 0.07;
+        targets.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
+      }
+      break;
+    }
+  }
+  return targets;
+}
+
 function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry {
   const random = fireworkRandom(effect.seed);
-  const burstCount = Math.max(1, effect.burstCount ?? 1);
-  const perBurst = fireworkSparksPerBurst(effect.particleCount, burstCount);
-  const total = perBurst * burstCount;
+  const total = Math.max(24, Math.floor(effect.particleCount));
+  const shape = effect.shape ?? 'star';
+  // A legacy single-scope burst draws the same figure, just small and local.
+  const radius = effect.celebrationScope === 'archive' ? FIGURE_RADIUS : 8;
+  const targets = sampleShapeTargets(shape, total, random);
 
   const positions = new Float32Array(total * 3);
-  const directions = new Float32Array(total * 3);
-  const speeds = new Float32Array(total);
   const sizes = new Float32Array(total);
   const delays = new Float32Array(total);
   const colors = new Float32Array(total * 3);
-  const gravities = new Float32Array(total);
   const glitters = new Float32Array(total);
+  const seeds = new Float32Array(total);
 
   const base = new Color(effect.color ?? DEFAULT_FIREWORK_COLOR);
-  const isArchiveShow = effect.celebrationScope === 'archive';
-  // Archive celebrations scatter shells across the whole visible sky so the
-  // show fills the screen; a lone single-scope burst stays on its own work.
-  // Origins stay within the camera frustum at a consistent backdrop depth so
-  // every shell reads big and on-screen — the wide expansion (uSpread) then
-  // carries sparks out toward the edges for a vast, screen-filling panorama.
-  const spreadX = isArchiveShow ? 46 : burstCount > 1 ? 28 : 0;
-  const spreadY = isArchiveShow ? 24 : burstCount > 1 ? 16 : 0;
-  const spreadZ = isArchiveShow ? 8 : burstCount > 1 ? 14 : 0;
-  const sparkScale = isArchiveShow ? 1.5 : 1.15;
-
-  // Scratch color reused per spark to avoid allocating thousands of Colors.
+  // Scratch color reused per spark to avoid allocating hundreds of Colors.
   const sparkColor = new Color();
 
-  let index = 0;
-  for (let burst = 0; burst < burstCount; burst += 1) {
-    const originX = (random() - 0.5) * 2 * spreadX;
-    const originY = (random() - 0.5) * 2 * spreadY + (burst > 0 ? 4 : 0);
-    const originZ = (random() - 0.5) * 2 * spreadZ;
-    // Stagger the shells so they crackle open one after another; the archive
-    // show rolls its volleys across a longer window like a real finale.
-    const burstDelay = burst === 0
-      ? random() * (isArchiveShow ? 0.5 : 0.12)
-      : 0.1 + random() * (isArchiveShow ? 1.4 : 0.65);
-    // Each shell opens with its own character: classic spherical peony, a
-    // tilted ring, or a drooping willow with heavy trailing sparks.
-    const shape = pickBurstShape(random());
-    // Every shell leans toward a different cosmic accent so the volley reads
-    // as an iridescent, nebula-tinted panorama rather than one flat hue.
+  for (let index = 0; index < total; index += 1) {
+    const [ux, uy] = targets[index % targets.length] ?? [0, 0];
+    // The position attribute holds each spark's final slot in the figure; the
+    // vertex shader animates the journey from the center out to it.
+    positions[index * 3] = ux * radius;
+    positions[index * 3 + 1] = uy * radius;
+    positions[index * 3 + 2] = (random() - 0.5) * 2.4;
+    sizes[index] = 5.5 + random() * 6.5;
+    delays[index] = random() * 0.5;
+    glitters[index] = random() < 0.35 ? 1 : 0;
+    seeds[index] = random();
+
+    // A light cosmic-accent blend keeps the figure iridescent without washing
+    // out its identity color; a white-hot minority keeps it lively.
     const accent = COSMIC_ACCENTS[Math.floor(random() * COSMIC_ACCENTS.length)]
       ?? COSMIC_ACCENTS[0]!;
-
-    // Random ring plane for 'ring' shells.
-    const normalTheta = 2 * Math.PI * random();
-    const normalCosPhi = 2 * random() - 1;
-    const normalSinPhi = Math.sqrt(Math.max(0, 1 - normalCosPhi * normalCosPhi));
-    const nx = normalSinPhi * Math.cos(normalTheta);
-    const ny = normalCosPhi;
-    const nz = normalSinPhi * Math.sin(normalTheta);
-    // Orthonormal basis (u, v) spanning the ring plane.
-    let ux = 1;
-    const uy = 0;
-    let uz = 0;
-    if (Math.abs(ny) < 0.9) {
-      const planeLength = Math.hypot(nz, nx);
-      ux = nz / planeLength;
-      uz = -nx / planeLength;
-    }
-    const vx = ny * uz - nz * uy;
-    const vy = nz * ux - nx * uz;
-    const vz = nx * uy - ny * ux;
-
-    for (let particle = 0; particle < perBurst; particle += 1) {
-      let dirX: number;
-      let dirY: number;
-      let dirZ: number;
-      let radial: number;
-      let gravity: number;
-
-      if (shape === 'ring') {
-        const angle = 2 * Math.PI * random();
-        const jitter = (random() - 0.5) * 0.24;
-        dirX = Math.cos(angle) * ux + Math.sin(angle) * vx + nx * jitter;
-        dirY = Math.cos(angle) * uy + Math.sin(angle) * vy + ny * jitter;
-        dirZ = Math.cos(angle) * uz + Math.sin(angle) * vz + nz * jitter;
-        radial = 0.75 + random() * 0.3;
-        gravity = 2.4;
-      } else {
-        const theta = 2 * Math.PI * random();
-        const cosinePhi = 2 * random() - 1;
-        const sinePhi = Math.sqrt(Math.max(0, 1 - cosinePhi * cosinePhi));
-        dirX = sinePhi * Math.cos(theta);
-        dirY = cosinePhi;
-        dirZ = sinePhi * Math.sin(theta);
-        if (shape === 'willow') {
-          // Slower sparks pulled down hard: long weeping trails.
-          radial = 0.45 + random() * 0.35;
-          gravity = 5.4 + random() * 2.2;
-        } else {
-          // Peony: shell-biased radius with a few faster outliers.
-          radial = 0.55 + random() * 0.5;
-          gravity = 2.6 + random() * 0.9;
-        }
-      }
-
-      positions[index * 3] = originX;
-      positions[index * 3 + 1] = originY;
-      positions[index * 3 + 2] = originZ;
-      directions[index * 3] = dirX;
-      directions[index * 3 + 1] = dirY;
-      directions[index * 3 + 2] = dirZ;
-      speeds[index] = radial;
-      sizes[index] = (6 + random() * 9) * sparkScale;
-      delays[index] = burstDelay + random() * 0.08;
-      gravities[index] = gravity;
-      glitters[index] = random() < 0.3 ? 1 : 0;
-
-      // Blend the shell's base tint toward its cosmic accent per-spark, so the
-      // burst shimmers with iridescence; a warm-white hot core minority and
-      // brightness jitter keep it lively.
-      sparkColor.copy(base).lerp(accent, random() * 0.65);
-      const brightness = 0.75 + random() * 0.6;
-      const whiteHot = random() < 0.18 ? 0.55 : 0;
-      colors[index * 3] = Math.min(1, sparkColor.r * brightness + whiteHot);
-      colors[index * 3 + 1] = Math.min(1, sparkColor.g * brightness + whiteHot);
-      colors[index * 3 + 2] = Math.min(1, sparkColor.b * brightness + whiteHot);
-      index += 1;
-    }
+    sparkColor.copy(base).lerp(accent, random() * 0.4);
+    const brightness = 0.8 + random() * 0.5;
+    const whiteHot = random() < 0.12 ? 0.5 : 0;
+    colors[index * 3] = Math.min(1, sparkColor.r * brightness + whiteHot);
+    colors[index * 3 + 1] = Math.min(1, sparkColor.g * brightness + whiteHot);
+    colors[index * 3 + 2] = Math.min(1, sparkColor.b * brightness + whiteHot);
   }
 
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('aDir', new Float32BufferAttribute(directions, 3));
-  geometry.setAttribute('aSpeed', new Float32BufferAttribute(speeds, 1));
   geometry.setAttribute('aSize', new Float32BufferAttribute(sizes, 1));
   geometry.setAttribute('aDelay', new Float32BufferAttribute(delays, 1));
   geometry.setAttribute('aColor', new Float32BufferAttribute(colors, 3));
-  geometry.setAttribute('aGravity', new Float32BufferAttribute(gravities, 1));
   geometry.setAttribute('aGlitter', new Float32BufferAttribute(glitters, 1));
+  geometry.setAttribute('aSeed', new Float32BufferAttribute(seeds, 1));
   return geometry;
 }
 
@@ -308,10 +347,10 @@ interface FireworksVisualProps {
 }
 
 /**
- * GPU-driven genre-colored fireworks. Each work bursts into one or more shells
- * (more shells for genres you have watched more of) that fan out, arc down under
- * gravity, twinkle, and fade — a wide, celebratory panorama rather than a single
- * yellow pop.
+ * GPU-driven drone-show fireworks: a burst of sparks races out from a central
+ * flash and settles into one giant glowing figure on the backdrop sky — a star
+ * for new works, a ringed planet for gacha pulls, a crown for achievements —
+ * hovers there twinkling, then loosens and sinks away.
  */
 export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
   const pointsRef = useRef<Points>(null);
@@ -332,11 +371,9 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
           uTime: { value: 0 },
           uDuration: { value: effect.durationSeconds },
           uPixelRatio: { value: pixelRatio },
-          // Show shells balloon far wider so a burst can swallow the screen.
-          uSpread: { value: isArchiveShow ? 34 : 16 },
         },
       }),
-    [effect.durationSeconds, isArchiveShow, pixelRatio],
+    [effect.durationSeconds, pixelRatio],
   );
 
   useEffect(() => {
@@ -353,13 +390,14 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
     material.uniforms.uPixelRatio!.value = pixelRatio;
   });
 
-  // The personal show centers on the sky as a whole, not the new work.
+  // The celebration figure is staged on the backdrop sky, not the new work.
   const origin: readonly [number, number, number] = isArchiveShow
-    ? [0, 6, -10]
+    ? FIGURE_STAGE
     : [effect.origin.x, effect.origin.y, effect.origin.z];
 
   return (
     <points
+      frustumCulled={false}
       geometry={geometry}
       material={material}
       name="particle-effect-fireworks"
@@ -368,7 +406,7 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
       userData={{
         effectId: effect.id,
         particleCount: effect.particleCount,
-        burstCount: effect.burstCount ?? 1,
+        shape: effect.shape ?? 'star',
         celebrationScope: effect.celebrationScope ?? 'single',
       }}
     />

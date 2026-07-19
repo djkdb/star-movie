@@ -1,15 +1,21 @@
 import type { PlanetRarity, RuntimeEvent, Vec3 } from '../domain/models';
 import { RARITY_COLORS } from '../domain/planetCatalog';
 
-export const FIREWORK_PARTICLE_RANGE = [220, 340] as const;
-export const FIREWORK_DURATION_SECONDS = 3.2;
-export const FIREWORK_MAX_BURSTS = 6;
+export const FIREWORK_PARTICLE_RANGE = [320, 460] as const;
+export const FIREWORK_DURATION_SECONDS = 5.2;
 
 /** Default spark color when a firework carries no genre tint. */
 export const DEFAULT_FIREWORK_COLOR = '#ffe27a';
 
 /** Warm-gold celebration color for achievement fireworks. */
 export const ACHIEVEMENT_FIREWORK_COLOR = '#ffd27a';
+
+/**
+ * The figure a celebration firework forms once its sparks settle, drone-show
+ * style: a giant star for new works, a ringed planet for gacha pulls, and a
+ * crown for achievements.
+ */
+export type FireworkShape = 'star' | 'planet' | 'crown';
 
 /**
  * Genre → firework tint, mirroring each genre galaxy's primary color so a burst
@@ -26,56 +32,6 @@ export const GENRE_FIREWORK_COLORS: Readonly<Record<string, string>> = {
   기타: '#14B8A6',
 };
 
-/** More works in a genre → a grander, multi-shell burst, capped for sanity. */
-export function fireworkBurstCount(genreCount: number): number {
-  if (!Number.isFinite(genreCount) || genreCount < 1) return 1;
-  return Math.min(FIREWORK_MAX_BURSTS, 1 + Math.floor((genreCount - 1) / 2));
-}
-
-/** Total shell budget for the whole-archive "personal show" across genres. */
-export const PERSONAL_SHOW_MAX_TOTAL_BURSTS = 20;
-
-/**
- * Sparks per shell, tapered by shell count so a many-shell show grows in
- * breadth without multiplying GPU fill cost linearly. A lone shell keeps its
- * full spark budget; a 16-shell show uses a quarter per shell.
- */
-export function fireworkSparksPerBurst(
-  particleCount: number,
-  burstCount: number,
-): number {
-  const base = Math.max(1, Math.floor(particleCount));
-  const shells = Math.max(1, Math.floor(burstCount));
-  return Math.max(24, Math.round(base / Math.sqrt(shells)));
-}
-/** Longer window so staggered show shells finish their full fade. */
-export const PERSONAL_SHOW_DURATION_SECONDS = 4.4;
-
-/**
- * Shell counts for the personal show: every genre with at least one star gets
- * a shell group sized by its count, then the largest groups shed shells until
- * the total fits the global budget (each genre always keeps one).
- */
-export function personalShowBurstCounts(
-  genreCounts: readonly number[],
-): number[] {
-  const bursts = genreCounts.map((count) =>
-    Number.isFinite(count) && count >= 1
-      ? Math.min(FIREWORK_MAX_BURSTS, 1 + Math.floor(count / 2))
-      : 1,
-  );
-  let total = bursts.reduce((sum, value) => sum + value, 0);
-  while (total > PERSONAL_SHOW_MAX_TOTAL_BURSTS) {
-    let largestIndex = 0;
-    bursts.forEach((value, index) => {
-      if (value > bursts[largestIndex]!) largestIndex = index;
-    });
-    if (bursts[largestIndex]! <= 1) break;
-    bursts[largestIndex] = bursts[largestIndex]! - 1;
-    total -= 1;
-  }
-  return bursts;
-}
 export const METEOR_SHOWER_TRAIL_RANGE = [2, 3] as const;
 export const METEOR_SHOWER_DURATION_SECONDS = 1.5;
 export const ASTEROID_DEBRIS_RANGE = [20, 40] as const;
@@ -109,11 +65,11 @@ export interface ParticleEffectDescriptor {
   scaleTo: number;
   /** Hex tint for genre-colored fireworks; renderers fall back when absent. */
   color?: string;
-  /** Number of simultaneous burst shells (grandeur), defaults to one. */
-  burstCount?: number;
+  /** The figure this firework's sparks form; renderers default to 'star'. */
+  shape?: FireworkShape;
   /**
-   * 'archive' marks a whole-archive celebration shell group: renderers spread
-   * it across the entire visible sky instead of the work's own position.
+   * 'archive' marks a whole-sky celebration: renderers stage it as a giant
+   * backdrop figure instead of a burst at the work's own position.
    */
   celebrationScope?: 'single' | 'archive';
 }
@@ -336,27 +292,11 @@ function descriptor(
     scaleFrom: values.scaleFrom ?? 1,
     scaleTo: values.scaleTo ?? 1,
     ...(values.color === undefined ? {} : { color: values.color }),
-    ...(values.burstCount === undefined ? {} : { burstCount: values.burstCount }),
+    ...(values.shape === undefined ? {} : { shape: values.shape }),
     ...(values.celebrationScope === undefined
       ? {}
       : { celebrationScope: values.celebrationScope }),
   };
-}
-
-/** Reads the whole-archive genre distribution, if the event carries one. */
-function readGenreCounts(
-  payload: Readonly<Record<string, unknown>>,
-): ReadonlyArray<readonly [string, number]> | null {
-  const counts = payload.genreCounts;
-  if (typeof counts !== 'object' || counts === null) return null;
-  const entries = Object.entries(counts).filter(
-    (entry): entry is [string, number] =>
-      entry[0] in GENRE_FIREWORK_COLORS
-      && typeof entry[1] === 'number'
-      && Number.isFinite(entry[1])
-      && entry[1] >= 1,
-  );
-  return entries.length === 0 ? null : entries;
 }
 
 function readGenreColor(payload: Readonly<Record<string, unknown>>): string {
@@ -365,13 +305,6 @@ function readGenreColor(payload: Readonly<Record<string, unknown>>): string {
     return GENRE_FIREWORK_COLORS[genre] ?? DEFAULT_FIREWORK_COLOR;
   }
   return DEFAULT_FIREWORK_COLOR;
-}
-
-function readGenreCount(payload: Readonly<Record<string, unknown>>): number {
-  const count = payload.genreCount;
-  return typeof count === 'number' && Number.isFinite(count) && count >= 1
-    ? Math.floor(count)
-    : 1;
 }
 
 /** Quality overrides are cumulative and apply only to newly created effects. */
@@ -396,45 +329,21 @@ export function createParticleEffectsForEvent(
   const minimumCounts = quality.minimumCounts ?? false;
   switch (event.type) {
     case 'work-added': {
-      const genreEntries = readGenreCounts(event.payload);
-      let effects: ParticleEffectDescriptor[];
-
-      if (genreEntries === null || minimumCounts) {
-        // Legacy payloads and degraded quality fall back to one modest burst.
-        effects = [
-          descriptor(event, 'fireworks', 0, random, {
-            particleCount: boundedEffectCount(
-              random,
-              FIREWORK_PARTICLE_RANGE,
-              minimumCounts,
-            ),
-            durationSeconds: FIREWORK_DURATION_SECONDS,
-            color: readGenreColor(event.payload),
-            burstCount: minimumCounts
-              ? 1
-              : fireworkBurstCount(readGenreCount(event.payload)),
-          }),
-        ];
-      } else {
-        // The personal show: every genre in the archive fires its own
-        // genre-colored shell group, scaled by how many stars it holds.
-        const burstCounts = personalShowBurstCounts(
-          genreEntries.map(([, count]) => count),
-        );
-        effects = genreEntries.map(([genre], index) =>
-          descriptor(event, 'fireworks', index, random, {
-            particleCount: boundedEffectCount(
-              random,
-              FIREWORK_PARTICLE_RANGE,
-              minimumCounts,
-            ),
-            durationSeconds: PERSONAL_SHOW_DURATION_SECONDS,
-            color: GENRE_FIREWORK_COLORS[genre] ?? DEFAULT_FIREWORK_COLOR,
-            burstCount: burstCounts[index] ?? 1,
-            celebrationScope: 'archive',
-          }),
-        );
-      }
+      // One giant genre-colored star figure blooms across the backdrop sky,
+      // drone-show style, for every newly registered work.
+      const effects: ParticleEffectDescriptor[] = [
+        descriptor(event, 'fireworks', 0, random, {
+          particleCount: boundedEffectCount(
+            random,
+            FIREWORK_PARTICLE_RANGE,
+            minimumCounts,
+          ),
+          durationSeconds: FIREWORK_DURATION_SECONDS,
+          color: readGenreColor(event.payload),
+          shape: 'star',
+          celebrationScope: 'archive',
+        }),
+      ];
 
       if (event.payload.rating === 5) {
         effects.push(
@@ -483,8 +392,8 @@ export function createParticleEffectsForEvent(
         }),
       ];
     case 'planet-pulled': {
-      // A grand sky-filling burst tinted to the pulled planet's rarity; higher
-      // tiers open more shells.
+      // A giant ringed-planet figure in the pulled planet's rarity color;
+      // epic and legendary pulls draw the figure at full spark density.
       const rarity =
         typeof event.payload.rarity === 'string'
           ? (event.payload.rarity as PlanetRarity)
@@ -492,10 +401,12 @@ export function createParticleEffectsForEvent(
       const grand = rarity === 'legendary' || rarity === 'epic';
       return [
         descriptor(event, 'fireworks', 0, random, {
-          particleCount: boundedEffectCount(random, FIREWORK_PARTICLE_RANGE, minimumCounts),
-          durationSeconds: PERSONAL_SHOW_DURATION_SECONDS,
+          particleCount: grand && !minimumCounts
+            ? FIREWORK_PARTICLE_RANGE[1]
+            : boundedEffectCount(random, FIREWORK_PARTICLE_RANGE, minimumCounts),
+          durationSeconds: FIREWORK_DURATION_SECONDS,
           color: RARITY_COLORS[rarity] ?? DEFAULT_FIREWORK_COLOR,
-          burstCount: minimumCounts ? 1 : grand ? 6 : 3,
+          shape: 'planet',
           celebrationScope: 'archive',
         }),
       ];
@@ -508,13 +419,13 @@ export function createParticleEffectsForEvent(
         }),
       ];
     case 'achievement-unlocked':
-      // A warm-gold sky-filling celebration burst.
+      // A giant warm-gold crown figure across the backdrop sky.
       return [
         descriptor(event, 'fireworks', 0, random, {
           particleCount: boundedEffectCount(random, FIREWORK_PARTICLE_RANGE, minimumCounts),
-          durationSeconds: PERSONAL_SHOW_DURATION_SECONDS,
+          durationSeconds: FIREWORK_DURATION_SECONDS,
           color: ACHIEVEMENT_FIREWORK_COLOR,
-          burstCount: minimumCounts ? 1 : 5,
+          shape: 'crown',
           celebrationScope: 'archive',
         }),
       ];

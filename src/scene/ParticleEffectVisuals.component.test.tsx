@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest';
 import { FireworksVisual, MeteorVisual } from './ParticleManager';
 import {
   EffectLifecycleRegistry,
-  fireworkSparksPerBurst,
   ParticleEffectController,
   type ParticleEffectDescriptor,
   type ParticleTimer,
@@ -84,12 +83,12 @@ describe('MeteorVisual', () => {
 });
 
 describe('FireworksVisual', () => {
-  it('builds one spark cloud per burst shell and animates its clock', async () => {
+  it('gives every spark a slot in the figure and animates its clock', async () => {
     const controller = createController();
     const effect = descriptor({
       kind: 'fireworks',
       particleCount: 40,
-      burstCount: 3,
+      shape: 'star',
       color: '#3B82F6',
       durationSeconds: 2.4,
     });
@@ -103,10 +102,9 @@ describe('FireworksVisual', () => {
     const points = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
       .instance as Points;
     const geometry = points.geometry;
-    // Sparks per shell taper with shell count to bound additive overdraw.
-    expect(geometry.getAttribute('position').count)
-      .toBe(fireworkSparksPerBurst(40, 3) * 3);
-    for (const attribute of ['aDir', 'aSpeed', 'aSize', 'aDelay', 'aColor', 'aGravity', 'aGlitter']) {
+    // One vertex per requested spark; positions hold the figure's slots.
+    expect(geometry.getAttribute('position').count).toBe(40);
+    for (const attribute of ['aSize', 'aDelay', 'aColor', 'aGlitter', 'aSeed']) {
       expect(geometry.getAttribute(attribute)).toBeDefined();
     }
 
@@ -117,12 +115,12 @@ describe('FireworksVisual', () => {
     await renderer.unmount();
   });
 
-  it('spreads archive-show shells across the whole sky with widened expansion', async () => {
+  it('stages the archive figure large on the backdrop sky', async () => {
     const controller = createController();
     const effect = descriptor({
       kind: 'fireworks',
-      particleCount: 30,
-      burstCount: 4,
+      particleCount: 200,
+      shape: 'planet',
       color: '#F97316',
       celebrationScope: 'archive',
       durationSeconds: 3.6,
@@ -136,14 +134,11 @@ describe('FireworksVisual', () => {
 
     const points = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
       .instance as Points;
-    // The show centers on the sky, not the triggering work's position.
+    // The figure is staged on the backdrop, not the triggering work's position.
     expect([points.position.x, points.position.y, points.position.z])
-      .toEqual([0, 6, -10]);
+      .toEqual([0, 10, -40]);
 
-    const material = points.material as ShaderMaterial;
-    expect(material.uniforms.uSpread!.value).toBe(34);
-
-    // Shell origins scatter across a screen-wide region.
+    // The figure's slots span a screen-wide region of the backdrop.
     const positions = points.geometry.getAttribute('position');
     let minX = Number.POSITIVE_INFINITY;
     let maxX = Number.NEGATIVE_INFINITY;
@@ -151,7 +146,7 @@ describe('FireworksVisual', () => {
       minX = Math.min(minX, positions.getX(index));
       maxX = Math.max(maxX, positions.getX(index));
     }
-    expect(maxX - minX).toBeGreaterThan(30);
+    expect(maxX - minX).toBeGreaterThan(40);
 
     await renderer.unmount();
   });
