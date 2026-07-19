@@ -45,6 +45,7 @@ import {
   type BackgroundLayerDefinition,
 } from './backgroundModel';
 import { CameraRig } from './CameraRig';
+import { registerGalaxyCanvas } from './galaxyCapture';
 import { SceneErrorBoundary } from './SceneErrorBoundary';
 import { usePrefersReducedMotion, getSceneFrameLoop } from './usePrefersReducedMotion';
 import { BlackholeRenderer } from './BlackholeRenderer';
@@ -624,6 +625,8 @@ export function SpaceCanvas({
     gl,
     scene,
   }: RootState) => {
+    // Register the live canvas so the galaxy image export can snapshot it.
+    registerGalaxyCanvas(gl.domElement);
     if (onBenchmarkSource === undefined) return;
     onBenchmarkSource({
       snapshotResources: () => collectSceneResources(
@@ -669,7 +672,8 @@ export function SpaceCanvas({
             // Anti-aliasing is owned by the post-processing composer; enabling it
             // on the Canvas too makes both resolve MSAA and alias the shared
             // depth-stencil buffer, which flickers/blacks out the scene.
-            gl={{ antialias: false }}
+            // preserveDrawingBuffer lets the galaxy image export read the frame.
+            gl={{ antialias: false, preserveDrawingBuffer: true }}
             onCreated={createBenchmarkSource}
           >
             {sceneContentMounted ? (

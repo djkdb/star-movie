@@ -1942,3 +1942,23 @@ progress::-moz-progress-bar {
     animation-duration: 0.01ms;
   }
 }
+
+/* Galaxy image export */
+.galaxy-export {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.galaxy-export-button {
+  align-self: stretch;
+}
+
+.galaxy-export-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  text-align: center;
+}
