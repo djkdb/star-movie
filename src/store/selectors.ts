@@ -9,7 +9,11 @@ import {
   type Store,
 } from '../domain/models';
 import { normalizeText } from '../domain/normalization';
-import { PLANET_SPECIES, type PlanetSpecies } from '../domain/planetCatalog';
+import {
+  PLANET_RARITIES,
+  PLANET_SPECIES,
+  type PlanetSpecies,
+} from '../domain/planetCatalog';
 import {
   availableTickets,
   collectionRate,
@@ -345,6 +349,16 @@ export interface PlanetCodexViewModel {
   entries: PlanetCodexEntryViewModel[];
 }
 
+const RARITY_RANK: ReadonlyMap<PlanetSpecies['rarity'], number> = new Map(
+  PLANET_RARITIES.map((rarity, index) => [rarity, index]),
+);
+
+/** Catalog species grouped by ascending rarity; stable within each tier. */
+const CODEX_SPECIES_ORDER: readonly PlanetSpecies[] = [...PLANET_SPECIES].sort(
+  (left, right) =>
+    (RARITY_RANK.get(left.rarity) ?? 0) - (RARITY_RANK.get(right.rarity) ?? 0),
+);
+
 export function selectPlanetCodexViewModel(
   store: Readonly<Store>,
 ): PlanetCodexViewModel {
@@ -358,7 +372,7 @@ export function selectPlanetCodexViewModel(
     starsUntilNextTicket: starsUntilNextTicket(collection.lifetimeStarsAdded),
     collected: rate.collected,
     total: rate.total,
-    entries: PLANET_SPECIES.map((species) => {
+    entries: CODEX_SPECIES_ORDER.map((species) => {
       const count = counts.get(species.id) ?? 0;
       return { species, owned: count > 0, count };
     }),

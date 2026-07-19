@@ -14,7 +14,9 @@ import {
   selectActiveConstellations,
   selectHudViewModel,
   selectListViewModel,
+  selectPlanetCodexViewModel,
 } from './selectors';
+import { PLANET_RARITIES } from '../domain/planetCatalog';
 
 function uuid(index: number): string {
   return `00000000-0000-4000-8000-${index.toString().padStart(12, '0')}`;
@@ -113,6 +115,24 @@ describe('HUD and achievement selectors', () => {
       isOpen: true,
       achievements: [{ progress: 2, unlocked: true }],
     });
+  });
+});
+
+describe('planet codex selector', () => {
+  it('lists every species ordered by ascending rarity', () => {
+    const state = createDefaultStore(true);
+    const viewModel = selectPlanetCodexViewModel(state);
+
+    expect(viewModel.entries).toHaveLength(viewModel.total);
+    const ranks = viewModel.entries.map((entry) =>
+      PLANET_RARITIES.indexOf(entry.species.rarity),
+    );
+    // Ranks must never decrease: common → rare → epic → legendary.
+    for (let index = 1; index < ranks.length; index += 1) {
+      expect(ranks[index]).toBeGreaterThanOrEqual(ranks[index - 1]!);
+    }
+    expect(viewModel.entries[0]!.species.rarity).toBe('common');
+    expect(viewModel.entries.at(-1)!.species.rarity).toBe('legendary');
   });
 });
 
