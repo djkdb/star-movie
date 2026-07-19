@@ -144,7 +144,10 @@ export class ThreeResourceRegistry {
     if (isBufferGeometry(resource)) this.#geometries -= 1;
     else if (isMaterial(resource)) this.#materials -= 1;
     else this.#textures -= 1;
-    resource.dispose();
+    // A resource's dispose can be clobbered from the outside — e.g. a
+    // `dispose={null}` prop leaking through a component onto its material —
+    // which must not crash the whole scene when we release it.
+    if (typeof resource.dispose === 'function') resource.dispose();
     return 0;
   }
 
