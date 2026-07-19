@@ -7,6 +7,8 @@ import {
   getPlanetSpecies,
   type PlanetSpecies,
 } from '../domain/planetCatalog';
+import type { PlanetRarity } from '../domain/models';
+import { PlanetPullReveal } from '../scene/PlanetPullReveal';
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { selectPlanetCodexViewModel } from '../store/selectors';
 
@@ -43,8 +45,8 @@ function PlanetChip({ species, size = 48 }: { species: PlanetSpecies; size?: num
 
 interface RevealState {
   species: PlanetSpecies;
+  rarity: PlanetRarity;
   isNewSpecies: boolean;
-  nonce: number;
 }
 
 export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
@@ -65,8 +67,8 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
         setError(null);
         setReveal({
           species,
+          rarity: result.value.rarity,
           isNewSpecies: result.value.isNewSpecies,
-          nonce: Date.now(),
         });
       }
     } else {
@@ -94,32 +96,10 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
           </p>
         </div>
 
-        <div className={`planet-reveal-slot${reveal !== null ? ' has-reveal' : ''}`}>
-          {reveal !== null ? (
-            <div className="planet-reveal-card" key={reveal.nonce}>
-              <div className="planet-reveal-inner">
-                <div className="planet-reveal-back" aria-hidden="true">
-                  <span>?</span>
-                </div>
-                <div
-                  className="planet-reveal-front"
-                  style={{ borderColor: RARITY_COLORS[reveal.species.rarity] }}
-                >
-                  <PlanetChip species={reveal.species} size={64} />
-                  <strong>{reveal.species.name}</strong>
-                  <span
-                    className="rarity-chip"
-                    style={{ color: RARITY_COLORS[reveal.species.rarity] }}
-                  >
-                    {RARITY_LABELS[reveal.species.rarity]}
-                  </span>
-                  {reveal.isNewSpecies && <span className="new-badge">NEW</span>}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="planet-reveal-placeholder">티켓으로 새 행성을 뽑아보세요</p>
-          )}
+        <div className="planet-reveal-slot">
+          <p className="planet-reveal-placeholder">
+            티켓으로 새 행성을 뽑아보세요
+          </p>
         </div>
 
         <button
@@ -167,6 +147,15 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
           </li>
         ))}
       </ul>
+
+      {reveal !== null && (
+        <PlanetPullReveal
+          isNewSpecies={reveal.isNewSpecies}
+          onDismiss={() => setReveal(null)}
+          rarity={reveal.rarity}
+          species={reveal.species}
+        />
+      )}
     </div>
   );
 }

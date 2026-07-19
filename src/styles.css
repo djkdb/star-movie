@@ -1843,3 +1843,102 @@ progress::-moz-progress-bar {
     animation-duration: 0.01ms;
   }
 }
+
+/* ============================================================
+   Gacha pull reveal (full-screen, rarity-scaled)
+   ============================================================ */
+.pull-reveal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: radial-gradient(circle at 50% 45%, rgba(6, 10, 22, 0.86), rgba(2, 3, 8, 0.97));
+  animation: pullRevealFade 0.35s ease both;
+}
+
+.pull-reveal-overlay.rarity-epic {
+  background: radial-gradient(circle at 50% 45%, rgba(40, 16, 60, 0.6), rgba(2, 3, 8, 0.97));
+}
+
+.pull-reveal-overlay.rarity-legendary {
+  background: radial-gradient(circle at 50% 45%, rgba(60, 44, 8, 0.6), rgba(2, 3, 8, 0.98));
+}
+
+@keyframes pullRevealFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pull-reveal-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.pull-reveal-caption {
+  position: absolute;
+  bottom: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: min(90vw, 460px);
+  text-align: center;
+  pointer-events: auto;
+  animation: pullCaptionIn 0.6s ease 0.7s both;
+}
+
+@keyframes pullCaptionIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.pull-reveal-caption .rarity-chip {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pull-reveal-caption strong {
+  font-size: 1.7rem;
+  color: var(--text-primary);
+  text-shadow: 0 0 18px rgba(180, 210, 255, 0.35);
+}
+
+.pull-reveal-caption p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.pull-reveal-new {
+  position: static;
+  animation: none;
+}
+
+.pull-reveal-caption .primary-action {
+  margin-top: 6px;
+  min-width: 140px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-reveal-overlay,
+  .pull-reveal-caption {
+    animation-duration: 0.01ms;
+  }
+}
