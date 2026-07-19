@@ -1,4 +1,4 @@
-import type { Rating, Star, Vec3 } from '../domain/models';
+import type { Genre, Rating, Star, Vec3 } from '../domain/models';
 import { BLACKHOLE_POSITION } from './blackholeModel';
 
 export interface RatingVisual {
@@ -83,6 +83,37 @@ export const STAR_TINT_PALETTE = [
   '#96ecd2', // mint
 ] as const;
 
+/**
+ * Genre hue each star is tinted toward, mirroring the genre galaxies and
+ * fireworks so the sky visibly separates into "my SF stars", "my romance
+ * stars", and so on while identity still varies each individual star.
+ */
+export const GENRE_STAR_HUES: Readonly<Record<Genre, string>> = {
+  SF: '#3B82F6',
+  로맨스: '#F472B6',
+  스릴러: '#DC2626',
+  드라마: '#F59E0B',
+  애니: '#A855F7',
+  코미디: '#FDE047',
+  액션: '#F97316',
+  기타: '#14B8A6',
+};
+
+/** Linear blend of two hex colors; amount 0 → first, 1 → second. */
+export function mixHexColor(first: string, second: string, amount: number): string {
+  const a = parseInt(first.slice(1), 16);
+  const b = parseInt(second.slice(1), 16);
+  const clamped = Math.min(1, Math.max(0, amount));
+  const channels = [16, 8, 0].map((shift) => {
+    const left = (a >> shift) & 0xff;
+    const right = (b >> shift) & 0xff;
+    return Math.round(left + (right - left) * clamped)
+      .toString(16)
+      .padStart(2, '0');
+  });
+  return `#${channels.join('')}`;
+}
+
 export type StarSpikeCount = 0 | 4 | 6;
 
 export interface StarAppearance {
@@ -122,19 +153,30 @@ function scaleHexColor(hex: string, amount: number): string {
  * stable star UUID, so a work keeps its exact appearance across sessions while
  * the field as a whole shows varied colors and silhouettes.
  */
-export function getStarAppearance(starId: string, rating: Rating): StarAppearance {
+export function getStarAppearance(
+  starId: string,
+  rating: Rating,
+  genre?: Genre,
+): StarAppearance {
   if (starId.length === 0) throw new RangeError('starId must not be empty');
   const visual = RATING_VISUALS[rating];
   const hash = hashStarId(starId);
 
   const tint = STAR_TINT_PALETTE[hash % STAR_TINT_PALETTE.length]!;
+  // When the genre is known, pull the identity tint strongly toward the genre
+  // hue so the sky reads its genre mix, while the per-star tint keeps siblings
+  // of the same genre from looking identical.
+  const color =
+    genre === undefined ? tint : mixHexColor(GENRE_STAR_HUES[genre], tint, 0.4);
   // Roughly a quarter of stars stay plain orbs; half get classic 4-point
-  // diffraction spikes; the rest sparkle with 6 points.
+  // diffraction spikes; the rest sparkle with 6 points. Top-rated works always
+  // blaze with the full 6-point star so a 5★ reads as a hero at a glance.
   const spikeRoll = (hash >>> 8) % 100;
-  const spikeCount: StarSpikeCount = spikeRoll < 25 ? 0 : spikeRoll < 75 ? 4 : 6;
+  const spikeCount: StarSpikeCount =
+    rating === 5 ? 6 : spikeRoll < 25 ? 0 : spikeRoll < 75 ? 4 : 6;
 
   return {
-    color: tint,
+    color,
     radius: visual.radius,
     bloom: visual.bloom,
     haloScale: 5 + visual.bloom * 3.5,
@@ -149,8 +191,12 @@ export function getStarAppearance(starId: string, rating: Rating): StarAppearanc
  * Display color for the instanced renderer: the per-star tint dimmed by rating
  * so low-rated stars fade toward the background while 5-star works blaze.
  */
-export function getStarDisplayColor(starId: string, rating: Rating): string {
-  const appearance = getStarAppearance(starId, rating);
+export function getStarDisplayColor(
+  starId: string,
+  rating: Rating,
+  genre?: Genre,
+): string {
+  const appearance = getStarAppearance(starId, rating, genre);
   return scaleHexColor(appearance.color, 0.5 + appearance.bloom * 0.55);
 }
 

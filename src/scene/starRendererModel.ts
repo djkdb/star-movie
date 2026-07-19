@@ -133,7 +133,7 @@ export function updateInstancedStarColors(
   scratchColor: Color,
 ): void {
   bucket.stars.forEach((star, instanceId) => {
-    scratchColor.set(getStarDisplayColor(star.id, star.rating));
+    scratchColor.set(getStarDisplayColor(star.id, star.rating, star.genre));
     mesh.setColorAt(instanceId, scratchColor);
   });
   if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true;

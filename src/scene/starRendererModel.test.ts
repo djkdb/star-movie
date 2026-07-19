@@ -158,7 +158,7 @@ describe('Star renderer model', () => {
         mesh.getColorAt(instanceId, actualColor);
         // Each instance carries its identity-derived tint, not a bucket color.
         expect(`#${actualColor.getHexString()}`).toBe(
-          getStarDisplayColor(star.id, star.rating),
+          getStarDisplayColor(star.id, star.rating, star.genre),
         );
       });
     } finally {

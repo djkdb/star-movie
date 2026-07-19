@@ -3,6 +3,7 @@ import { Select } from '@react-three/postprocessing';
 import type { Star } from '../domain/models';
 import { IndividualStarMesh } from './IndividualStarMesh';
 import { InstancedStarField } from './InstancedStarField';
+import { SelectedStarWorld } from './SelectedStarWorld';
 import type { StarDragPayload } from './starVisualModel';
 import { getStarRenderMode } from './starRendererModel';
 
@@ -28,40 +29,48 @@ export function StarRenderer({
   onDragEnd,
 }: StarRendererProps) {
   const renderMode = getStarRenderMode(stars.length);
+  const selectedStar =
+    selectedStarId === null
+      ? undefined
+      : stars.find((star) => star.id === selectedStarId);
 
-  if (renderMode === 'instanced') {
-    return (
-      <Select enabled>
-        <InstancedStarField
-          onDragEnd={onDragEnd}
-          onDragStart={onDragStart}
-          onSelect={onSelect}
-          reducedMotion={reducedMotion}
-          selectedStarId={selectedStarId}
-          stars={stars}
-        />
-      </Select>
+  const field =
+    renderMode === 'instanced' ? (
+      <InstancedStarField
+        onDragEnd={onDragEnd}
+        onDragStart={onDragStart}
+        onSelect={onSelect}
+        reducedMotion={reducedMotion}
+        selectedStarId={selectedStarId}
+        stars={stars}
+      />
+    ) : (
+      <group
+        name="stars-individual"
+        userData={{ renderMode: 'individual', selectedStarId }}
+      >
+        {stars.map((star) => (
+          <IndividualStarMesh
+            key={star.id}
+            onDragEnd={onDragEnd}
+            onDragStart={onDragStart}
+            onSelect={onSelect}
+            reducedMotion={reducedMotion}
+            selected={selectedStarId === star.id}
+            star={star}
+          />
+        ))}
+      </group>
     );
-  }
 
   return (
-    <Select enabled>
-      <group
-      name="stars-individual"
-      userData={{ renderMode: 'individual', selectedStarId }}
-    >
-      {stars.map((star) => (
-        <IndividualStarMesh
-          key={star.id}
-          onDragEnd={onDragEnd}
-          onDragStart={onDragStart}
-          onSelect={onSelect}
-          reducedMotion={reducedMotion}
-          selected={selectedStarId === star.id}
-          star={star}
-        />
-      ))}
-      </group>
-    </Select>
+    <>
+      <Select enabled>{field}</Select>
+      {/* The selected work blooms into an inspectable world, kept out of the
+          bloom selection so its surface reads instead of blowing out. */}
+      {selectedStar !== undefined && (
+        <SelectedStarWorld reducedMotion={reducedMotion} star={selectedStar} />
+      )}
+    </>
   );
 }
