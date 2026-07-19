@@ -9,6 +9,13 @@ import {
   type Store,
 } from '../domain/models';
 import { normalizeText } from '../domain/normalization';
+import { PLANET_SPECIES, type PlanetSpecies } from '../domain/planetCatalog';
+import {
+  availableTickets,
+  collectionRate,
+  ownedCountBySpecies,
+  starsUntilNextTicket,
+} from '../domain/planetGacha';
 import { calculateAchievementProgress } from './progressReconciler';
 
 export type ListSortOption = 'rating' | 'latest';
@@ -319,5 +326,41 @@ export function selectListViewModel(
       ? '조건에 맞는 작품이 없습니다'
       : null,
     archiveEmptyMessage: archivedWorks.length === 0 ? '보관된 작품이 없습니다' : null,
+  };
+}
+
+export interface PlanetCodexEntryViewModel {
+  species: PlanetSpecies;
+  owned: boolean;
+  count: number;
+}
+
+export interface PlanetCodexViewModel {
+  isOpen: boolean;
+  tickets: number;
+  lifetimeStarsAdded: number;
+  starsUntilNextTicket: number;
+  collected: number;
+  total: number;
+  entries: PlanetCodexEntryViewModel[];
+}
+
+export function selectPlanetCodexViewModel(
+  store: Readonly<Store>,
+): PlanetCodexViewModel {
+  const collection = store.persisted.planetCollection;
+  const counts = ownedCountBySpecies(collection);
+  const rate = collectionRate(collection);
+  return {
+    isOpen: store.runtime.isPlanetCodexOpen,
+    tickets: availableTickets(collection),
+    lifetimeStarsAdded: collection.lifetimeStarsAdded,
+    starsUntilNextTicket: starsUntilNextTicket(collection.lifetimeStarsAdded),
+    collected: rate.collected,
+    total: rate.total,
+    entries: PLANET_SPECIES.map((species) => {
+      const count = counts.get(species.id) ?? 0;
+      return { species, owned: count > 0, count };
+    }),
   };
 }

@@ -245,4 +245,40 @@ describe('schemaVersion 2 persisted-state codec', () => {
 
     expect(() => decodePersistedV2(JSON.stringify(payload))).toThrow();
   });
+
+  it('backfills the planet collection for legacy documents saved before the gacha feature', () => {
+    const legacy = JSON.parse(
+      encodePersistedV2(createValidDocument()),
+    ) as Record<string, unknown>;
+    // Simulate a pre-gacha document by dropping the field entirely.
+    delete legacy.planetCollection;
+    legacy.blackholeArchive = [
+      archiveStar(createStar('30000000-0000-4000-8000-0000000000aa', 'Dunkirk')),
+    ];
+
+    const decoded = decodePersistedV2(JSON.stringify(legacy));
+    // Two active stars + one archived star => three lifetime works.
+    expect(decoded.planetCollection).toEqual({
+      lifetimeStarsAdded: 3,
+      pullsPerformed: 0,
+      planets: [],
+    });
+  });
+
+  it('rejects a collection whose pulls exceed earned tickets', () => {
+    const document = createValidDocument();
+    document.planetCollection = {
+      lifetimeStarsAdded: 4,
+      pullsPerformed: 1,
+      planets: [
+        {
+          id: '30000000-0000-4000-8000-000000000001',
+          speciesId: 'verde',
+          acquiredAt: '2025-01-03T00:00:00.000Z',
+          orbitSeed: 123,
+        },
+      ],
+    };
+    expect(safeDecodePersistedV2(document).success).toBe(false);
+  });
 });

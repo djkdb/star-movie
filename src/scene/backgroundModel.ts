@@ -64,6 +64,10 @@ export interface NebulaConfig {
   scale: readonly [number, number, number];
   opacity: number;
   color: string;
+  /** Billboard roll (radians) so overlapping clouds never read as one circle. */
+  rotation: number;
+  /** Which procedural cloud texture variant to draw. */
+  variant: number;
 }
 
 export interface MilkyWayPatchConfig {
@@ -72,7 +76,14 @@ export interface MilkyWayPatchConfig {
   scale: readonly [number, number];
   opacity: number;
   color: string;
+  /** Billboard roll (radians) so overlapping clouds never read as one circle. */
+  rotation: number;
+  /** Which procedural cloud texture variant to draw. */
+  variant: number;
 }
+
+/** Number of distinct procedural cloud textures the scene rotates through. */
+export const CLOUD_TEXTURE_VARIANTS = 4;
 
 interface DirectionLike {
   x: number;
@@ -283,11 +294,13 @@ export function createNebulaConfigs(
         MIN_NEBULA_OPACITY +
         random() * (MAX_NEBULA_OPACITY - MIN_NEBULA_OPACITY),
       color: interpolateNebulaColor(random()),
+      rotation: random() * TWO_PI,
+      variant: Math.floor(random() * CLOUD_TEXTURE_VARIANTS) % CLOUD_TEXTURE_VARIANTS,
     };
   });
 }
 
-const MILKY_WAY_PATCH_COUNT = 72;
+const MILKY_WAY_PATCH_COUNT = 96;
 
 function interpolateMilkyWayColor(amount: number): string {
   // Desaturated warm-gray range so the diffuse glow reads as unresolved
@@ -310,9 +323,11 @@ export function createMilkyWayPatchConfigs(seed = 0x7ede4a1b): MilkyWayPatchConf
   const radius = 860;
 
   return Array.from({ length: MILKY_WAY_PATCH_COUNT }, (_, index) => {
-    const angle = (TWO_PI * index) / MILKY_WAY_PATCH_COUNT + (random() - 0.5) * 0.22;
-    const offset = gaussian(random) * radius * 0.035;
-    const width = 180 + random() * 240;
+    const angle = (TWO_PI * index) / MILKY_WAY_PATCH_COUNT + (random() - 0.5) * 0.28;
+    // Wider gaussian thickness with an occasional far-flung tuft keeps the band
+    // edge feathered and irregular instead of a clean tube of circles.
+    const offset = gaussian(random) * radius * (random() < 0.8 ? 0.04 : 0.09);
+    const width = 150 + random() * 300;
     return {
       id: `milkyway-${index}`,
       position: [
@@ -320,9 +335,12 @@ export function createMilkyWayPatchConfigs(seed = 0x7ede4a1b): MilkyWayPatchConf
         radius * (Math.cos(angle) * BAND_U.y + Math.sin(angle) * BAND_V.y) + BAND_NORMAL.y * offset,
         radius * (Math.cos(angle) * BAND_U.z + Math.sin(angle) * BAND_V.z) + BAND_NORMAL.z * offset,
       ],
-      scale: [width, width * (0.38 + random() * 0.28)],
-      opacity: 0.05 + random() * 0.075,
+      // Elongated, varied aspect so each tuft is a wisp rather than a disc.
+      scale: [width, width * (0.3 + random() * 0.3)],
+      opacity: 0.04 + random() * 0.06,
       color: interpolateMilkyWayColor(random()),
+      rotation: random() * TWO_PI,
+      variant: Math.floor(random() * CLOUD_TEXTURE_VARIANTS) % CLOUD_TEXTURE_VARIANTS,
     };
   });
 }

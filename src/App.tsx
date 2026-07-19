@@ -8,6 +8,7 @@ import { ConstellationControls } from './components/ConstellationControls';
 import { GenreFilter } from './components/GenreFilter';
 import { HUD } from './components/HUD';
 import { ListView } from './components/ListView';
+import { PlanetCodexPanel } from './components/PlanetCodexPanel';
 import { ToastRegion } from './components/ToastRegion';
 import { WorkCard } from './components/WorkCard';
 import {
@@ -77,6 +78,12 @@ const DOCK_ICONS = {
     <DockGlyph>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M15.5 8.5 L13.5 13.5 L8.5 15.5 L10.5 10.5 Z" />
+    </DockGlyph>
+  ),
+  codex: (
+    <DockGlyph>
+      <circle cx="12" cy="12" r="5.5" />
+      <ellipse cx="12" cy="12" rx="9.5" ry="3.4" transform="rotate(-24 12 12)" />
     </DockGlyph>
   ),
 } as const;
@@ -168,6 +175,13 @@ export function App({ store }: AppProps) {
       label: '별자리 관리',
       icon: DOCK_ICONS.constellation,
       content: <ConstellationControls store={archiveStore} />,
+    },
+    {
+      id: 'codex',
+      label: '행성 도감',
+      icon: DOCK_ICONS.codex,
+      content: <PlanetCodexPanel store={archiveStore} />,
+      wide: true,
     },
     {
       id: 'navigation',

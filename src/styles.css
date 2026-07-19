@@ -1555,3 +1555,291 @@ progress::-moz-progress-bar {
 .canvas-dom-link:focus-visible {
   transform: translateY(0);
 }
+
+/* ============================================================
+   Planet gacha codex
+   ============================================================ */
+.planet-codex {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.planet-codex-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.planet-codex-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.planet-codex-rate {
+  font-family: var(--mono-font);
+  font-size: 0.82rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
+.planet-gacha {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(30, 40, 80, 0.35), rgba(8, 12, 22, 0.35));
+}
+
+.planet-gacha-status {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.planet-ticket-count {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+
+.planet-ticket-count strong {
+  color: var(--starlight);
+  font-size: 1.15rem;
+  margin: 0 2px;
+}
+
+.ticket-icon {
+  margin-right: 6px;
+}
+
+.planet-ticket-progress {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.planet-reveal-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 128px;
+}
+
+.planet-reveal-placeholder {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+
+.planet-reveal-card {
+  perspective: 800px;
+  width: 132px;
+  height: 132px;
+}
+
+.planet-reveal-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: planetFlip 0.8s cubic-bezier(0.4, 0.1, 0.2, 1) forwards;
+}
+
+@keyframes planetFlip {
+  0% {
+    transform: rotateY(0deg) scale(0.9);
+  }
+  60% {
+    transform: rotateY(180deg) scale(1.05);
+  }
+  100% {
+    transform: rotateY(180deg) scale(1);
+  }
+}
+
+.planet-reveal-back,
+.planet-reveal-front {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 16px;
+  backface-visibility: hidden;
+}
+
+.planet-reveal-back {
+  background: radial-gradient(circle at 50% 40%, #23305c, #0a0e1c);
+  border: 1px solid var(--panel-border-strong);
+  font-size: 2.6rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.planet-reveal-front {
+  transform: rotateY(180deg);
+  background: radial-gradient(circle at 50% 30%, rgba(30, 40, 80, 0.6), rgba(6, 9, 18, 0.9));
+  border: 2px solid var(--panel-border-strong);
+}
+
+.planet-reveal-front strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.planet-reveal-front .rarity-chip {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.new-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #05231a;
+  background: #4ade80;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.planet-pull-button {
+  align-self: stretch;
+}
+
+.planet-gacha-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+/* Planet chip: a palette-driven CSS planet used across the dex and reveal. */
+.planet-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.planet-chip[data-geometry='crystal'] {
+  border-radius: 14%;
+  clip-path: polygon(50% 0%, 90% 30%, 78% 100%, 22% 100%, 10% 30%);
+}
+
+.planet-chip-ring {
+  position: absolute;
+  left: -28%;
+  top: 33%;
+  width: 156%;
+  height: 34%;
+  border: 2px solid;
+  border-radius: 50%;
+  transform: rotate(-20deg);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.planet-chip-locked {
+  background: radial-gradient(circle at 40% 35%, #1a2136, #070b14);
+  border: 1px dashed var(--panel-border);
+  color: var(--text-faint);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.planet-dex-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 10px;
+}
+
+.planet-dex-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: var(--field-bg);
+  position: relative;
+  min-height: 108px;
+  justify-content: center;
+}
+
+.planet-dex-cell.is-locked {
+  opacity: 0.72;
+}
+
+.planet-dex-name {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.planet-dex-name-locked {
+  color: var(--text-faint);
+}
+
+.planet-dex-rarity {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.planet-dex-count {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-family: var(--mono-font);
+  font-size: 0.72rem;
+  color: var(--starlight);
+}
+
+/* 3D hover label for a collected planet. */
+.planet-hover-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  background: rgba(6, 9, 18, 0.82);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.planet-hover-label em {
+  font-style: normal;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planet-reveal-inner {
+    animation-duration: 0.01ms;
+  }
+}

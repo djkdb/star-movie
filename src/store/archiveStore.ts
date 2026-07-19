@@ -11,12 +11,17 @@ import type {
   ConstellationDraft,
   Genre,
   PersistedStateV2,
+  PlanetRarity,
   QualityLevel,
   RuntimeEvent,
   RuntimeStore,
   Star,
   Store,
 } from '../domain/models';
+import {
+  availableTickets,
+  pullPlanet as performPlanetPull,
+} from '../domain/planetGacha';
 import { degradeQualityLevel } from '../domain/qualityLevel';
 import {
   validateWorkInput,
@@ -70,6 +75,8 @@ export type CommandResult<T = void> =
 export interface ArchiveCommandProviders {
   nextUuid(): string;
   nowIso(): string;
+  /** Uniform [0, 1) source for gacha rolls; injectable for deterministic tests. */
+  nextRandom(): number;
 }
 
 export interface AddWorkValue {
@@ -83,6 +90,13 @@ export interface DeleteWorkValue {
 
 export interface RestoreWorkValue {
   starId: string;
+}
+
+export interface PullPlanetValue {
+  planetId: string;
+  speciesId: string;
+  rarity: PlanetRarity;
+  isNewSpecies: boolean;
 }
 
 export interface CreateConstellationInput {
@@ -105,8 +119,10 @@ export interface ArchiveCommands {
   hardDelete(starId: string): CommandResult<DeleteWorkValue>;
   softDelete(starId: string): CommandResult<DeleteWorkValue>;
   restoreArchived(starId: string): CommandResult<RestoreWorkValue>;
+  pullPlanet(): CommandResult<PullPlanetValue>;
   toggleSelectedGenre(genre: Genre): void;
   setAchievementPanelOpen(isOpen: boolean): void;
+  setPlanetCodexOpen(isOpen: boolean): void;
   setListDrawerOpen(isOpen: boolean): void;
   toggleListDrawer(): void;
   degradeQuality(): QualityLevel;
@@ -159,6 +175,7 @@ interface ArchiveStoreOptions {
 const defaultProviders: ArchiveCommandProviders = {
   nextUuid: () => globalThis.crypto.randomUUID(),
   nowIso: () => new Date().toISOString(),
+  nextRandom: () => Math.random(),
 };
 
 const COMPLETED_OPERATION_ID_LIMIT = 100;
@@ -460,6 +477,8 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
           };
           const candidate = structuredClone(snapshot);
           candidate.stars.push(star);
+          // Every added work earns gacha progress (one ticket per five stars).
+          candidate.planetCollection.lifetimeStarsAdded += 1;
           const progress = reconcileProgressAfterMutation(snapshot, candidate, {
             nowIso: createdAt,
             nextRewardId: providers.nextUuid,
@@ -587,6 +606,54 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
           };
         },
       }),
+    pullPlanet: () => {
+      const collection = store.getState().persisted.planetCollection;
+      if (availableTickets(collection) < 1) {
+        return validationFailure('가챠 티켓이 없습니다.', {
+          tickets: ['별 5개를 등록할 때마다 가챠 티켓 1장이 지급됩니다.'],
+        });
+      }
+      return executor.execute({
+        operation: 'pullPlanet',
+        derive: (snapshot) => {
+          const acquiredAt = providers.nowIso();
+          const result = performPlanetPull({
+            collection: snapshot.planetCollection,
+            rarityRoll: providers.nextRandom(),
+            speciesRoll: providers.nextRandom(),
+            orbitRoll: providers.nextRandom(),
+            planetId: providers.nextUuid(),
+            acquiredAt,
+          });
+          const candidate = structuredClone(snapshot);
+          // `candidate` is a shallow-readonly snapshot clone; mutate the nested
+          // collection fields rather than reassigning the property.
+          candidate.planetCollection.pullsPerformed += 1;
+          candidate.planetCollection.planets.push(structuredClone(result.planet));
+          const completionEvent: RuntimeEvent = {
+            id: `planet-pulled:${result.planet.id}:${++completionSequence}`,
+            type: 'planet-pulled',
+            occurredAt: acquiredAt,
+            payload: {
+              planetId: result.planet.id,
+              speciesId: result.speciesId,
+              rarity: result.rarity,
+              isNewSpecies: result.isNewSpecies,
+            },
+          };
+          return {
+            candidate,
+            value: {
+              planetId: result.planet.id,
+              speciesId: result.speciesId,
+              rarity: result.rarity,
+              isNewSpecies: result.isNewSpecies,
+            },
+            completionEvents: [completionEvent],
+          };
+        },
+      });
+    },
     toggleSelectedGenre: (genre) => {
       store.setState((state) => {
         const selectedGenres = new Set(state.runtime.selectedGenres);
@@ -598,6 +665,11 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
     setAchievementPanelOpen: (isOpen) => {
       store.setState((state) => ({
         runtime: { ...state.runtime, isAchievementPanelOpen: isOpen },
+      }));
+    },
+    setPlanetCodexOpen: (isOpen) => {
+      store.setState((state) => ({
+        runtime: { ...state.runtime, isPlanetCodexOpen: isOpen },
       }));
     },
     setListDrawerOpen: (isOpen) => {

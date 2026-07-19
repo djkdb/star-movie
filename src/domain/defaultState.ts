@@ -160,6 +160,11 @@ export function createDefaultPersistedStore(): PersistedStore {
       hundred: createLockedMilestone(100),
     },
     achievements: [createNolanMaster()],
+    planetCollection: {
+      lifetimeStarsAdded: 0,
+      pullsPerformed: 0,
+      planets: [],
+    },
   };
 }
 
@@ -176,6 +181,7 @@ export function createDefaultRuntimeStore(hasPersistedRegistration = false): Run
     },
     isListDrawerOpen: false,
     isAchievementPanelOpen: false,
+    isPlanetCodexOpen: false,
     qualityLevel: 'full',
     pendingCameraRequest: null,
     preFocusPose: null,
