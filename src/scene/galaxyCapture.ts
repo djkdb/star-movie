@@ -75,12 +75,12 @@ function drawPoster(
     (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0px';
   }
 
-  // Title.
-  ctx.fillStyle = '#eef2ff';
-  ctx.font = `700 ${Math.round(w * 0.044)}px system-ui, sans-serif`;
+  // Title — the elegant serif display voice.
+  ctx.fillStyle = '#f2f5ff';
+  ctx.font = `700 ${Math.round(w * 0.05)}px 'Nanum Myeongjo', serif`;
   ctx.shadowColor = 'rgba(120, 180, 255, 0.45)';
-  ctx.shadowBlur = Math.round(w * 0.02);
-  ctx.fillText(GALAXY_POSTER_TITLE, w / 2, h * 0.155);
+  ctx.shadowBlur = Math.round(w * 0.022);
+  ctx.fillText(GALAXY_POSTER_TITLE, w / 2, h * 0.16);
   ctx.shadowBlur = 0;
 
   // Stats.
@@ -115,6 +115,15 @@ export async function exportGalaxyPoster(
 ): Promise<boolean> {
   const dataUrl = captureGalaxyDataUrl();
   if (dataUrl === null) return false;
+
+  // Ensure the serif display face is ready so the poster title renders in it.
+  if (typeof document !== 'undefined' && document.fonts?.ready !== undefined) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Fall back to whatever is available.
+    }
+  }
 
   const image = await loadImage(dataUrl);
   const canvas = document.createElement('canvas');
