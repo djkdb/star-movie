@@ -26,10 +26,10 @@ const TWO_PI = Math.PI * 2;
 /** Bigger, statelier bodies for higher rarities — collected planets read as
  *  prominent hero worlds rather than distant specks. */
 const RARITY_SIZE: Readonly<Record<PlanetRarity, number>> = {
-  common: 1.6,
-  rare: 2.1,
-  epic: 2.8,
-  legendary: 3.6,
+  common: 2.8,
+  rare: 3.7,
+  epic: 4.8,
+  legendary: 6.2,
 };
 
 function seededRandom(seed: number): () => number {

@@ -313,21 +313,31 @@ function interpolateMilkyWayColor(amount: number): string {
   return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 }
 
+/** Uneven "cloud complexes" the Milky Way patches clump around. */
+const MILKY_WAY_KNOT_COUNT = 6;
+
 /**
- * Deterministic diffuse-glow patches strung along the same great circle as the
- * band star layer. Rendered as large additive sprites, they blend the resolved
- * band stars into a continuous Milky Way ribbon.
+ * Deterministic diffuse-glow patches loosely following the galactic band. Rather
+ * than sitting evenly on one radius (which reads as a compass-drawn ring), the
+ * patches clump around a handful of unevenly spaced cloud complexes, scatter at
+ * widely varied depths, and leave gaps — so the Milky Way reads as irregular,
+ * three-dimensional nebulosity. A quarter are scattered freely for diffuse fill.
  */
 export function createMilkyWayPatchConfigs(seed = 0x7ede4a1b): MilkyWayPatchConfig[] {
   const random = createRandom(seed ^ 0x51ed270b);
-  const radius = 860;
+  const knotAngles = Array.from({ length: MILKY_WAY_KNOT_COUNT }, () => random() * TWO_PI);
 
   return Array.from({ length: MILKY_WAY_PATCH_COUNT }, (_, index) => {
-    const angle = (TWO_PI * index) / MILKY_WAY_PATCH_COUNT + (random() - 0.5) * 0.28;
-    // Wider gaussian thickness with an occasional far-flung tuft keeps the band
-    // edge feathered and irregular instead of a clean tube of circles.
-    const offset = gaussian(random) * radius * (random() < 0.8 ? 0.04 : 0.09);
-    const width = 150 + random() * 300;
+    // Most patches gather into cloud complexes; the rest scatter for diffuse fill.
+    const angle =
+      random() < 0.72
+        ? knotAngles[Math.floor(random() * MILKY_WAY_KNOT_COUNT)]! + gaussian(random) * 0.32
+        : random() * TWO_PI;
+    // Depth varies widely so the band has volume instead of lying on one shell.
+    const radius = 600 + random() * 420;
+    // Uneven cross-band scatter with occasional far tufts feathers the edges.
+    const offset = gaussian(random) * radius * (random() < 0.72 ? 0.06 : 0.15);
+    const width = 150 + random() * 340;
     return {
       id: `milkyway-${index}`,
       position: [
@@ -336,8 +346,8 @@ export function createMilkyWayPatchConfigs(seed = 0x7ede4a1b): MilkyWayPatchConf
         radius * (Math.cos(angle) * BAND_U.z + Math.sin(angle) * BAND_V.z) + BAND_NORMAL.z * offset,
       ],
       // Elongated, varied aspect so each tuft is a wisp rather than a disc.
-      scale: [width, width * (0.3 + random() * 0.3)],
-      opacity: 0.04 + random() * 0.06,
+      scale: [width, width * (0.3 + random() * 0.35)],
+      opacity: 0.035 + random() * 0.06,
       color: interpolateMilkyWayColor(random()),
       rotation: random() * TWO_PI,
       variant: Math.floor(random() * CLOUD_TEXTURE_VARIANTS) % CLOUD_TEXTURE_VARIANTS,
