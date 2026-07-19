@@ -110,11 +110,12 @@ const FIREWORK_VERTEX_SHADER = `
     vec3 tinted = mix(vec3(1.0), aColor, smoothstep(0.03, 0.28, life));
     vColor = mix(tinted, ember, smoothstep(0.62, 1.0, life));
 
-    float shrink = 1.0 - 0.45 * life;
+    float shrink = 1.0 - 0.4 * life;
     // Cap the screen-space size: nearby sparks otherwise balloon into huge
     // additive quads whose overdraw stalls weaker GPUs into dropped frames.
-    float px = aSize * shrink * uPixelRatio * (210.0 / max(1.0, -mvPosition.z));
-    gl_PointSize = min(px, 42.0 * uPixelRatio);
+    // The cap is generous so a grand shell reads as big, glowing embers.
+    float px = aSize * shrink * uPixelRatio * (260.0 / max(1.0, -mvPosition.z));
+    gl_PointSize = min(px, 64.0 * uPixelRatio);
   }
 `;
 
@@ -150,6 +151,19 @@ function pickBurstShape(roll: number): FireworkBurstShape {
   return 'willow';
 }
 
+/**
+ * Cosmic accent hues layered over each shell's base tint so a burst shimmers
+ * with nebula-like iridescence — teal, violet, rose, and gold drifting through
+ * the sparks instead of one flat color.
+ */
+const COSMIC_ACCENTS: readonly Color[] = [
+  new Color('#7cf5ff'), // ion teal
+  new Color('#b98bff'), // nebula violet
+  new Color('#ff8fd0'), // rose
+  new Color('#ffe6a3'), // stardust gold
+  new Color('#8fb6ff'), // deep-sky blue
+];
+
 function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry {
   const random = fireworkRandom(effect.seed);
   const burstCount = Math.max(1, effect.burstCount ?? 1);
@@ -169,10 +183,16 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
   const isArchiveShow = effect.celebrationScope === 'archive';
   // Archive celebrations scatter shells across the whole visible sky so the
   // show fills the screen; a lone single-scope burst stays on its own work.
-  const spreadX = isArchiveShow ? 52 : burstCount > 1 ? 22 : 0;
-  const spreadY = isArchiveShow ? 28 : burstCount > 1 ? 12 : 0;
-  const spreadZ = isArchiveShow ? 22 : burstCount > 1 ? 10 : 0;
-  const sparkScale = isArchiveShow ? 1.25 : 1;
+  // Origins stay within the camera frustum at a consistent backdrop depth so
+  // every shell reads big and on-screen — the wide expansion (uSpread) then
+  // carries sparks out toward the edges for a vast, screen-filling panorama.
+  const spreadX = isArchiveShow ? 46 : burstCount > 1 ? 28 : 0;
+  const spreadY = isArchiveShow ? 24 : burstCount > 1 ? 16 : 0;
+  const spreadZ = isArchiveShow ? 8 : burstCount > 1 ? 14 : 0;
+  const sparkScale = isArchiveShow ? 1.5 : 1.15;
+
+  // Scratch color reused per spark to avoid allocating thousands of Colors.
+  const sparkColor = new Color();
 
   let index = 0;
   for (let burst = 0; burst < burstCount; burst += 1) {
@@ -187,6 +207,10 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
     // Each shell opens with its own character: classic spherical peony, a
     // tilted ring, or a drooping willow with heavy trailing sparks.
     const shape = pickBurstShape(random());
+    // Every shell leans toward a different cosmic accent so the volley reads
+    // as an iridescent, nebula-tinted panorama rather than one flat hue.
+    const accent = COSMIC_ACCENTS[Math.floor(random() * COSMIC_ACCENTS.length)]
+      ?? COSMIC_ACCENTS[0]!;
 
     // Random ring plane for 'ring' shells.
     const normalTheta = 2 * Math.PI * random();
@@ -248,17 +272,20 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
       directions[index * 3 + 1] = dirY;
       directions[index * 3 + 2] = dirZ;
       speeds[index] = radial;
-      sizes[index] = (4.5 + random() * 7) * sparkScale;
+      sizes[index] = (6 + random() * 9) * sparkScale;
       delays[index] = burstDelay + random() * 0.08;
       gravities[index] = gravity;
       glitters[index] = random() < 0.3 ? 1 : 0;
 
-      // Per-spark brightness jitter plus a warm-white hot core minority.
-      const brightness = 0.7 + random() * 0.6;
-      const whiteHot = random() < 0.15 ? 0.5 : 0;
-      colors[index * 3] = Math.min(1, base.r * brightness + whiteHot);
-      colors[index * 3 + 1] = Math.min(1, base.g * brightness + whiteHot);
-      colors[index * 3 + 2] = Math.min(1, base.b * brightness + whiteHot);
+      // Blend the shell's base tint toward its cosmic accent per-spark, so the
+      // burst shimmers with iridescence; a warm-white hot core minority and
+      // brightness jitter keep it lively.
+      sparkColor.copy(base).lerp(accent, random() * 0.65);
+      const brightness = 0.75 + random() * 0.6;
+      const whiteHot = random() < 0.18 ? 0.55 : 0;
+      colors[index * 3] = Math.min(1, sparkColor.r * brightness + whiteHot);
+      colors[index * 3 + 1] = Math.min(1, sparkColor.g * brightness + whiteHot);
+      colors[index * 3 + 2] = Math.min(1, sparkColor.b * brightness + whiteHot);
       index += 1;
     }
   }
@@ -306,7 +333,7 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
           uDuration: { value: effect.durationSeconds },
           uPixelRatio: { value: pixelRatio },
           // Show shells balloon far wider so a burst can swallow the screen.
-          uSpread: { value: isArchiveShow ? 17 : 9.5 },
+          uSpread: { value: isArchiveShow ? 34 : 16 },
         },
       }),
     [effect.durationSeconds, isArchiveShow, pixelRatio],

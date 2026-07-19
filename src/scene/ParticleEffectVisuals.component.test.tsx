@@ -141,7 +141,7 @@ describe('FireworksVisual', () => {
       .toEqual([0, 6, -10]);
 
     const material = points.material as ShaderMaterial;
-    expect(material.uniforms.uSpread!.value).toBe(17);
+    expect(material.uniforms.uSpread!.value).toBe(34);
 
     // Shell origins scatter across a screen-wide region.
     const positions = points.geometry.getAttribute('position');

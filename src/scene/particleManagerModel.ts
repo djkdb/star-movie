@@ -1,11 +1,15 @@
-import type { RuntimeEvent, Vec3 } from '../domain/models';
+import type { PlanetRarity, RuntimeEvent, Vec3 } from '../domain/models';
+import { RARITY_COLORS } from '../domain/planetCatalog';
 
-export const FIREWORK_PARTICLE_RANGE = [90, 150] as const;
-export const FIREWORK_DURATION_SECONDS = 2.4;
+export const FIREWORK_PARTICLE_RANGE = [220, 340] as const;
+export const FIREWORK_DURATION_SECONDS = 3.2;
 export const FIREWORK_MAX_BURSTS = 6;
 
 /** Default spark color when a firework carries no genre tint. */
 export const DEFAULT_FIREWORK_COLOR = '#ffe27a';
+
+/** Warm-gold celebration color for achievement fireworks. */
+export const ACHIEVEMENT_FIREWORK_COLOR = '#ffd27a';
 
 /**
  * Genre → firework tint, mirroring each genre galaxy's primary color so a burst
@@ -45,7 +49,7 @@ export function fireworkSparksPerBurst(
   return Math.max(24, Math.round(base / Math.sqrt(shells)));
 }
 /** Longer window so staggered show shells finish their full fade. */
-export const PERSONAL_SHOW_DURATION_SECONDS = 3.6;
+export const PERSONAL_SHOW_DURATION_SECONDS = 4.4;
 
 /**
  * Shell counts for the personal show: every genre with at least one star gets
@@ -478,6 +482,24 @@ export function createParticleEffectsForEvent(
           scaleTo: 2.15,
         }),
       ];
+    case 'planet-pulled': {
+      // A grand sky-filling burst tinted to the pulled planet's rarity; higher
+      // tiers open more shells.
+      const rarity =
+        typeof event.payload.rarity === 'string'
+          ? (event.payload.rarity as PlanetRarity)
+          : 'common';
+      const grand = rarity === 'legendary' || rarity === 'epic';
+      return [
+        descriptor(event, 'fireworks', 0, random, {
+          particleCount: boundedEffectCount(random, FIREWORK_PARTICLE_RANGE, minimumCounts),
+          durationSeconds: PERSONAL_SHOW_DURATION_SECONDS,
+          color: RARITY_COLORS[rarity] ?? DEFAULT_FIREWORK_COLOR,
+          burstCount: minimumCounts ? 1 : grand ? 6 : 3,
+          celebrationScope: 'archive',
+        }),
+      ];
+    }
     case 'milestone-unlocked':
       return [
         descriptor(event, 'milestone-celebration', 0, random, {
@@ -486,10 +508,14 @@ export function createParticleEffectsForEvent(
         }),
       ];
     case 'achievement-unlocked':
+      // A warm-gold sky-filling celebration burst.
       return [
-        descriptor(event, 'achievement-celebration', 0, random, {
-          particleCount: 36,
-          durationSeconds: 1.2,
+        descriptor(event, 'fireworks', 0, random, {
+          particleCount: boundedEffectCount(random, FIREWORK_PARTICLE_RANGE, minimumCounts),
+          durationSeconds: PERSONAL_SHOW_DURATION_SECONDS,
+          color: ACHIEVEMENT_FIREWORK_COLOR,
+          burstCount: minimumCounts ? 1 : 5,
+          celebrationScope: 'archive',
         }),
       ];
     default:

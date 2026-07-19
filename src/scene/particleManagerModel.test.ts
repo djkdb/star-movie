@@ -155,7 +155,7 @@ describe('ParticleManager effect model', () => {
     ).toMatchObject({ kind: 'milestone-celebration' });
     expect(
       createParticleEffectsForEvent(event('achievement-unlocked', {}), constantRandom(0))[0],
-    ).toMatchObject({ kind: 'achievement-celebration' });
+    ).toMatchObject({ kind: 'fireworks', celebrationScope: 'archive' });
   });
 
   it('R13.4 uses every bounded particle and trail range minimum after degradation', () => {
