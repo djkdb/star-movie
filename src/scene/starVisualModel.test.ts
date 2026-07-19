@@ -162,6 +162,38 @@ describe('individual Star visual model', () => {
     expect(() => getStarAppearance('', 3)).toThrow(RangeError);
   });
 
+  it('tints a star toward its genre while keeping identity variation', () => {
+    const sf = getStarAppearance('genre-star', 3, 'SF');
+    const romance = getStarAppearance('genre-star', 3, '로맨스');
+    const untinted = getStarAppearance('genre-star', 3);
+
+    // Genre changes the hue, and both differ from the pure identity tint.
+    expect(sf.color).not.toBe(romance.color);
+    expect(sf.color).not.toBe(untinted.color);
+    expect(sf.color).toMatch(/^#[0-9a-f]{6}$/);
+
+    // An SF star reads blue: its blue channel dominates its red channel.
+    const red = parseInt(sf.color.slice(1, 3), 16);
+    const blue = parseInt(sf.color.slice(5, 7), 16);
+    expect(blue).toBeGreaterThan(red);
+
+    // Same genre + identity is stable across ratings.
+    expect(getStarAppearance('genre-star', 5, 'SF').color).toBe(sf.color);
+
+    // Same-genre siblings still spread across several hues by identity.
+    const sameGenreColors = new Set(
+      Array.from({ length: 20 }, (_, index) =>
+        getStarAppearance(`sf-${index}`, 3, 'SF').color,
+      ),
+    );
+    expect(sameGenreColors.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it('always gives five-star works the full six-point hero spike', () => {
+    expect(getStarAppearance('hero', 5).spikeCount).toBe(6);
+    expect(getStarAppearance('hero', 5, '드라마').spikeCount).toBe(6);
+  });
+
   it('creates an immutable Blackhole drag payload with the Star identity and source position', () => {
     const position = { x: 1, y: 2, z: 3 };
     const payload = createStarDragPayload('star-1', position);

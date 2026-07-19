@@ -23,12 +23,13 @@ export interface PlanetOrbit {
 
 const TWO_PI = Math.PI * 2;
 
-/** Bigger, statelier bodies for higher rarities. */
+/** Bigger, statelier bodies for higher rarities — collected planets read as
+ *  prominent hero worlds rather than distant specks. */
 const RARITY_SIZE: Readonly<Record<PlanetRarity, number>> = {
-  common: 1.0,
-  rare: 1.25,
-  epic: 1.6,
-  legendary: 2.0,
+  common: 1.6,
+  rare: 2.1,
+  epic: 2.8,
+  legendary: 3.6,
 };
 
 function seededRandom(seed: number): () => number {

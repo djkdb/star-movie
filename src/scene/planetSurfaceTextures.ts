@@ -1,11 +1,25 @@
 import { Color, DataTexture, LinearFilter, RGBAFormat, UnsignedByteType } from 'three';
 
-import type { PlanetSpecies } from '../domain/planetCatalog';
+import type { PlanetSpecies, PlanetSurfacePattern } from '../domain/planetCatalog';
 
 /**
- * Deterministic per-species equirectangular surface textures, generated once and
- * cached. Each species' pattern (bands, blotches, swirls, cracks…) is painted
- * from its own palette so every world reads distinctly.
+ * Minimal input the procedural surface painter needs. Planet species satisfy it
+ * structurally, and selected-star "worlds" build their own spec, so both share
+ * one generator.
+ */
+export interface SurfaceSpec {
+  /** Stable cache key; unique per distinct surface. */
+  id: string;
+  pattern: PlanetSurfacePattern;
+  baseColor: string;
+  accentColor: string;
+  emissiveColor: string;
+}
+
+/**
+ * Deterministic equirectangular surface textures, generated once and cached by
+ * spec id. Each pattern (bands, blotches, swirls, cracks…) is painted from the
+ * spec's palette so every world reads distinctly.
  */
 const textureCache = new Map<string, DataTexture>();
 
@@ -66,14 +80,14 @@ function seedFromId(id: string): number {
   return hash >>> 0;
 }
 
-function buildTexture(species: PlanetSpecies): DataTexture {
+function buildTexture(spec: SurfaceSpec): DataTexture {
   const width = 128;
   const height = 64;
   const data = new Uint8Array(width * height * 4);
-  const base = new Color(species.baseColor);
-  const accent = new Color(species.accentColor);
-  const emissive = new Color(species.emissiveColor);
-  const seed = seedFromId(species.id);
+  const base = new Color(spec.baseColor);
+  const accent = new Color(spec.accentColor);
+  const emissive = new Color(spec.emissiveColor);
+  const seed = seedFromId(spec.id);
   const mixColor = new Color();
 
   for (let y = 0; y < height; y += 1) {
@@ -83,7 +97,7 @@ function buildTexture(species: PlanetSpecies): DataTexture {
       let t: number; // 0 = base, 1 = accent
       let glow = 0; // extra emissive contribution along cracks
 
-      switch (species.pattern) {
+      switch (spec.pattern) {
         case 'bands': {
           const wobble = (fbm(u, v, seed, 3) - 0.5) * 0.12;
           const band = Math.sin((v + wobble) * Math.PI * 7);
@@ -169,10 +183,15 @@ function buildTexture(species: PlanetSpecies): DataTexture {
   return texture;
 }
 
-export function getPlanetSurfaceTexture(species: PlanetSpecies): DataTexture {
-  const cached = textureCache.get(species.id);
+/** Returns (and caches) the procedural surface texture for any surface spec. */
+export function getSurfaceTexture(spec: SurfaceSpec): DataTexture {
+  const cached = textureCache.get(spec.id);
   if (cached !== undefined) return cached;
-  const texture = buildTexture(species);
-  textureCache.set(species.id, texture);
+  const texture = buildTexture(spec);
+  textureCache.set(spec.id, texture);
   return texture;
+}
+
+export function getPlanetSurfaceTexture(species: PlanetSpecies): DataTexture {
+  return getSurfaceTexture(species);
 }
