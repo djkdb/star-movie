@@ -8,6 +8,7 @@ import {
   type PlanetSpecies,
 } from '../domain/planetCatalog';
 import type { PlanetRarity } from '../domain/models';
+import { exportGalaxyPoster } from '../scene/galaxyCapture';
 import { PlanetPullReveal } from '../scene/PlanetPullReveal';
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { selectPlanetCodexViewModel } from '../store/selectors';
@@ -58,6 +59,20 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
   );
   const [reveal, setReveal] = useState<RevealState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportImage = async () => {
+    setExporting(true);
+    setError(null);
+    const ok = await exportGalaxyPoster({
+      starCount: persisted.stars.length,
+      planetCount: persisted.planetCollection.planets.length,
+      collected: viewModel.collected,
+      total: viewModel.total,
+    });
+    if (!ok) setError('우주 이미지를 저장하지 못했습니다. 3D 화면이 켜져 있는지 확인해 주세요.');
+    setExporting(false);
+  };
 
   const pull = () => {
     const result = store.getState().commands.pullPlanet();
@@ -147,6 +162,20 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
           </li>
         ))}
       </ul>
+
+      <div className="galaxy-export">
+        <button
+          className="secondary-action galaxy-export-button"
+          disabled={exporting}
+          onClick={exportImage}
+          type="button"
+        >
+          🖼️ {exporting ? '저장 중…' : '내 우주 이미지 저장'}
+        </button>
+        <p className="galaxy-export-hint">
+          지금 보이는 밤하늘을 “내가 본 영화들로 만든 우주” 이미지로 저장합니다.
+        </p>
+      </div>
 
       {reveal !== null && (
         <PlanetPullReveal
