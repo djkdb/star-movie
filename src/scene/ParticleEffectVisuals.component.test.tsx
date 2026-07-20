@@ -83,7 +83,7 @@ describe('MeteorVisual', () => {
 });
 
 describe('FireworksVisual', () => {
-  it('gives every spark a slot in the figure and animates its clock', async () => {
+  it('gives every spark a slot in the figure, a comet trail, and a running clock', async () => {
     const controller = createController();
     const effect = descriptor({
       kind: 'fireworks',
@@ -99,23 +99,32 @@ describe('FireworksVisual', () => {
     );
     await renderer.advanceFrames(3, 0.2);
 
-    const points = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
+    const sparks = renderer.scene.findByProps({ name: 'firework-sparks' })
       .instance as Points;
-    const geometry = points.geometry;
     // One vertex per requested spark; positions hold the figure's slots.
-    expect(geometry.getAttribute('position').count).toBe(40);
+    expect(sparks.geometry.getAttribute('position').count).toBe(40);
     for (const attribute of ['aSize', 'aDelay', 'aColor', 'aGlitter', 'aSeed']) {
-      expect(geometry.getAttribute(attribute)).toBeDefined();
+      expect(sparks.geometry.getAttribute(attribute)).toBeDefined();
     }
 
-    const material = points.material as ShaderMaterial;
+    // Every spark drags a light trail: one head/tail vertex pair per spark.
+    const trails = renderer.scene.findByProps({ name: 'firework-trails' })
+      .instance as Points;
+    expect(trails.geometry.getAttribute('position').count).toBe(80);
+    expect(trails.geometry.getAttribute('aTrail')).toBeDefined();
+
+    // The launch flash and shockwave ring open the show.
+    expect(renderer.scene.findByProps({ name: 'firework-flash' })).toBeDefined();
+    expect(renderer.scene.findByProps({ name: 'firework-shockwave' })).toBeDefined();
+
+    const material = sparks.material as ShaderMaterial;
     expect(material.uniforms.uTime!.value).toBeCloseTo(0.6);
     expect(material.uniforms.uDuration!.value).toBe(2.4);
 
     await renderer.unmount();
   });
 
-  it('stages the archive figure large on the backdrop sky', async () => {
+  it('stages the archive figure huge on the deep backdrop sky', async () => {
     const controller = createController();
     const effect = descriptor({
       kind: 'fireworks',
@@ -132,21 +141,23 @@ describe('FireworksVisual', () => {
     );
     await renderer.advanceFrames(1, 0.1);
 
-    const points = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
-      .instance as Points;
-    // The figure is staged on the backdrop, not the triggering work's position.
-    expect([points.position.x, points.position.y, points.position.z])
-      .toEqual([0, 10, -40]);
+    const group = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
+      .instance as Group;
+    // The figure is staged far behind the star field, never at the work.
+    expect([group.position.x, group.position.y, group.position.z])
+      .toEqual([0, 26, -130]);
 
-    // The figure's slots span a screen-wide region of the backdrop.
-    const positions = points.geometry.getAttribute('position');
+    // The figure's slots span a vast, screen-filling region of the backdrop.
+    const sparks = renderer.scene.findByProps({ name: 'firework-sparks' })
+      .instance as Points;
+    const positions = sparks.geometry.getAttribute('position');
     let minX = Number.POSITIVE_INFINITY;
     let maxX = Number.NEGATIVE_INFINITY;
     for (let index = 0; index < positions.count; index += 1) {
       minX = Math.min(minX, positions.getX(index));
       maxX = Math.max(maxX, positions.getX(index));
     }
-    expect(maxX - minX).toBeGreaterThan(40);
+    expect(maxX - minX).toBeGreaterThan(100);
 
     await renderer.unmount();
   });
