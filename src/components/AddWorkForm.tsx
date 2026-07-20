@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useStore } from 'zustand';
 
 import { GENRES } from '../domain/models';
@@ -6,10 +6,20 @@ import {
   validateWorkInput,
   type WorkInput,
 } from '../domain/workInputValidation';
+import { posterUrl, type MovieSuggestion } from '../services/tmdbClient';
 import type { ArchiveStoreApi, DomainError } from '../store/archiveStore';
+import { TmdbAttribution } from './TmdbAttribution';
+import { fetchMovieDirector, useMovieSuggestions } from './useMovieSuggestions';
 
-type FormField = keyof WorkInput;
+/** The six user-facing fields; posterPath/tmdbId are metadata, not inputs. */
+type FormField = 'title' | 'genre' | 'rating' | 'review' | 'watchedDate' | 'director';
 type DirectorMode = 'existing' | 'custom';
+
+/** TMDB metadata attached when a work is picked from autocomplete. */
+interface SelectedMovie {
+  tmdbId: number;
+  posterPath: string | null;
+}
 
 type Draft = Record<Exclude<FormField, 'director'>, string> & {
   existingDirector: string;
@@ -62,7 +72,11 @@ function selectedDirector(draft: Draft, mode: DirectorMode): string {
   return mode === 'existing' ? draft.existingDirector : draft.customDirector;
 }
 
-function createWorkInput(draft: Draft, mode: DirectorMode): WorkInput {
+function createWorkInput(
+  draft: Draft,
+  mode: DirectorMode,
+  selected: SelectedMovie | null,
+): WorkInput {
   return {
     title: draft.title,
     genre: draft.genre,
@@ -70,6 +84,8 @@ function createWorkInput(draft: Draft, mode: DirectorMode): WorkInput {
     review: draft.review,
     watchedDate: draft.watchedDate,
     director: selectedDirector(draft, mode),
+    ...(selected?.posterPath != null ? { posterPath: selected.posterPath } : {}),
+    ...(selected !== null ? { tmdbId: selected.tmdbId } : {}),
   };
 }
 
@@ -87,6 +103,15 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
   const [directorMode, setDirectorMode] = useState<DirectorMode>('custom');
   const [errors, setErrors] = useState<FieldErrors>({});
   const fieldRefs = useRef<Partial<Record<FormField, HTMLElement | null>>>({});
+
+  // TMDB autocomplete: suggestions for the current title, the pick's metadata,
+  // and open/highlight state for the combobox dropdown.
+  const [selectedMovie, setSelectedMovie] = useState<SelectedMovie | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const directorFetchToken = useRef(0);
+  const { suggestions, loading, enabled: autocompleteEnabled } =
+    useMovieSuggestions(suggestOpen ? draft.title : '');
 
   const directors = useMemo(() => {
     const byNormalizedName = new Map<string, string>();
@@ -110,6 +135,63 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       delete next[errorField];
       return next;
     });
+  };
+
+  // Typing in the title box reopens autocomplete and drops any prior TMDB pick,
+  // so a stale poster never rides along with an edited title.
+  const handleTitleChange = (value: string) => {
+    updateDraft('title', value);
+    setSelectedMovie(null);
+    setSuggestOpen(true);
+    setActiveIndex(-1);
+  };
+
+  const applySuggestion = (suggestion: MovieSuggestion) => {
+    setDraft((current) => ({
+      ...current,
+      title: suggestion.title,
+      genre: suggestion.genre ?? current.genre,
+      customDirector: '',
+    }));
+    setDirectorMode('custom');
+    setSelectedMovie({ tmdbId: suggestion.tmdbId, posterPath: suggestion.posterPath });
+    setSuggestOpen(false);
+    setActiveIndex(-1);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.title;
+      delete next.genre;
+      delete next.director;
+      return next;
+    });
+    // Backfill the director from the movie's credits without blocking the UI;
+    // a newer pick invalidates an older, slower in-flight lookup.
+    const token = ++directorFetchToken.current;
+    void fetchMovieDirector(suggestion.tmdbId).then((name) => {
+      if (name !== null && directorFetchToken.current === token) {
+        setDraft((current) => ({ ...current, customDirector: name }));
+      }
+    });
+  };
+
+  const handleTitleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!suggestOpen || suggestions.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((index) => (index + 1) % suggestions.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
+    } else if (event.key === 'Enter' && activeIndex >= 0) {
+      const picked = suggestions[activeIndex];
+      if (picked !== undefined) {
+        event.preventDefault();
+        applySuggestion(picked);
+      }
+    } else if (event.key === 'Escape') {
+      setSuggestOpen(false);
+      setActiveIndex(-1);
+    }
   };
 
   const focusFirstError = (nextErrors: FieldErrors) => {
@@ -140,7 +222,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const input = createWorkInput(draft, directorMode);
+    const input = createWorkInput(draft, directorMode, selectedMovie);
     const validation = validateWorkInput(input);
     if (!validation.success) {
       reportValidationErrors(validation.fieldErrors);
@@ -158,7 +240,14 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
     setDraft(EMPTY_DRAFT);
     setDirectorMode('custom');
     setErrors({});
+    setSelectedMovie(null);
+    setSuggestOpen(false);
+    setActiveIndex(-1);
   };
+
+  const posterPreview = posterUrl(selectedMovie?.posterPath, 'w200');
+  const listboxId = 'work-title-suggestions';
+  const showList = autocompleteEnabled && suggestOpen && draft.title.trim().length >= 2;
 
   const errorProps = (field: FormField) => ({
     'aria-invalid': errors[field] === undefined ? undefined : true,
@@ -169,16 +258,81 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
     <section className="add-work-panel" aria-labelledby="add-work-heading">
       <h2 id="add-work-heading">작품 추가</h2>
       <form className="add-work-form" noValidate onSubmit={handleSubmit}>
-        <div className="form-field">
+        <div className="form-field work-title-field">
           <label htmlFor="work-title">제목</label>
-          <input
-            {...errorProps('title')}
-            id="work-title"
-            maxLength={200}
-            ref={(node) => { fieldRefs.current.title = node; }}
-            value={draft.title}
-            onChange={(event) => updateDraft('title', event.target.value)}
-          />
+          <div className="autocomplete-shell">
+            {posterPreview !== null && (
+              <img
+                alt=""
+                aria-hidden="true"
+                className="autocomplete-poster-thumb"
+                src={posterPreview}
+              />
+            )}
+            <input
+              {...errorProps('title')}
+              aria-activedescendant={
+                showList && activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined
+              }
+              aria-autocomplete="list"
+              aria-controls={showList ? listboxId : undefined}
+              aria-expanded={showList}
+              autoComplete="off"
+              className={posterPreview !== null ? 'has-poster' : undefined}
+              id="work-title"
+              maxLength={200}
+              ref={(node) => { fieldRefs.current.title = node; }}
+              role="combobox"
+              value={draft.title}
+              onBlur={() => window.setTimeout(() => setSuggestOpen(false), 120)}
+              onChange={(event) => handleTitleChange(event.target.value)}
+              onFocus={() => { if (draft.title.trim().length >= 2) setSuggestOpen(true); }}
+              onKeyDown={handleTitleKeyDown}
+            />
+            {showList && (
+              <ul className="autocomplete-list" id={listboxId} role="listbox">
+                {loading && suggestions.length === 0 && (
+                  <li className="autocomplete-status" aria-disabled="true">검색 중…</li>
+                )}
+                {!loading && suggestions.length === 0 && (
+                  <li className="autocomplete-status" aria-disabled="true">검색 결과가 없어요</li>
+                )}
+                {suggestions.map((suggestion, index) => {
+                  const thumb = posterUrl(suggestion.posterPath, 'w92');
+                  return (
+                    <li
+                      key={suggestion.tmdbId}
+                      aria-selected={index === activeIndex}
+                      className={`autocomplete-option${index === activeIndex ? ' is-active' : ''}`}
+                      id={`${listboxId}-${index}`}
+                      role="option"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        applySuggestion(suggestion);
+                      }}
+                      onMouseEnter={() => setActiveIndex(index)}
+                    >
+                      {thumb !== null ? (
+                        <img alt="" aria-hidden="true" className="autocomplete-option-thumb" src={thumb} />
+                      ) : (
+                        <span aria-hidden="true" className="autocomplete-option-thumb is-empty">🎬</span>
+                      )}
+                      <span className="autocomplete-option-title">{suggestion.title}</span>
+                      {suggestion.year !== null && (
+                        <span className="autocomplete-option-year">{suggestion.year}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          {autocompleteEnabled && (
+            <>
+              <p className="autocomplete-hint">제목을 입력하면 추천이 떠요. 골라 누르면 감독·포스터가 채워집니다.</p>
+              <TmdbAttribution variant="inline" />
+            </>
+          )}
           {errors.title !== undefined && <p id="title-error" className="field-error">{errors.title}</p>}
         </div>
 

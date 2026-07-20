@@ -8,6 +8,7 @@ import {
 import { useStore } from 'zustand';
 
 import type { Rating } from '../domain/models';
+import { posterUrl } from '../services/tmdbClient';
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { ConfirmDialog } from './ConfirmDialog';
 import {
@@ -147,6 +148,8 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
     '--work-glow-color': RATING_GLOW_COLORS[star.rating],
   } as CSSProperties;
 
+  const poster = posterUrl(star.posterPath, 'w342');
+
   return (
     <aside
       aria-labelledby="work-card-title"
@@ -168,10 +171,22 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
         닫기
       </button>
       <p className="eyebrow">SELECTED STAR</p>
-      <h2 id="work-card-title">{star.title}</h2>
-      <div className="work-card-summary">
-        <GenreBadge genre={star.genre} />
-        <RatingDisplay rating={star.rating} />
+      <div className={poster !== null ? 'work-card-heading has-poster' : 'work-card-heading'}>
+        {poster !== null && (
+          <img
+            alt={`${star.title} 포스터`}
+            className="work-card-poster"
+            loading="lazy"
+            src={poster}
+          />
+        )}
+        <div className="work-card-heading-text">
+          <h2 id="work-card-title">{star.title}</h2>
+          <div className="work-card-summary">
+            <GenreBadge genre={star.genre} />
+            <RatingDisplay rating={star.rating} />
+          </div>
+        </div>
       </div>
       <dl className="work-card-details">
         <div>

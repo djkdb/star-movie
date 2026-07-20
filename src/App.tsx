@@ -9,6 +9,7 @@ import { GenreFilter } from './components/GenreFilter';
 import { HUD } from './components/HUD';
 import { ListView } from './components/ListView';
 import { PlanetCodexPanel } from './components/PlanetCodexPanel';
+import { TmdbAttribution } from './components/TmdbAttribution';
 import { ToastRegion } from './components/ToastRegion';
 import { WorkCard } from './components/WorkCard';
 import {
@@ -154,6 +155,7 @@ export function App({ store }: AppProps) {
         <>
           <HUD store={archiveStore} />
           <GenreFilter store={archiveStore} />
+          <TmdbAttribution variant="block" />
         </>
       ),
     },

@@ -10,6 +10,8 @@ export interface WorkInput {
   review: unknown;
   watchedDate: unknown;
   director: unknown;
+  posterPath?: unknown;
+  tmdbId?: unknown;
 }
 
 export interface ValidatedWorkInput {
@@ -21,6 +23,8 @@ export interface ValidatedWorkInput {
   watchedDate: string;
   director: string;
   normalizedDirector: string;
+  posterPath?: string;
+  tmdbId?: number;
 }
 
 export type WorkInputValidationResult =
@@ -60,6 +64,13 @@ const workInputSchema = z
     review: z.string().max(100),
     watchedDate: z.string().refine(isRealCalendarDate, 'Invalid calendar date'),
     director: displayTextSchema,
+    // Optional TMDB enrichment carried through from autocomplete selection.
+    posterPath: z
+      .string()
+      .regex(/^\/[\w./-]+\.(jpg|jpeg|png|webp)$/i)
+      .max(200)
+      .optional(),
+    tmdbId: z.number().int().positive().optional(),
   })
   .strict();
 
@@ -73,7 +84,8 @@ export function validateWorkInput(input: WorkInput): WorkInputValidationResult {
     };
   }
 
-  const { title, genre, rating, review, watchedDate, director } = result.data;
+  const { title, genre, rating, review, watchedDate, director, posterPath, tmdbId } =
+    result.data;
   return {
     success: true,
     data: {
@@ -85,6 +97,10 @@ export function validateWorkInput(input: WorkInput): WorkInputValidationResult {
       watchedDate,
       director,
       normalizedDirector: normalizeText(director),
+      // Only carry the optional TMDB keys when actually present, so persisted
+      // stars never gain `undefined`-valued fields.
+      ...(posterPath === undefined ? {} : { posterPath }),
+      ...(tmdbId === undefined ? {} : { tmdbId }),
     },
   };
 }
