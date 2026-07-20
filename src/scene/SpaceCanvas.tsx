@@ -1,4 +1,4 @@
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { PerspectiveCamera, TrackballControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type RootState } from '@react-three/fiber';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { useStore } from 'zustand';
@@ -402,7 +402,7 @@ function SpaceScene({
   onStarDragStart,
   onStarDragEnd,
 }: SpaceSceneProps) {
-  const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
+  const controlsRef = useRef<ComponentRef<typeof TrackballControls>>(null);
   const selectStar = useCallback((starId: string) => {
     const state = store.getState();
     if (state.runtime.constellationDraft.active) {
@@ -495,17 +495,17 @@ function SpaceScene({
           store={store}
         />
       </VisibilityClock>
-      <OrbitControls
-        dampingFactor={0.045}
-        enableDamping={!reducedMotion}
-        enablePan
-        enableRotate
-        enableZoom
+      {/* Trackball (arcball) instead of Orbit: the camera tumbles freely in
+          every axis with no pole gimbal-lock, so the sky spins a full 360°
+          in any direction. staticMoving under reduced motion drops inertia. */}
+      <TrackballControls
+        dynamicDampingFactor={0.12}
         maxDistance={SPACE_CAMERA_MAX_DISTANCE}
+        panSpeed={0.8}
         ref={controlsRef}
-        rotateSpeed={0.55}
-        touches={ORBIT_TOUCH_GESTURES}
-        zoomSpeed={0.75}
+        rotateSpeed={2.4}
+        staticMoving={reducedMotion}
+        zoomSpeed={1.2}
       />
       {/* Wheel dolly is intercepted and eased toward its target distance so
           zooming glides like a rubber band instead of stepping per tick.
