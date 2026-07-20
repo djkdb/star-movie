@@ -113,7 +113,8 @@ describe('FireworksVisual', () => {
     expect(trails.geometry.getAttribute('position').count).toBe(80);
     expect(trails.geometry.getAttribute('aTrail')).toBeDefined();
 
-    // The launch flash and shockwave ring open the show.
+    // The rocket climb, launch flash, and shockwave ring open the show.
+    expect(renderer.scene.findByProps({ name: 'firework-rocket' })).toBeDefined();
     expect(renderer.scene.findByProps({ name: 'firework-flash' })).toBeDefined();
     expect(renderer.scene.findByProps({ name: 'firework-shockwave' })).toBeDefined();
 
@@ -145,7 +146,7 @@ describe('FireworksVisual', () => {
       .instance as Group;
     // The figure is staged far behind the star field, never at the work.
     expect([group.position.x, group.position.y, group.position.z])
-      .toEqual([0, 26, -130]);
+      .toEqual([0, 34, -130]);
 
     // The figure's slots span a vast, screen-filling region of the backdrop.
     const sparks = renderer.scene.findByProps({ name: 'firework-sparks' })

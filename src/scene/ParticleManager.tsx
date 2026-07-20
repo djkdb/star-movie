@@ -199,7 +199,8 @@ const FIREWORK_RING_VERTEX_SHADER = `
     float p = clamp(uTime / 1.1, 0.0, 1.0);
     float eased = 1.0 - pow(1.0 - p, 3.0);
     vProgress = p;
-    vec3 pos = position * mix(0.05, 1.35, eased) * uRadius;
+    // Zero scale before the burst keeps the ring invisible during the climb.
+    vec3 pos = position * mix(0.0, 1.35, eased) * uRadius;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
 `;
@@ -256,10 +257,13 @@ const COSMIC_ACCENTS: readonly Color[] = [
  * World-space radius of the backdrop figure. Staged far behind the star field,
  * it spans roughly 60% of the visible sky — a vast panorama, never a local pop.
  */
-const FIGURE_RADIUS = 70;
+const FIGURE_RADIUS = 78;
 
 /** Deep backdrop stage: high in the sky, far behind every star and planet. */
-const FIGURE_STAGE: readonly [number, number, number] = [0, 26, -130];
+const FIGURE_STAGE: readonly [number, number, number] = [0, 34, -130];
+
+/** Seconds the launch rocket climbs before the shell bursts open. */
+const LAUNCH_SECONDS = 1.05;
 
 type ShapePoint = readonly [number, number];
 
@@ -419,8 +423,9 @@ function buildFireworkGeometries(effect: ParticleEffectDescriptor): FireworkGeom
     positions[index * 3 + 1] = uy * radius;
     positions[index * 3 + 2] = (random() - 0.5) * 2.4;
     sizes[index] = 8 + random() * 10;
-    // A tight stagger keeps the launch reading as one single great blast.
-    delays[index] = random() * 0.35;
+    // Sparks wait for the rocket to arrive; a tight stagger after that keeps
+    // the burst reading as one single great blast.
+    delays[index] = LAUNCH_SECONDS + random() * 0.35;
     glitters[index] = random() < 0.35 ? 1 : 0;
     seeds[index] = random();
 
@@ -558,14 +563,52 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
     [effect.color],
   );
 
+  // The climbing shell: a warm-white head dragging a vertical fire trail from
+  // the bottom of the sky up to the burst point.
+  const rocketRef = useRef<Group>(null);
+  const rocketGeometry = useMemo(() => new PlaneGeometry(1, 1), []);
+  const rocketTrailMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        side: DoubleSide,
+        vertexShader: METEOR_VERTEX_SHADER,
+        fragmentShader: METEOR_FRAGMENT_SHADER,
+        uniforms: {
+          uTint: { value: new Color('#ffd9a0') },
+          uFade: { value: 0 },
+          uTime: { value: 0 },
+        },
+      }),
+    [],
+  );
+  const rocketHeadMaterial = useMemo(
+    () =>
+      new SpriteMaterial({
+        map: getStarHaloTexture(),
+        color: '#fff3d6',
+        blending: AdditiveBlending,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0,
+        toneMapped: false,
+      }),
+    [],
+  );
+
   useEffect(() => {
     controller.addResource(effect.id, 'geometry', sparks);
     controller.addResource(effect.id, 'geometry', trails);
     controller.addResource(effect.id, 'geometry', ringGeometry);
+    controller.addResource(effect.id, 'geometry', rocketGeometry);
     controller.addResource(effect.id, 'material', sparkMaterial);
     controller.addResource(effect.id, 'material', trailMaterial);
     controller.addResource(effect.id, 'material', ringMaterial);
     controller.addResource(effect.id, 'material', flashMaterial);
+    controller.addResource(effect.id, 'material', rocketTrailMaterial);
+    controller.addResource(effect.id, 'material', rocketHeadMaterial);
     controller.addAnimation(effect.id, () => {
       elapsedRef.current = 0;
     });
@@ -575,21 +618,44 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
     sparks,
     trails,
     ringGeometry,
+    rocketGeometry,
     sparkMaterial,
     trailMaterial,
     ringMaterial,
     flashMaterial,
+    rocketTrailMaterial,
+    rocketHeadMaterial,
   ]);
 
   useFrame((_, delta) => {
     elapsedRef.current += delta;
     const elapsed = elapsedRef.current;
+    // Sparks and their comet trails wait out the climb via per-spark delays.
     sparkMaterial.uniforms.uTime!.value = elapsed;
     sparkMaterial.uniforms.uPixelRatio!.value = pixelRatio;
     trailMaterial.uniforms.uTime!.value = elapsed;
-    ringMaterial.uniforms.uTime!.value = elapsed;
-    // The launch flash spikes instantly and dies within the first half second.
-    flashMaterial.opacity = Math.pow(Math.max(0, 1 - elapsed / 0.55), 1.6) * 0.9;
+
+    // Flash and shockwave ignite the moment the rocket reaches the apex.
+    const sinceBurst = elapsed - LAUNCH_SECONDS;
+    ringMaterial.uniforms.uTime!.value = Math.max(0, sinceBurst);
+    flashMaterial.opacity = sinceBurst >= 0
+      ? Math.pow(Math.max(0, 1 - sinceBurst / 0.55), 1.6) * 0.9
+      : 0;
+
+    // The rocket eases up from far below, swaying gently, and winks out at
+    // the apex just as the shell bursts.
+    const climb = Math.min(1, elapsed / LAUNCH_SECONDS);
+    const eased = 1 - Math.pow(1 - climb, 2.2);
+    const rocket = rocketRef.current;
+    if (rocket !== null) {
+      rocket.position.set(Math.sin(climb * 6) * 5 * (1 - climb), -170 * (1 - eased), 0);
+      rocket.visible = elapsed < LAUNCH_SECONDS + 0.08;
+    }
+    const rocketFade =
+      Math.min(climb / 0.12, 1) * (1 - Math.max(0, (climb - 0.9) / 0.1));
+    rocketTrailMaterial.uniforms.uFade!.value = Math.max(0, rocketFade);
+    rocketTrailMaterial.uniforms.uTime!.value = elapsed;
+    rocketHeadMaterial.opacity = Math.max(0, rocketFade);
   });
 
   // The celebration figure is staged on the deep backdrop, not the new work.
@@ -632,6 +698,22 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
         name="firework-flash"
         scale={[flashScale, flashScale, 1]}
       />
+      <group name="firework-rocket" ref={rocketRef}>
+        {/* Rotated so the meteor shader's head (+x) points straight up. */}
+        <group rotation={[0, 0, Math.PI / 2]}>
+          <mesh
+            frustumCulled={false}
+            geometry={rocketGeometry}
+            material={rocketTrailMaterial}
+            scale={[30, 3, 1]}
+          />
+          <sprite
+            material={rocketHeadMaterial}
+            position={[15, 0, 0]}
+            scale={[8, 8, 1]}
+          />
+        </group>
+      </group>
     </group>
   );
 }
