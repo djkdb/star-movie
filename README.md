@@ -94,3 +94,122 @@ Asteron은 영화, 드라마, 애니메이션 등 내가 본 작품에 대한 **
 | 작품 DOM 탐색 | Canvas 없이 키보드와 DOM으로 작품 관리 |
 
 패널은 닫혀도 언마운트되지 않기 때문에 작성 중인 입력과 Store 상태가 유지됩니다. `Escape` 또는 바깥 영역 클릭으로 패널을 닫을 수 있습니다.
+
+## 🧱 기술 구조
+
+```text
+React + TypeScript + Vite
+          │
+          ├─ Zustand archive store
+          │    ├─ 작품·별자리·블랙홀·행성·업적 상태
+          │    └─ 원자적 command와 상태 불변식
+          │
+          ├─ React Three Fiber + Three.js
+          │    ├─ 우주 배경·은하·별·별자리·블랙홀
+          │    └─ 카메라 포커스·파티클·Bloom·성능 모드
+          │
+          ├─ localStorage persistence
+          │    ├─ schemaVersion 2
+          │    ├─ 1초 debounce autosave
+          │    └─ 손상 데이터 전체 기본 상태 복구
+          │
+          └─ TMDB REST API (선택)
+               └─ 영화 검색·포스터·감독 크레딧
+```
+
+주요 의존성은 `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `three`, `zustand`, `zod`입니다. 테스트에는 Vitest, Testing Library, Playwright, axe-core, fast-check를 사용합니다.
+
+## 🚀 시작하기
+
+### 요구 사항
+
+- Node.js 20 권장 (`.node-version`에 고정)
+- npm
+
+### 설치 및 실행
+
+```bash
+npm install
+npm run dev
+```
+
+브라우저에서 Vite가 출력한 로컬 주소를 엽니다.
+
+### TMDB 자동완성 설정(선택)
+
+```bash
+cp .env.example .env
+```
+
+`.env`에 읽기 전용 TMDB v3 API 키를 입력합니다.
+
+```env
+VITE_TMDB_API_KEY=your_tmdb_api_key
+```
+
+키가 없어도 작품 직접 입력, 리뷰 작성, 3D 아카이브, 저장 기능은 정상적으로 사용할 수 있습니다. 키가 설정된 경우 앱에는 TMDB 필수 출처 문구가 표시됩니다.
+
+## 🧪 테스트 및 검증
+
+```bash
+# 타입 검사와 프로덕션 빌드
+npm run typecheck
+npm run build
+
+# 기본 테스트
+npm test
+npm run test:unit
+npm run test:component
+
+# 속성 기반·통합·시각·성능 테스트
+npm run test:pbt
+npm run test:integration
+npm run test:visual
+npm run test:performance
+
+# 핵심 검증 전체
+npm run validate
+
+# 시각·성능 검증
+npm run validate:visual-performance
+```
+
+도메인 로직과 Store에는 fast-check 기반 속성 테스트가 포함되어 있으며, Playwright 테스트로 반응형·접근성·WebGL 장면을 검증합니다.
+
+## ☁️ 배포
+
+Asteron은 백엔드 없는 정적 Vite SPA라 Cloudflare Pages에 배포할 수 있습니다.
+
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name star-movie
+```
+
+Cloudflare Pages 설정값:
+
+| 항목 | 값 |
+| --- | --- |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| Node version | `20` |
+| Optional environment variable | `VITE_TMDB_API_KEY` |
+
+자세한 배포 절차는 [`DEPLOY.md`](./DEPLOY.md)를 참고하세요.
+
+## ⚠️ 데이터와 TMDB 안내
+
+- 현재 데이터는 서버 계정이 아닌 브라우저 `localStorage`에 저장됩니다.
+- 브라우저 저장소를 삭제하거나 다른 브라우저를 사용하면 기록이 공유되지 않습니다.
+- TMDB API와 이미지를 사용하는 경우 TMDB의 이용 약관과 출처 표기를 따라야 합니다.
+- TMDB API 키는 클라이언트 번들에 포함되므로 비밀 키로 취급할 수 없습니다.
+- 이 제품은 TMDB API를 사용하지만 TMDB의 보증 또는 인증을 받은 제품이 아닙니다.
+
+## 🌱 프로젝트의 시작
+
+Asteron은 충북대학교 AI+데이터센터 전문인력 양성 교육에서 Kiro 에이전트 AI와 함께 시작한 바이브코딩 프로젝트입니다. 짧은 시간에 기본 기능을 만들며 끝내기보다, 내가 본 작품과 그때의 감정을 오래 남길 수 있는 서비스로 계속 발전시키고 있습니다.
+
+저장소의 이름은 초기 프로젝트명인 `star-movie`를 유지하고 있지만, 서비스가 지향하는 이름과 세계관은 **Asteron**으로 확장되었습니다.
+
+---
+
+**Asteron — 내가 본 이야기들이 별이 되어 남는 곳.** 🌌
