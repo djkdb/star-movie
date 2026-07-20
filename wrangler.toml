@@ -1,0 +1,6 @@
+# Cloudflare Pages project config. Works with both the dashboard Git
+# integration and `wrangler pages deploy`. The build output Vite writes to
+# `dist/` is what Pages serves.
+name = "star-movie"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"

@@ -2125,3 +2125,51 @@ progress::-moz-progress-bar {
   display: grid;
   gap: 0.5rem;
 }
+
+/* ---- Required TMDB attribution ---- */
+.tmdb-attribution {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tmdb-attribution-block {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--panel-border);
+  flex-wrap: wrap;
+}
+
+.tmdb-attribution-inline {
+  margin-top: 0.35rem;
+}
+
+.tmdb-attribution-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  line-height: 0;
+  border-radius: 0.2rem;
+}
+
+.tmdb-attribution-mark:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tmdb-logo {
+  height: 0.95rem;
+  width: auto;
+}
+
+.tmdb-attribution-block .tmdb-logo {
+  height: 1.1rem;
+}
+
+.tmdb-notice {
+  margin: 0;
+  flex: 1 1 12rem;
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}

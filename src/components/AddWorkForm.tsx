@@ -8,6 +8,7 @@ import {
 } from '../domain/workInputValidation';
 import { posterUrl, type MovieSuggestion } from '../services/tmdbClient';
 import type { ArchiveStoreApi, DomainError } from '../store/archiveStore';
+import { TmdbAttribution } from './TmdbAttribution';
 import { fetchMovieDirector, useMovieSuggestions } from './useMovieSuggestions';
 
 /** The six user-facing fields; posterPath/tmdbId are metadata, not inputs. */
@@ -327,7 +328,10 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
             )}
           </div>
           {autocompleteEnabled && (
-            <p className="autocomplete-hint">제목을 입력하면 추천이 떠요. 골라 누르면 감독·포스터가 채워집니다.</p>
+            <>
+              <p className="autocomplete-hint">제목을 입력하면 추천이 떠요. 골라 누르면 감독·포스터가 채워집니다.</p>
+              <TmdbAttribution variant="inline" />
+            </>
           )}
           {errors.title !== undefined && <p id="title-error" className="field-error">{errors.title}</p>}
         </div>
