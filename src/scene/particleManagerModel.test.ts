@@ -17,12 +17,10 @@ import {
   METEOR_SHOWER_DURATION_SECONDS,
   METEOR_SHOWER_TRAIL_RANGE,
   ParticleEffectController,
-  PERSONAL_SHOW_DURATION_SECONDS,
-  PERSONAL_SHOW_MAX_TOTAL_BURSTS,
   createParticleEffectsForEvent,
-  personalShowBurstCounts,
   type ParticleEffectDescriptor,
 } from './particleManagerModel';
+import { RARITY_COLORS } from '../domain/planetCatalog';
 
 function event(
   type: string,
@@ -113,40 +111,48 @@ describe('ParticleManager effect model', () => {
     });
   });
 
-  it('fires the whole-archive personal show: one genre-colored shell group per genre', () => {
+  it('forms one giant genre-colored star figure per registration, drone-show style', () => {
     const position = { x: 1, y: 2, z: 3 };
     const effects = createParticleEffectsForEvent(
-      event('work-added', {
-        rating: 5,
-        position,
-        genreCounts: { SF: 5, 로맨스: 1, 액션: 9, 잘못된장르: 3, 드라마: Number.NaN },
-      }),
+      event('work-added', { rating: 5, position, genre: 'SF' }),
       constantRandom(0.5),
     );
 
     const fireworks = effects.filter(({ kind }) => kind === 'fireworks');
-    // Only known genres with valid counts fire: SF, 로맨스, 액션.
-    expect(fireworks).toHaveLength(3);
-    expect(fireworks.map(({ color }) => color)).toEqual([
-      GENRE_FIREWORK_COLORS.SF,
-      GENRE_FIREWORK_COLORS.로맨스,
-      GENRE_FIREWORK_COLORS.액션,
-    ]);
-    expect(fireworks.map(({ burstCount }) => burstCount)).toEqual([3, 1, 5]);
-    for (const shellGroup of fireworks) {
-      expect(shellGroup.celebrationScope).toBe('archive');
-      expect(shellGroup.durationSeconds).toBe(PERSONAL_SHOW_DURATION_SECONDS);
-    }
-    // The rating-5 meteor shower still tags along after the show.
+    expect(fireworks).toHaveLength(1);
+    expect(fireworks[0]).toMatchObject({
+      shape: 'star',
+      color: GENRE_FIREWORK_COLORS.SF,
+      celebrationScope: 'archive',
+      durationSeconds: FIREWORK_DURATION_SECONDS,
+    });
+    // The rating-5 meteor shower still tags along after the figure.
     expect(effects.at(-1)!.kind).toBe('meteor-shower');
   });
 
-  it('caps the personal show at the global shell budget while keeping every genre', () => {
-    const bursts = personalShowBurstCounts([40, 40, 40, 1]);
-    expect(bursts.reduce((sum, value) => sum + value, 0))
-      .toBeLessThanOrEqual(PERSONAL_SHOW_MAX_TOTAL_BURSTS);
-    for (const value of bursts) expect(value).toBeGreaterThanOrEqual(1);
-    expect(bursts[3]).toBe(1);
+  it('forms a rarity-colored ringed-planet figure for gacha pulls', () => {
+    const legendary = createParticleEffectsForEvent(
+      event('planet-pulled', { rarity: 'legendary' }),
+      constantRandom(0),
+    )[0]!;
+    const common = createParticleEffectsForEvent(
+      event('planet-pulled', { rarity: 'common' }),
+      constantRandom(0),
+    )[0]!;
+
+    expect(legendary).toMatchObject({
+      kind: 'fireworks',
+      shape: 'planet',
+      color: RARITY_COLORS.legendary,
+      celebrationScope: 'archive',
+      // Top tiers draw the figure at full spark density.
+      particleCount: FIREWORK_PARTICLE_RANGE[1],
+    });
+    expect(common).toMatchObject({
+      kind: 'fireworks',
+      shape: 'planet',
+      color: RARITY_COLORS.common,
+    });
   });
 
   it('creates completion celebrations for milestone and achievement unlock events', () => {
@@ -155,7 +161,7 @@ describe('ParticleManager effect model', () => {
     ).toMatchObject({ kind: 'milestone-celebration' });
     expect(
       createParticleEffectsForEvent(event('achievement-unlocked', {}), constantRandom(0))[0],
-    ).toMatchObject({ kind: 'fireworks', celebrationScope: 'archive' });
+    ).toMatchObject({ kind: 'fireworks', shape: 'crown', celebrationScope: 'archive' });
   });
 
   it('R13.4 uses every bounded particle and trail range minimum after degradation', () => {
