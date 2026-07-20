@@ -8,7 +8,7 @@ import {
   Float32BufferAttribute,
   Mesh,
   PlaneGeometry,
-  Points,
+  RingGeometry,
   ShaderMaterial,
   SpriteMaterial,
   type Group,
@@ -68,6 +68,35 @@ function effectColor(kind: ParticleEffectDescriptor['kind']): string {
   }
 }
 
+/**
+ * Trajectory shared by the spark heads and their light trails: an explosive
+ * launch from the shell's heart that overshoots each spark's slot in the
+ * figure and springs back (easeOutBack), a hovering breathe once settled,
+ * then a loosening downward dissolve.
+ */
+const FIREWORK_MOTION_GLSL = `
+  vec3 sparkPos(vec3 slot, float t, float seed, float clockTime) {
+    float x = clamp(t / 0.3, 0.0, 1.0);
+    float c1 = 1.70158;
+    float c3 = c1 + 1.0;
+    float form = 1.0 + c3 * pow(x - 1.0, 3.0) + c1 * pow(x - 1.0, 2.0);
+    float settled = smoothstep(0.26, 0.4, t);
+    vec3 pos = slot * form;
+    pos.x += sin(clockTime * 1.2 + seed * 43.0) * 1.1 * settled;
+    pos.y += cos(clockTime * 0.9 + seed * 57.0) * 1.1 * settled;
+    float fall = smoothstep(0.7, 1.0, t);
+    pos *= 1.0 + fall * 0.25;
+    pos.y -= fall * fall * 22.0;
+    return pos;
+  }
+
+  float sparkLife(float clockTime, float delay, float duration) {
+    // Normalized life with headroom so the most-delayed spark still
+    // completes its full fade before the effect's cleanup timer fires.
+    return clamp((clockTime - delay) / max(0.1, duration - 0.9), 0.0, 1.0);
+  }
+`;
+
 const FIREWORK_VERTEX_SHADER = `
   attribute float aSize;
   attribute float aDelay;
@@ -79,29 +108,18 @@ const FIREWORK_VERTEX_SHADER = `
   uniform float uPixelRatio;
   varying float vAlpha;
   varying vec3 vColor;
+  ${FIREWORK_MOTION_GLSL}
 
   void main() {
-    // Normalize each spark's life over the effect window, leaving headroom so
-    // the most-delayed spark still completes its full fade before cleanup.
-    float t = clamp((uTime - aDelay) / max(0.1, uDuration - 0.9), 0.0, 1.0);
-    // Formation: sparks race out from the shell's heart to their slot in the
-    // figure, easing to a stop like drones settling into a light show.
-    float form = 1.0 - pow(1.0 - clamp(t / 0.3, 0.0, 1.0), 3.0);
-    float settled = smoothstep(0.26, 0.4, t);
-    vec3 pos = position * form;
-    // The formed figure hovers and breathes like a drone constellation.
-    pos.x += sin(uTime * 1.3 + aSeed * 43.0) * 0.45 * settled;
-    pos.y += cos(uTime * 1.1 + aSeed * 57.0) * 0.45 * settled;
-    // Finale: the figure loosens, swells, and sinks as its sparks burn out.
-    float fall = smoothstep(0.72, 1.0, t);
-    pos *= 1.0 + fall * 0.22;
-    pos.y -= fall * fall * 8.0;
+    float t = sparkLife(uTime, aDelay, uDuration);
+    vec3 pos = sparkPos(position, t, aSeed, uTime);
 
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPosition;
 
-    float appear = smoothstep(0.0, 0.05, t);
-    float fade = 1.0 - smoothstep(0.76, 1.0, t);
+    float settled = smoothstep(0.26, 0.4, t);
+    float appear = smoothstep(0.0, 0.04, t);
+    float fade = 1.0 - smoothstep(0.74, 1.0, t);
     float twinkle = 0.8 + 0.2 * sin(uTime * 8.0 + aSeed * 89.0);
     // Glitter sparks strobe once the figure has formed, like crackle stars.
     float strobe = step(0.35, fract(sin(floor(uTime * 14.0) + aSeed * 61.0) * 43758.5453));
@@ -115,8 +133,87 @@ const FIREWORK_VERTEX_SHADER = `
 
     // Cap the screen-space size: nearby sparks otherwise balloon into huge
     // additive quads whose overdraw stalls weaker GPUs into dropped frames.
-    float px = aSize * uPixelRatio * (300.0 / max(1.0, -mvPosition.z));
-    gl_PointSize = min(px, 64.0 * uPixelRatio);
+    float px = aSize * uPixelRatio * (480.0 / max(1.0, -mvPosition.z));
+    gl_PointSize = min(px, 72.0 * uPixelRatio);
+  }
+`;
+
+/**
+ * Each spark drags a comet-like light streak: a line from its current position
+ * back to where it was a beat ago. Streaks are long while sparks race outward,
+ * vanish while the figure hovers, and reappear as it rains apart.
+ */
+const FIREWORK_TRAIL_VERTEX_SHADER = `
+  attribute float aTrail;
+  attribute float aDelay;
+  attribute vec3 aColor;
+  attribute float aSeed;
+  uniform float uTime;
+  uniform float uDuration;
+  varying float vAlpha;
+  varying vec3 vColor;
+  ${FIREWORK_MOTION_GLSL}
+
+  void main() {
+    float tHead = sparkLife(uTime, aDelay, uDuration);
+    float tTail = sparkLife(uTime - 0.22, aDelay, uDuration);
+    vec3 head = sparkPos(position, tHead, aSeed, uTime);
+    vec3 tail = sparkPos(position, tTail, aSeed, uTime - 0.22);
+    vec3 span = tail - head;
+    float len = length(span);
+    // Cap the streak so settled sparks keep short, elegant tails.
+    if (len > 16.0) span *= 16.0 / len;
+    vec3 pos = head + span * aTrail;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+
+    float appear = smoothstep(0.0, 0.04, tHead);
+    float fade = 1.0 - smoothstep(0.74, 1.0, tHead);
+    // Streak brightness follows speed, so trails live only while moving.
+    float speedGlow = clamp(len / 5.0, 0.0, 1.0);
+    vAlpha = appear * fade * speedGlow * (1.0 - aTrail) * 0.75;
+
+    vec3 tinted = mix(vec3(1.0), aColor, smoothstep(0.02, 0.3, tHead));
+    vColor = tinted;
+  }
+`;
+
+const FIREWORK_TRAIL_FRAGMENT_SHADER = `
+  precision highp float;
+  varying float vAlpha;
+  varying vec3 vColor;
+
+  void main() {
+    if (vAlpha <= 0.004) discard;
+    gl_FragColor = vec4(vColor, vAlpha);
+  }
+`;
+
+/** Expanding shockwave ring that races out past the figure as it opens. */
+const FIREWORK_RING_VERTEX_SHADER = `
+  uniform float uTime;
+  uniform float uRadius;
+  varying float vProgress;
+
+  void main() {
+    float p = clamp(uTime / 1.1, 0.0, 1.0);
+    float eased = 1.0 - pow(1.0 - p, 3.0);
+    vProgress = p;
+    // Zero scale before the burst keeps the ring invisible during the climb.
+    vec3 pos = position * mix(0.0, 1.35, eased) * uRadius;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }
+`;
+
+const FIREWORK_RING_FRAGMENT_SHADER = `
+  precision highp float;
+  uniform vec3 uTint;
+  varying float vProgress;
+
+  void main() {
+    float alpha = (1.0 - vProgress) * 0.5;
+    if (alpha <= 0.004) discard;
+    gl_FragColor = vec4(mix(vec3(1.0), uTint, vProgress) * 1.2, alpha);
   }
 `;
 
@@ -156,11 +253,17 @@ const COSMIC_ACCENTS: readonly Color[] = [
   new Color('#8fb6ff'), // deep-sky blue
 ];
 
-/** World-space radius of the backdrop figure (about 40% of the visible sky). */
-const FIGURE_RADIUS = 26;
+/**
+ * World-space radius of the backdrop figure. Staged far behind the star field,
+ * it spans roughly 60% of the visible sky — a vast panorama, never a local pop.
+ */
+const FIGURE_RADIUS = 78;
 
-/** Backdrop stage: centered high in the sky, behind the stars and blackhole. */
-const FIGURE_STAGE: readonly [number, number, number] = [0, 10, -40];
+/** Deep backdrop stage: high in the sky, far behind every star and planet. */
+const FIGURE_STAGE: readonly [number, number, number] = [0, 34, -130];
+
+/** Seconds the launch rocket climbs before the shell bursts open. */
+const LAUNCH_SECONDS = 1.05;
 
 type ShapePoint = readonly [number, number];
 
@@ -288,7 +391,12 @@ function sampleShapeTargets(
   return targets;
 }
 
-function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry {
+interface FireworkGeometries {
+  sparks: BufferGeometry;
+  trails: BufferGeometry;
+}
+
+function buildFireworkGeometries(effect: ParticleEffectDescriptor): FireworkGeometries {
   const random = fireworkRandom(effect.seed);
   const total = Math.max(24, Math.floor(effect.particleCount));
   const shape = effect.shape ?? 'star';
@@ -314,8 +422,10 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
     positions[index * 3] = ux * radius;
     positions[index * 3 + 1] = uy * radius;
     positions[index * 3 + 2] = (random() - 0.5) * 2.4;
-    sizes[index] = 5.5 + random() * 6.5;
-    delays[index] = random() * 0.5;
+    sizes[index] = 8 + random() * 10;
+    // Sparks wait for the rocket to arrive; a tight stagger after that keeps
+    // the burst reading as one single great blast.
+    delays[index] = LAUNCH_SECONDS + random() * 0.35;
     glitters[index] = random() < 0.35 ? 1 : 0;
     seeds[index] = random();
 
@@ -331,14 +441,43 @@ function buildFireworkGeometry(effect: ParticleEffectDescriptor): BufferGeometry
     colors[index * 3 + 2] = Math.min(1, sparkColor.b * brightness + whiteHot);
   }
 
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('aSize', new Float32BufferAttribute(sizes, 1));
-  geometry.setAttribute('aDelay', new Float32BufferAttribute(delays, 1));
-  geometry.setAttribute('aColor', new Float32BufferAttribute(colors, 3));
-  geometry.setAttribute('aGlitter', new Float32BufferAttribute(glitters, 1));
-  geometry.setAttribute('aSeed', new Float32BufferAttribute(seeds, 1));
-  return geometry;
+  const sparks = new BufferGeometry();
+  sparks.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  sparks.setAttribute('aSize', new Float32BufferAttribute(sizes, 1));
+  sparks.setAttribute('aDelay', new Float32BufferAttribute(delays, 1));
+  sparks.setAttribute('aColor', new Float32BufferAttribute(colors, 3));
+  sparks.setAttribute('aGlitter', new Float32BufferAttribute(glitters, 1));
+  sparks.setAttribute('aSeed', new Float32BufferAttribute(seeds, 1));
+
+  // The trail geometry duplicates every spark into a head/tail vertex pair;
+  // the trail shader stretches each pair into a comet streak along its path.
+  const trailPositions = new Float32Array(total * 2 * 3);
+  const trailDelays = new Float32Array(total * 2);
+  const trailColors = new Float32Array(total * 2 * 3);
+  const trailSeeds = new Float32Array(total * 2);
+  const trailEnds = new Float32Array(total * 2);
+  for (let index = 0; index < total; index += 1) {
+    for (let end = 0; end < 2; end += 1) {
+      const vertex = index * 2 + end;
+      trailPositions[vertex * 3] = positions[index * 3]!;
+      trailPositions[vertex * 3 + 1] = positions[index * 3 + 1]!;
+      trailPositions[vertex * 3 + 2] = positions[index * 3 + 2]!;
+      trailDelays[vertex] = delays[index]!;
+      trailColors[vertex * 3] = colors[index * 3]!;
+      trailColors[vertex * 3 + 1] = colors[index * 3 + 1]!;
+      trailColors[vertex * 3 + 2] = colors[index * 3 + 2]!;
+      trailSeeds[vertex] = seeds[index]!;
+      trailEnds[vertex] = end;
+    }
+  }
+  const trails = new BufferGeometry();
+  trails.setAttribute('position', new Float32BufferAttribute(trailPositions, 3));
+  trails.setAttribute('aDelay', new Float32BufferAttribute(trailDelays, 1));
+  trails.setAttribute('aColor', new Float32BufferAttribute(trailColors, 3));
+  trails.setAttribute('aSeed', new Float32BufferAttribute(trailSeeds, 1));
+  trails.setAttribute('aTrail', new Float32BufferAttribute(trailEnds, 1));
+
+  return { sparks, trails };
 }
 
 interface FireworksVisualProps {
@@ -347,19 +486,22 @@ interface FireworksVisualProps {
 }
 
 /**
- * GPU-driven drone-show fireworks: a burst of sparks races out from a central
- * flash and settles into one giant glowing figure on the backdrop sky — a star
- * for new works, a ringed planet for gacha pulls, a crown for achievements —
- * hovers there twinkling, then loosens and sinks away.
+ * GPU-driven drone-show fireworks, staged as a vast deep-background panorama:
+ * a launch flash and expanding shockwave ring open the show, then hundreds of
+ * sparks — each dragging a comet-like light trail — blast outward and settle
+ * into one giant glowing figure (a star for new works, a ringed planet for
+ * gacha pulls, a crown for achievements), hover there twinkling, and finally
+ * rain apart.
  */
 export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
-  const pointsRef = useRef<Points>(null);
   const elapsedRef = useRef(0);
   const pixelRatio = useThree((state) => state.viewport.dpr);
   const isArchiveShow = effect.celebrationScope === 'archive';
+  const figureRadius = isArchiveShow ? FIGURE_RADIUS : 8;
 
-  const geometry = useMemo(() => buildFireworkGeometry(effect), [effect]);
-  const material = useMemo(
+  const { sparks, trails } = useMemo(() => buildFireworkGeometries(effect), [effect]);
+  const ringGeometry = useMemo(() => new RingGeometry(0.96, 1, 96), []);
+  const sparkMaterial = useMemo(
     () =>
       new ShaderMaterial({
         transparent: true,
@@ -375,41 +517,204 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
       }),
     [effect.durationSeconds, pixelRatio],
   );
+  const trailMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        vertexShader: FIREWORK_TRAIL_VERTEX_SHADER,
+        fragmentShader: FIREWORK_TRAIL_FRAGMENT_SHADER,
+        uniforms: {
+          uTime: { value: 0 },
+          uDuration: { value: effect.durationSeconds },
+        },
+      }),
+    [effect.durationSeconds],
+  );
+  const ringMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        side: DoubleSide,
+        vertexShader: FIREWORK_RING_VERTEX_SHADER,
+        fragmentShader: FIREWORK_RING_FRAGMENT_SHADER,
+        uniforms: {
+          uTime: { value: 0 },
+          uRadius: { value: figureRadius * 1.05 },
+          uTint: { value: new Color(effect.color ?? DEFAULT_FIREWORK_COLOR) },
+        },
+      }),
+    [effect.color, figureRadius],
+  );
+  const flashMaterial = useMemo(
+    () =>
+      new SpriteMaterial({
+        map: getStarHaloTexture(),
+        color: effect.color ?? DEFAULT_FIREWORK_COLOR,
+        blending: AdditiveBlending,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0,
+        toneMapped: false,
+      }),
+    [effect.color],
+  );
+
+  // The climbing shell: a warm-white head dragging a vertical fire trail from
+  // the bottom of the sky up to the burst point.
+  const rocketRef = useRef<Group>(null);
+  const rocketGeometry = useMemo(() => new PlaneGeometry(1, 1), []);
+  const rocketTrailMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        side: DoubleSide,
+        vertexShader: METEOR_VERTEX_SHADER,
+        fragmentShader: METEOR_FRAGMENT_SHADER,
+        uniforms: {
+          uTint: { value: new Color('#ffd9a0') },
+          uFade: { value: 0 },
+          uTime: { value: 0 },
+        },
+      }),
+    [],
+  );
+  const rocketHeadMaterial = useMemo(
+    () =>
+      new SpriteMaterial({
+        map: getStarHaloTexture(),
+        color: '#fff3d6',
+        blending: AdditiveBlending,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0,
+        toneMapped: false,
+      }),
+    [],
+  );
 
   useEffect(() => {
-    controller.addResource(effect.id, 'geometry', geometry);
-    controller.addResource(effect.id, 'material', material);
+    controller.addResource(effect.id, 'geometry', sparks);
+    controller.addResource(effect.id, 'geometry', trails);
+    controller.addResource(effect.id, 'geometry', ringGeometry);
+    controller.addResource(effect.id, 'geometry', rocketGeometry);
+    controller.addResource(effect.id, 'material', sparkMaterial);
+    controller.addResource(effect.id, 'material', trailMaterial);
+    controller.addResource(effect.id, 'material', ringMaterial);
+    controller.addResource(effect.id, 'material', flashMaterial);
+    controller.addResource(effect.id, 'material', rocketTrailMaterial);
+    controller.addResource(effect.id, 'material', rocketHeadMaterial);
     controller.addAnimation(effect.id, () => {
       elapsedRef.current = 0;
     });
-  }, [controller, effect.id, geometry, material]);
+  }, [
+    controller,
+    effect.id,
+    sparks,
+    trails,
+    ringGeometry,
+    rocketGeometry,
+    sparkMaterial,
+    trailMaterial,
+    ringMaterial,
+    flashMaterial,
+    rocketTrailMaterial,
+    rocketHeadMaterial,
+  ]);
 
   useFrame((_, delta) => {
     elapsedRef.current += delta;
-    material.uniforms.uTime!.value = elapsedRef.current;
-    material.uniforms.uPixelRatio!.value = pixelRatio;
+    const elapsed = elapsedRef.current;
+    // Sparks and their comet trails wait out the climb via per-spark delays.
+    sparkMaterial.uniforms.uTime!.value = elapsed;
+    sparkMaterial.uniforms.uPixelRatio!.value = pixelRatio;
+    trailMaterial.uniforms.uTime!.value = elapsed;
+
+    // Flash and shockwave ignite the moment the rocket reaches the apex.
+    const sinceBurst = elapsed - LAUNCH_SECONDS;
+    ringMaterial.uniforms.uTime!.value = Math.max(0, sinceBurst);
+    flashMaterial.opacity = sinceBurst >= 0
+      ? Math.pow(Math.max(0, 1 - sinceBurst / 0.55), 1.6) * 0.9
+      : 0;
+
+    // The rocket eases up from far below, swaying gently, and winks out at
+    // the apex just as the shell bursts.
+    const climb = Math.min(1, elapsed / LAUNCH_SECONDS);
+    const eased = 1 - Math.pow(1 - climb, 2.2);
+    const rocket = rocketRef.current;
+    if (rocket !== null) {
+      rocket.position.set(Math.sin(climb * 6) * 5 * (1 - climb), -170 * (1 - eased), 0);
+      rocket.visible = elapsed < LAUNCH_SECONDS + 0.08;
+    }
+    const rocketFade =
+      Math.min(climb / 0.12, 1) * (1 - Math.max(0, (climb - 0.9) / 0.1));
+    rocketTrailMaterial.uniforms.uFade!.value = Math.max(0, rocketFade);
+    rocketTrailMaterial.uniforms.uTime!.value = elapsed;
+    rocketHeadMaterial.opacity = Math.max(0, rocketFade);
   });
 
-  // The celebration figure is staged on the backdrop sky, not the new work.
+  // The celebration figure is staged on the deep backdrop, not the new work.
   const origin: readonly [number, number, number] = isArchiveShow
     ? FIGURE_STAGE
     : [effect.origin.x, effect.origin.y, effect.origin.z];
+  const flashScale = figureRadius * 0.8;
 
   return (
-    <points
-      frustumCulled={false}
-      geometry={geometry}
-      material={material}
+    <group
       name="particle-effect-fireworks"
       position={origin}
-      ref={pointsRef}
       userData={{
         effectId: effect.id,
         particleCount: effect.particleCount,
         shape: effect.shape ?? 'star',
         celebrationScope: effect.celebrationScope ?? 'single',
       }}
-    />
+    >
+      <points
+        frustumCulled={false}
+        geometry={sparks}
+        material={sparkMaterial}
+        name="firework-sparks"
+      />
+      <lineSegments
+        frustumCulled={false}
+        geometry={trails}
+        material={trailMaterial}
+        name="firework-trails"
+      />
+      <mesh
+        frustumCulled={false}
+        geometry={ringGeometry}
+        material={ringMaterial}
+        name="firework-shockwave"
+      />
+      <sprite
+        material={flashMaterial}
+        name="firework-flash"
+        scale={[flashScale, flashScale, 1]}
+      />
+      <group name="firework-rocket" ref={rocketRef}>
+        {/* Rotated so the meteor shader's head (+x) points straight up. */}
+        <group rotation={[0, 0, Math.PI / 2]}>
+          <mesh
+            frustumCulled={false}
+            geometry={rocketGeometry}
+            material={rocketTrailMaterial}
+            scale={[30, 3, 1]}
+          />
+          <sprite
+            material={rocketHeadMaterial}
+            position={[15, 0, 0]}
+            scale={[8, 8, 1]}
+          />
+        </group>
+      </group>
+    </group>
   );
 }
 
