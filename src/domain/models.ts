@@ -25,6 +25,10 @@ export interface Star {
   normalizedDirector: string;
   position: Vec3;
   createdAt: string;
+  /** TMDB poster path (e.g. "/abc.jpg") when picked from autocomplete. */
+  posterPath?: string;
+  /** TMDB movie id backing a picked work, for future metadata enrichment. */
+  tmdbId?: number;
 }
 
 export interface Constellation {

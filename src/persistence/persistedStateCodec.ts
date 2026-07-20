@@ -72,6 +72,14 @@ const starFields = {
   normalizedDirector: z.string().min(1).max(200),
   position: vec3Schema,
   createdAt: ISO_TIMESTAMP,
+  // Optional TMDB enrichment from autocomplete; absent on manually typed works
+  // and every pre-existing document, so no migration is required.
+  posterPath: z
+    .string()
+    .regex(/^\/[\w./-]+\.(jpg|jpeg|png|webp)$/i)
+    .max(200)
+    .optional(),
+  tmdbId: z.number().int().positive().optional(),
 } as const;
 
 function validateNormalizedStarText(

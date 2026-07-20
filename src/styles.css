@@ -1998,3 +1998,130 @@ progress::-moz-progress-bar {
   color: var(--text-faint);
   text-align: center;
 }
+
+/* ---- TMDB title autocomplete ---- */
+.work-title-field {
+  grid-column: 1 / -1;
+}
+
+.autocomplete-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.autocomplete-poster-thumb {
+  position: absolute;
+  left: 0.4rem;
+  width: 1.9rem;
+  height: 2.7rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.autocomplete-shell input.has-poster {
+  padding-left: 2.7rem;
+}
+
+.autocomplete-hint {
+  margin: 0.1rem 0 0;
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  max-height: 17rem;
+  overflow-y: auto;
+  background: var(--panel-bg-solid);
+  border: 1px solid var(--panel-border-strong);
+  border-radius: 0.6rem;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+}
+
+.autocomplete-status {
+  padding: 0.6rem 0.7rem;
+  color: var(--text-faint);
+  font-size: 0.86rem;
+}
+
+.autocomplete-option {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.45rem;
+  cursor: pointer;
+}
+
+.autocomplete-option.is-active {
+  background: var(--accent-soft);
+}
+
+.autocomplete-option-thumb {
+  flex: 0 0 auto;
+  width: 2.1rem;
+  height: 3.1rem;
+  object-fit: cover;
+  border-radius: 0.28rem;
+  background: rgba(158, 196, 255, 0.08);
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+}
+
+.autocomplete-option-thumb.is-empty {
+  border: 1px solid var(--panel-border);
+}
+
+.autocomplete-option-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autocomplete-option-year {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Work-card poster ---- */
+.work-card-heading {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.work-card-heading.has-poster {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.work-card-poster {
+  width: 5.4rem;
+  height: 8rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.work-card-heading-text {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+}

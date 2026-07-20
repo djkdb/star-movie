@@ -53,6 +53,33 @@ describe('schemaVersion 2 persisted-state codec', () => {
     expect(decoded.constellations[0]?.starIds).toEqual([STAR_TWO_ID, STAR_ONE_ID]);
   });
 
+  it('round-trips the optional TMDB posterPath and tmdbId when present', () => {
+    const state = createValidDocument();
+    state.stars[0]!.posterPath = '/wuMc08IPKEatf9rnMNXvIDxqP4W.jpg';
+    state.stars[0]!.tmdbId = 496243;
+
+    const decoded = decodePersistedV2(encodePersistedV2(state));
+    expect(decoded.stars[0]!.posterPath).toBe('/wuMc08IPKEatf9rnMNXvIDxqP4W.jpg');
+    expect(decoded.stars[0]!.tmdbId).toBe(496243);
+    expect(decoded).toEqual(state);
+  });
+
+  it('accepts documents whose stars omit the optional TMDB fields', () => {
+    // The pre-poster shape: no posterPath/tmdbId keys at all.
+    const state = createValidDocument();
+    expect('posterPath' in state.stars[0]!).toBe(false);
+    expect(safeDecodePersistedV2(state).success).toBe(true);
+  });
+
+  it.each(['not-a-path', '/no-extension', '/bad.gif', 'abc.jpg'])(
+    'rejects a malformed posterPath %s',
+    (posterPath) => {
+      const state = createValidDocument();
+      (state.stars[0] as { posterPath?: string }).posterPath = posterPath;
+      expect(safeDecodePersistedV2(state).success).toBe(false);
+    },
+  );
+
   it.each(['2024-02-29', '2000-02-29', '2025-01-31'])(
     'R8.2 accepts the real calendar date %s',
     (watchedDate) => {
