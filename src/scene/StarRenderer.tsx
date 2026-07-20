@@ -1,12 +1,14 @@
-import type { Star } from '../domain/models';
+import type { Genre, Star } from '../domain/models';
 import { IndividualStarMesh } from './IndividualStarMesh';
 import { InstancedStarField } from './InstancedStarField';
+import { resolveGenreOpacity } from './genreSpotlight';
 import type { StarDragPayload } from './starVisualModel';
 import { getStarRenderMode } from './starRendererModel';
 
 export interface StarRendererProps {
   stars: readonly Star[];
   selectedStarId: string | null;
+  selectedGenres: ReadonlySet<Genre>;
   reducedMotion: boolean;
   onSelect: (starId: string) => void;
   onDragStart?: (payload: StarDragPayload) => void;
@@ -20,6 +22,7 @@ export interface StarRendererProps {
 export function StarRenderer({
   stars,
   selectedStarId,
+  selectedGenres,
   reducedMotion,
   onSelect,
   onDragStart,
@@ -34,6 +37,7 @@ export function StarRenderer({
         onDragStart={onDragStart}
         onSelect={onSelect}
         reducedMotion={reducedMotion}
+        selectedGenres={selectedGenres}
         selectedStarId={selectedStarId}
         stars={stars}
       />
@@ -48,6 +52,7 @@ export function StarRenderer({
           onDragEnd={onDragEnd}
           onDragStart={onDragStart}
           onSelect={onSelect}
+          opacity={resolveGenreOpacity(star.genre, selectedGenres)}
           reducedMotion={reducedMotion}
           selected={selectedStarId === star.id}
           star={star}

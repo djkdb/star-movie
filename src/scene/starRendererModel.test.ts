@@ -167,6 +167,37 @@ describe('Star renderer model', () => {
     }
   });
 
+  it('scales instance colors by the per-star brightness multiplier (genre spotlight)', () => {
+    const stars = [createStar('lit', 4), createStar('dim', 4)];
+    const bucket = createInstancedStarBuckets(stars)[0]!;
+    const geometry = new SphereGeometry(1, 8, 6);
+    const material = new MeshBasicMaterial({ vertexColors: true });
+    const mesh = new InstancedMesh(geometry, material, stars.length);
+    const color = new Color('#ffe9b8');
+
+    try {
+      updateInstancedStarColors(mesh, bucket, color, (star) =>
+        star.id === 'dim' ? 0.05 : 1,
+      );
+      const litIndex = bucket.stars.findIndex((star) => star.id === 'lit');
+      const dimIndex = bucket.stars.findIndex((star) => star.id === 'dim');
+
+      const lit = new Color();
+      const dim = new Color();
+      mesh.getColorAt(litIndex, lit);
+      mesh.getColorAt(dimIndex, dim);
+
+      // The lit star keeps its full tint; the dimmed star is scaled toward black.
+      expect(`#${lit.getHexString()}`).toBe(getStarDisplayColor('lit', 4, bucket.stars[litIndex]!.genre));
+      const base = new Color(getStarDisplayColor('dim', 4, bucket.stars[dimIndex]!.genre));
+      expect(dim.r).toBeCloseTo(base.r * 0.05, 4);
+      expect(dim.g).toBeCloseTo(base.g * 0.05, 4);
+    } finally {
+      geometry.dispose();
+      material.dispose();
+    }
+  });
+
   it('R13.1 preserves ID-based selection and camera target mappings across 50↔51 transitions', () => {
     const stars = Array.from({ length: 51 }, (_, index) =>
       createStar(`transition-${index}`, ((index % 5) + 1) as Rating),

@@ -24,6 +24,7 @@ import type {
   CameraRequest,
   Constellation,
   Galaxy,
+  Genre,
   OwnedPlanet,
   PersistedStore,
   QualityLevel,
@@ -379,6 +380,7 @@ interface SpaceSceneProps {
   constellationDraft: ReturnType<ArchiveStoreApi['getState']>['runtime']['constellationDraft'];
   pendingCameraRequest: ReturnType<ArchiveStoreApi['getState']>['runtime']['pendingCameraRequest'];
   selectedStarId: string | null;
+  selectedGenres: ReadonlySet<Genre>;
   qualityLevel: QualityLevel;
   reducedMotion: boolean;
   activeDragPayload: StarDragPayload | null;
@@ -394,6 +396,7 @@ function SpaceScene({
   constellationDraft,
   pendingCameraRequest,
   selectedStarId,
+  selectedGenres,
   qualityLevel,
   reducedMotion,
   activeDragPayload,
@@ -472,6 +475,7 @@ function SpaceScene({
           onDragStart={onStarDragStart}
           onSelect={selectStar}
           reducedMotion={reducedMotion}
+          selectedGenres={selectedGenres}
           selectedStarId={selectedStarId}
           stars={viewModel.archiveContent.stars}
         />
@@ -568,6 +572,7 @@ export function SpaceCanvas({
     (state) => state.runtime.pendingCameraRequest,
   );
   const selectedStarId = useStore(store, (state) => state.runtime.selectedStarId);
+  const selectedGenres = useStore(store, (state) => state.runtime.selectedGenres);
   const qualityLevel = useStore(store, (state) => state.runtime.qualityLevel);
   const reducedMotion = usePrefersReducedMotion();
   const canvasRegionRef = useRef<HTMLElement>(null);
@@ -692,6 +697,7 @@ export function SpaceCanvas({
                   pendingCameraRequest={pendingCameraRequest}
                   qualityLevel={qualityLevel}
                   reducedMotion={reducedMotion}
+                  selectedGenres={selectedGenres}
                   selectedStarId={selectedStarId}
                   store={store}
                   viewModel={viewModel}
