@@ -46,13 +46,35 @@ function nolanUniqueWorkProgress(stars: readonly Star[]): number {
   return uniqueWorks.size;
 }
 
+/** Everything an achievement rule may need to measure its progress. */
+export type AchievementProgressContext = Pick<
+  PersistedStateV2,
+  'stars' | 'constellations' | 'blackholeArchive' | 'planetCollection'
+>;
+
+function distinctCount<T>(items: readonly T[], key: (item: T) => string): number {
+  const seen = new Set<string>();
+  for (const item of items) seen.add(key(item));
+  return seen.size;
+}
+
 export function calculateAchievementProgress(
   achievement: Pick<Achievement, 'ruleId'>,
-  stars: readonly Star[],
+  context: AchievementProgressContext,
 ): number {
   switch (achievement.ruleId) {
     case 'nolan-unique-work':
-      return nolanUniqueWorkProgress(stars);
+      return nolanUniqueWorkProgress(context.stars);
+    case 'genre-explorer':
+      return distinctCount(context.stars, (star) => star.genre);
+    case 'five-star-curator':
+      return context.stars.filter((star) => star.rating === 5).length;
+    case 'constellation-architect':
+      return context.constellations.length;
+    case 'blackhole-keeper':
+      return context.blackholeArchive.length;
+    case 'planet-pioneer':
+      return distinctCount(context.planetCollection.planets, (planet) => planet.speciesId);
   }
 }
 
@@ -126,7 +148,7 @@ function reconcileAchievements(
   const events: RuntimeEvent[] = [];
   candidate.achievements = candidate.achievements.map((achievement) => {
     const prior = previous.achievements.find(({ id }) => id === achievement.id);
-    const progress = calculateAchievementProgress(achievement, candidate.stars);
+    const progress = calculateAchievementProgress(achievement, candidate);
 
     if (prior?.unlocked === true) {
       return {

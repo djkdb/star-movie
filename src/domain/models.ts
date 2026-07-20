@@ -76,7 +76,13 @@ export interface Milestone {
   rewardId: string | null;
 }
 
-export type AchievementRuleId = 'nolan-unique-work';
+export type AchievementRuleId =
+  | 'nolan-unique-work'
+  | 'genre-explorer'
+  | 'five-star-curator'
+  | 'constellation-architect'
+  | 'blackhole-keeper'
+  | 'planet-pioneer';
 
 export interface Achievement {
   id: string;

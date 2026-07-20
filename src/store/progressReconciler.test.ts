@@ -11,6 +11,7 @@ import {
   createArchiveStoreFromLoadResult,
 } from './archiveStore';
 import {
+  calculateAchievementProgress,
   reconcileProgressAfterMutation,
   reconcileRestoredProgress,
 } from './progressReconciler';
@@ -375,5 +376,80 @@ describe('archive store progress integration', () => {
     expect(result).toMatchObject({ ok: false, error: { code: 'STORAGE_WRITE' } });
     expect(store.getState().persisted).toEqual(before);
     expect(store.getState().runtime.completionEvents).toEqual([]);
+  });
+});
+
+describe('calculateAchievementProgress rules', () => {
+  function contextWith(overrides: Partial<PersistedStateV2>): PersistedStateV2 {
+    return { ...createDefaultStore().persisted, ...overrides };
+  }
+
+  it('genre-explorer counts distinct genres among active stars', () => {
+    const base = createDefaultStore();
+    const stars = (['SF', '로맨스', 'SF', '액션'] as const).map((genre, index) =>
+      createStar(base.persisted, index, `Work ${index}`, 'Dir'),
+    );
+    stars[0]!.genre = 'SF';
+    stars[1]!.genre = '로맨스';
+    stars[2]!.genre = 'SF';
+    stars[3]!.genre = '액션';
+    expect(
+      calculateAchievementProgress({ ruleId: 'genre-explorer' }, contextWith({ stars })),
+    ).toBe(3);
+  });
+
+  it('five-star-curator counts only 5-star works', () => {
+    const base = createDefaultStore();
+    const stars = [5, 5, 3, 4, 5].map((rating, index) => {
+      const star = createStar(base.persisted, index, `Work ${index}`, 'Dir');
+      star.rating = rating as Star['rating'];
+      return star;
+    });
+    expect(
+      calculateAchievementProgress({ ruleId: 'five-star-curator' }, contextWith({ stars })),
+    ).toBe(3);
+  });
+
+  it('constellation-architect and blackhole-keeper count their collections', () => {
+    const constellations = [1, 2].map((index) => ({
+      id: uuid(index),
+      name: `C${index}`,
+      starIds: [],
+      color: '#ffffff',
+      createdAt: NOW,
+    }));
+    expect(
+      calculateAchievementProgress(
+        { ruleId: 'constellation-architect' },
+        contextWith({ constellations }),
+      ),
+    ).toBe(2);
+
+    const base = createDefaultStore();
+    const blackholeArchive = [1, 2, 3].map((index) => ({
+      ...createStar(base.persisted, index, `Work ${index}`, 'Dir'),
+      discardedAt: NOW,
+    }));
+    expect(
+      calculateAchievementProgress(
+        { ruleId: 'blackhole-keeper' },
+        contextWith({ blackholeArchive }),
+      ),
+    ).toBe(3);
+  });
+
+  it('planet-pioneer counts distinct collected species', () => {
+    const planetCollection = {
+      lifetimeStarsAdded: 0,
+      pullsPerformed: 3,
+      planets: [
+        { id: uuid(1), speciesId: 'a', acquiredAt: NOW, orbitSeed: 1 },
+        { id: uuid(2), speciesId: 'a', acquiredAt: NOW, orbitSeed: 2 },
+        { id: uuid(3), speciesId: 'b', acquiredAt: NOW, orbitSeed: 3 },
+      ],
+    };
+    expect(
+      calculateAchievementProgress({ ruleId: 'planet-pioneer' }, contextWith({ planetCollection })),
+    ).toBe(2);
   });
 });

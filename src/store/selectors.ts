@@ -162,7 +162,7 @@ export function selectAchievementViewModels(store: Readonly<Store>): Achievement
     name: achievement.name,
     description: achievement.description,
     ruleId: achievement.ruleId,
-    progress: calculateAchievementProgress(achievement, store.persisted.stars),
+    progress: calculateAchievementProgress(achievement, store.persisted),
     target: achievement.target,
     unlocked: achievement.unlocked,
     unlockedAt: achievement.unlockedAt,

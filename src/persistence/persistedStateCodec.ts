@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
+import {
+  ACHIEVEMENT_DEFINITIONS,
+  ACHIEVEMENT_RULE_IDS,
+  createLockedAchievement,
+} from '../domain/achievementCatalog';
 import { MINIMUM_GALAXY_CENTER_DISTANCE } from '../domain/defaultState';
 import {
   GENRES,
+  type AchievementRuleId,
   type Galaxy,
   type Genre,
   type PersistedStateV2,
@@ -199,7 +205,9 @@ const achievementSchema = z
     id: z.string().min(1).max(100),
     name: trimmedText(100),
     description: trimmedText(500),
-    ruleId: z.literal('nolan-unique-work'),
+    ruleId: z.enum(
+      ACHIEVEMENT_RULE_IDS as [AchievementRuleId, ...AchievementRuleId[]],
+    ),
     progress: z.number().int().nonnegative(),
     target: z.number().int().positive(),
     unlocked: z.boolean(),
@@ -514,10 +522,41 @@ function backfillLegacyShape(value: unknown): unknown {
   };
 }
 
+/**
+ * Appends any newly shipped achievements a document predates, locked and at
+ * zero progress, without touching achievements it already has (their earned
+ * state is preserved). Progress recomputes on the next mutation.
+ */
+function backfillMissingAchievements(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  if (!Array.isArray(record.achievements)) return value;
+
+  const presentIds = new Set(
+    record.achievements
+      .map((entry) =>
+        typeof entry === 'object' && entry !== null
+          ? (entry as { id?: unknown }).id
+          : undefined,
+      )
+      .filter((id): id is string => typeof id === 'string'),
+  );
+  const missing = ACHIEVEMENT_DEFINITIONS.filter(
+    (definition) => !presentIds.has(definition.id),
+  ).map(createLockedAchievement);
+  if (missing.length === 0) return value;
+
+  return { ...record, achievements: [...record.achievements, ...missing] };
+}
+
 /** Decodes either parsed JSON or a JSON string and rejects the entire document on any violation. */
 export function decodePersistedV2(value: unknown): PersistedStateV2 {
   const parsed = typeof value === 'string' ? parseJson(value) : value;
-  return validateAndRoundTrip(backfillLegacyShape(parsed));
+  return validateAndRoundTrip(
+    backfillMissingAchievements(backfillLegacyShape(parsed)),
+  );
 }
 
 /** Validates and canonically serializes a complete schemaVersion 2 document. */

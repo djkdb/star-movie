@@ -82,14 +82,14 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
 
     const completionEventsBeforeNavigation = store.getState().runtime.completionEvents;
     const toastEventsBeforeNavigation = store.getState().runtime.toastEvents;
-    await user.click(screen.getByRole('button', { name: '업적 0/1' }));
+    await user.click(screen.getByRole('button', { name: '업적 0/6' }));
     expect(screen.getByRole('dialog', { name: '업적' })).toBeInTheDocument();
-    expect(screen.getByText('놀란 마스터')).toBeInTheDocument();
-    expect(screen.getByText('0/10')).toBeInTheDocument();
+    const nolanItem = screen.getByText('놀란 마스터').closest('li')!;
+    expect(within(nolanItem).getByText('0/10')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '업적 패널 닫기' }));
     expect(screen.queryByRole('dialog', { name: '업적' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '업적 0/1' }));
+    await user.click(screen.getByRole('button', { name: '업적 0/6' }));
     expect(screen.getByRole('dialog', { name: '업적' })).toBeInTheDocument();
     expect(store.getState().runtime.completionEvents).toBe(completionEventsBeforeNavigation);
     expect(store.getState().runtime.toastEvents).toBe(toastEventsBeforeNavigation);
@@ -171,12 +171,16 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
             normalizedDirector: 'christopher nolan',
             createdAt: new Date(Date.UTC(2025, 0, 1, 0, 0, index)).toISOString(),
           })),
-          achievements: state.persisted.achievements.map((achievement) => ({
-            ...achievement,
-            progress: 10,
-            unlocked: true,
-            unlockedAt: unlockEvent.occurredAt,
-          })),
+          achievements: state.persisted.achievements.map((achievement) =>
+            achievement.id === 'nolan-master'
+              ? {
+                  ...achievement,
+                  progress: 10,
+                  unlocked: true,
+                  unlockedAt: unlockEvent.occurredAt,
+                }
+              : achievement,
+          ),
         },
         runtime: {
           ...state.runtime,
@@ -188,11 +192,11 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
 
     render(<><HUD store={store} /><AchievementPanel store={store} /><ToastRegion store={store} /></>);
 
-    expect(screen.getByRole('button', { name: '업적 1/1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '업적 1/6' })).toBeInTheDocument();
     expect(screen.getByText('업적 해금: 놀란 마스터')).toBeInTheDocument();
     expect(screen.getByText(unlockEvent.payload.description)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '업적 1/1' }));
+    await user.click(screen.getByRole('button', { name: '업적 1/6' }));
     expect(screen.getByText('10/10')).toBeInTheDocument();
     expect(screen.getByText('해금')).toBeInTheDocument();
 

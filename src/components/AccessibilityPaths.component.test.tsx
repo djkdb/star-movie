@@ -49,7 +49,7 @@ describe('complete accessible interaction paths', () => {
     const user = userEvent.setup();
     render(<><HUD store={store} /><AchievementPanel store={store} /></>);
 
-    const trigger = screen.getByRole('button', { name: '업적 0/1' });
+    const trigger = screen.getByRole('button', { name: '업적 0/6' });
     await user.click(trigger);
     const close = screen.getByRole('button', { name: '업적 패널 닫기' });
     expect(close).toHaveFocus();
