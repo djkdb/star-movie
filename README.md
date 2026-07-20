@@ -1,3 +1,35 @@
+# 🌌 Asteron
+
+> **내가 본 작품들이 별이 되어 남는, 3D 리뷰 아카이브**
+
+[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4.11-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Three.js](https://img.shields.io/badge/Three.js-WebGL-black?style=flat-square&logo=threedotjs&logoColor=white)](https://threejs.org/)
+[![TMDB](https://img.shields.io/badge/data-TMDB-01B4E4?style=flat-square&logo=themoviedatabase&logoColor=white)](https://www.themoviedb.org/)
+
+## Asteron은 무엇인가요?
+
+Asteron은 영화, 드라마, 애니메이션 등 내가 본 작품에 대한 **리뷰와 생각, 그 작품을 보던 날의 기억을 나만의 우주에 보관하는 개인 아카이브**입니다.
+
+작품을 찾기 위한 서비스라기보다, 이미 만난 작품을 오래 기억하기 위한 공간에 가깝습니다. 작품 하나하나는 밤하늘의 별이 되고, 같은 장르의 작품은 은하에 모이며, 서로 연결하고 싶은 작품들은 하나의 별자리가 됩니다.
+
+> 우주는 끝없이 넓고, 작품의 세계도 끝없이 이어집니다.  
+> Asteron은 그중 내가 지나온 이야기들을 나만의 밤하늘로 기록합니다.
+
+## ✨ 현재 구현된 기능
+
+### 작품 기록
+
+- 제목, 장르, 별점(1~5점), 감상평, 감상일, 감독 기록
+- 영화·드라마·애니메이션을 포함할 수 있는 8개 장르 분류
+- 작품을 추가하면 3D 공간에 하나의 별로 배치
+- 별의 시각적 표현은 작품 별점에 따라 달라짐
+- 기록된 작품은 브라우저 `localStorage`에 자동 저장
+
+### TMDB 연동
+
+- 제목 입력 중 TMDB 영화 자동완성
 - 포스터 썸네일과 개봉 연도 표시
 - 작품을 선택하면 장르 자동 입력
 - 영화 크레딧에서 감독 정보 자동 보완
@@ -62,99 +94,3 @@
 | 작품 DOM 탐색 | Canvas 없이 키보드와 DOM으로 작품 관리 |
 
 패널은 닫혀도 언마운트되지 않기 때문에 작성 중인 입력과 Store 상태가 유지됩니다. `Escape` 또는 바깥 영역 클릭으로 패널을 닫을 수 있습니다.
-
-## 🧱 기술 구조
-
-```text
-React + TypeScript + Vite
-          │
-          ├─ Zustand archive store
-          │    ├─ 작품·별자리·블랙홀·행성·업적 상태
-          │    └─ 원자적 command와 상태 불변식
-          │
-          ├─ React Three Fiber + Three.js
-          │    ├─ 우주 배경·은하·별·별자리·블랙홀
-          │    └─ 카메라 포커스·파티클·Bloom·성능 모드
-          │
-          ├─ localStorage persistence
-          │    ├─ schemaVersion 2
-          │    ├─ 1초 debounce autosave
-          │    └─ 손상 데이터 전체 기본 상태 복구
-          │
-          └─ TMDB REST API (선택)
-               └─ 영화 검색·포스터·감독 크레딧
-```
-
-주요 의존성은 `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `three`, `zustand`, `zod`입니다. 테스트에는 Vitest, Testing Library, Playwright, axe-core, fast-check를 사용합니다.
-
-## 🚀 시작하기
-
-### 요구 사항
-
-- Node.js 20 권장 (`.node-version`에 고정)
-- npm
-
-### 설치 및 실행
-
-```bash
-npm install
-npm run dev
-```
-
-브라우저에서 Vite가 출력한 로컬 주소를 엽니다.
-
-### TMDB 자동완성 설정(선택)
-
-```bash
-cp .env.example .env
-```
-
-`.env`에 읽기 전용 TMDB v3 API 키를 입력합니다.
-
-```env
-VITE_TMDB_API_KEY=your_tmdb_api_key
-```
-
-키가 없어도 작품 직접 입력, 리뷰 작성, 3D 아카이브, 저장 기능은 정상적으로 사용할 수 있습니다. 키가 설정된 경우 앱에는 TMDB 필수 출처 문구가 표시됩니다.
-
-## 🧪 테스트 및 검증
-
-```bash
-# 타입 검사와 프로덕션 빌드
-npm run typecheck
-npm run build
-
-# 기본 테스트
-npm test
-npm run test:unit
-npm run test:component
-
-# 속성 기반·통합·시각·성능 테스트
-npm run test:pbt
-npm run test:integration
-npm run test:visual
-npm run test:performance
-
-# 핵심 검증 전체
-npm run validate
-
-# 시각·성능 검증
-npm run validate:visual-performance
-```
-
-도메인 로직과 Store에는 fast-check 기반 속성 테스트가 포함되어 있으며, Playwright 테스트로 반응형·접근성·WebGL 장면을 검증합니다.
-
-## ☁️ 배포
-
-Asteron은 백엔드 없는 정적 Vite SPA라 Cloudflare Pages에 배포할 수 있습니다.
-
-```bash
-npm run build
-npx wrangler pages deploy dist --project-name star-movie
-```
-
-Cloudflare Pages 설정값:
-
-| 항목 | 값 |
-| --- | --- |
-| Build command | `npm run build` |
