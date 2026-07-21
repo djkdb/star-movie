@@ -70,6 +70,7 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
   uniform vec3 uCenter;
   uniform float uScale;
   uniform int uSteps;
+  uniform float uDiskTilt;
 
   float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
   float noise(vec2 p){
@@ -91,6 +92,11 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
     vec3 deep = vec3(0.66, 0.20, 0.08);
     vec3 c = mix(hot, warm, smoothstep(0.0, 0.5, x));
     return mix(c, deep, smoothstep(0.5, 1.0, x));
+  }
+
+  // Rotate a point about the local X axis, to tilt the disk plane.
+  vec3 tiltX(vec3 p, float c, float s){
+    return vec3(p.x, p.y * c - p.z * s, p.y * s + p.z * c);
   }
 
   void main(){
@@ -137,10 +143,15 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
       prev = posv;
       posv += rd * STEP;
 
-      // Accretion-disk plane (local XZ, y = 0). A sign flip means we crossed it.
-      if (prev.y * posv.y < 0.0 && alpha < 0.99){
-        float t = -prev.y / (posv.y - prev.y);
-        vec3 hit = mix(prev, posv, t);
+      // Accretion disk in a plane tilted by uDiskTilt about the local X axis, so
+      // a distant hole can present a fuller 3/4 disk instead of a thin edge.
+      float ct = cos(uDiskTilt);
+      float st = sin(uDiskTilt);
+      vec3 tPrev = tiltX(prev, ct, st);
+      vec3 tPos = tiltX(posv, ct, st);
+      if (tPrev.y * tPos.y < 0.0 && alpha < 0.99){
+        float t = -tPrev.y / (tPos.y - tPrev.y);
+        vec3 hit = mix(tPrev, tPos, t);
         float hr = length(hit.xz);
         if (hr > DIN && hr < DOUT){
           float ang = atan(hit.z, hit.x);
@@ -156,7 +167,7 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
           // Relativistic Doppler beaming on the tangential orbital velocity.
           vec3 vel = normalize(vec3(-sin(ang), 0.0, cos(ang)));
           float beta = 0.42 * inversesqrt(hr / DIN);
-          float dopp = pow(1.0 / (1.0 - beta * dot(vel, rd)), 3.0);
+          float dopp = pow(1.0 / (1.0 - beta * dot(vel, tiltX(rd, ct, st))), 3.0);
 
           float edge = smoothstep(0.0, 0.10, nR) * smoothstep(1.0, 0.72, nR);
           float bright = tex * edge * clamp(dopp, 0.25, 4.5);
@@ -320,6 +331,7 @@ export function BlackholeRenderer({
       },
       uScale: { value: 1 },
       uSteps: { value: RAYMARCH_STEPS_BY_QUALITY.full },
+      uDiskTilt: { value: 0 },
     }),
     [],
   );

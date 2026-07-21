@@ -124,9 +124,9 @@ const BACKGROUND_GALAXIES: readonly {
   tilt: readonly [number, number, number];
   scale: number;
 }[] = [
-  { origin: [520, -160, -300], tilt: [1.0, 0.6, 0.2], scale: 0.27 },
-  { origin: [-430, -220, -350], tilt: [0.9, -0.4, 0.5], scale: 0.27 },
-  { origin: [60, -340, -560], tilt: [1.3, 0.2, -0.3], scale: 0.27 },
+  { origin: [504, 380, 423], tilt: [1.0, 0.6, 0.2], scale: 0.27 },
+  { origin: [-547, -260, 459], tilt: [0.9, -0.4, 0.5], scale: 0.27 },
+  { origin: [539, -436, -311], tilt: [1.3, 0.2, -0.3], scale: 0.27 },
 ];
 
 export interface SceneArchiveContent {

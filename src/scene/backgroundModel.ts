@@ -317,34 +317,37 @@ function interpolateMilkyWayColor(amount: number): string {
 const MILKY_WAY_KNOT_COUNT = 6;
 
 /**
- * Deterministic diffuse-glow patches loosely following the galactic band. Rather
- * than sitting evenly on one radius (which reads as a compass-drawn ring), the
- * patches clump around a handful of unevenly spaced cloud complexes, scatter at
- * widely varied depths, and leave gaps — so the Milky Way reads as irregular,
- * three-dimensional nebulosity. A quarter are scattered freely for diffuse fill.
+ * Deterministic diffuse-glow patches scattered across the whole 360° sphere.
+ * Rather than hugging a single great-circle band (which reads as a compass-drawn
+ * ring), the patches clump around a handful of cloud complexes placed at random
+ * 3D directions, spread off them, and vary widely in depth — so the nebulosity
+ * fills the sky volumetrically in every direction. A quarter scatter freely.
  */
 export function createMilkyWayPatchConfigs(seed = 0x7ede4a1b): MilkyWayPatchConfig[] {
   const random = createRandom(seed ^ 0x51ed270b);
-  const knotAngles = Array.from({ length: MILKY_WAY_KNOT_COUNT }, () => random() * TWO_PI);
+  const knotDirections = Array.from({ length: MILKY_WAY_KNOT_COUNT }, () =>
+    randomDirection(random),
+  );
 
   return Array.from({ length: MILKY_WAY_PATCH_COUNT }, (_, index) => {
     // Most patches gather into cloud complexes; the rest scatter for diffuse fill.
-    const angle =
+    const base =
       random() < 0.72
-        ? knotAngles[Math.floor(random() * MILKY_WAY_KNOT_COUNT)]! + gaussian(random) * 0.32
-        : random() * TWO_PI;
-    // Depth varies widely so the band has volume instead of lying on one shell.
-    const radius = 600 + random() * 420;
-    // Uneven cross-band scatter with occasional far tufts feathers the edges.
-    const offset = gaussian(random) * radius * (random() < 0.72 ? 0.06 : 0.15);
+        ? knotDirections[Math.floor(random() * MILKY_WAY_KNOT_COUNT)]!
+        : randomDirection(random);
+    // Spread each patch off its complex so clumps read as 3D nebulosity.
+    const spread = random() < 0.72 ? 0.38 : 0;
+    const direction = normalizeVector({
+      x: base.x + gaussian(random) * spread,
+      y: base.y + gaussian(random) * spread,
+      z: base.z + gaussian(random) * spread,
+    });
+    // Depth varies widely so the glow has volume instead of lying on one shell.
+    const radius = 560 + random() * 460;
     const width = 150 + random() * 340;
     return {
       id: `milkyway-${index}`,
-      position: [
-        radius * (Math.cos(angle) * BAND_U.x + Math.sin(angle) * BAND_V.x) + BAND_NORMAL.x * offset,
-        radius * (Math.cos(angle) * BAND_U.y + Math.sin(angle) * BAND_V.y) + BAND_NORMAL.y * offset,
-        radius * (Math.cos(angle) * BAND_U.z + Math.sin(angle) * BAND_V.z) + BAND_NORMAL.z * offset,
-      ],
+      position: [direction.x * radius, direction.y * radius, direction.z * radius],
       // Elongated, varied aspect so each tuft is a wisp rather than a disc.
       scale: [width, width * (0.3 + random() * 0.35)],
       opacity: 0.035 + random() * 0.06,
