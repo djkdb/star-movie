@@ -268,6 +268,32 @@ const planetCollectionSchema = z
     }
   });
 
+const watchlistEntrySchema = z
+  .object({
+    id: UUID,
+    title: trimmedText(200),
+    normalizedTitle: z.string().min(1).max(200),
+    genre: genreSchema,
+    addedAt: ISO_TIMESTAMP,
+    position: vec3Schema,
+    posterPath: z
+      .string()
+      .regex(/^\/[\w./-]+\.(jpg|jpeg|png|webp)$/i)
+      .max(200)
+      .optional(),
+    tmdbId: z.number().int().positive().optional(),
+  })
+  .strict()
+  .superRefine((entry, context) => {
+    if (entry.normalizedTitle !== normalizeText(entry.title)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['normalizedTitle'],
+        message: 'normalizedTitle must match title',
+      });
+    }
+  });
+
 const persistedStateShapeSchema = z
   .object({
     schemaVersion: z.literal(2),
@@ -280,6 +306,7 @@ const persistedStateShapeSchema = z
       .strict(),
     achievements: z.array(achievementSchema),
     planetCollection: planetCollectionSchema,
+    watchlist: z.array(watchlistEntrySchema).max(100),
   })
   .strict();
 
@@ -383,6 +410,7 @@ function validateDocument(state: ParsedState, context: z.RefinementCtx): void {
     ['planetCollection', 'planets'],
     'Owned planet IDs',
   );
+  addDuplicateIssue(context, state.watchlist.map(({ id }) => id), ['watchlist'], 'Watchlist IDs');
 
   const activeIdSet = new Set(activeIds);
   if (archivedIds.some((id) => activeIdSet.has(id))) {
@@ -511,14 +539,18 @@ function backfillLegacyShape(value: unknown): unknown {
     return value;
   }
   const record = value as Record<string, unknown>;
-  if ('planetCollection' in record) return value;
+  // The watchlist arrived after schema 2 shipped; older documents gain an
+  // empty one so strict validation still passes.
+  const withWatchlist =
+    'watchlist' in record ? record : { ...record, watchlist: [] };
+  if ('planetCollection' in withWatchlist) return withWatchlist;
 
-  const activeCount = Array.isArray(record.stars) ? record.stars.length : 0;
-  const archivedCount = Array.isArray(record.blackholeArchive)
-    ? record.blackholeArchive.length
+  const activeCount = Array.isArray(withWatchlist.stars) ? withWatchlist.stars.length : 0;
+  const archivedCount = Array.isArray(withWatchlist.blackholeArchive)
+    ? (withWatchlist.blackholeArchive as unknown[]).length
     : 0;
   return {
-    ...record,
+    ...withWatchlist,
     planetCollection: {
       lifetimeStarsAdded: activeCount + archivedCount,
       pullsPerformed: 0,

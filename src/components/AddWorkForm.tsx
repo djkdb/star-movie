@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useStore } from 'zustand';
 
 import { EMOTION_TAGS, GENRES } from '../domain/models';
@@ -105,6 +105,8 @@ export interface AddWorkFormProps {
 
 export function AddWorkForm({ store }: AddWorkFormProps) {
   const stars = useStore(store, (state) => state.persisted.stars);
+  const watchlistPrefill = useStore(store, (state) => state.runtime.watchlistPrefill);
+  const appliedPrefillId = useRef<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [directorMode, setDirectorMode] = useState<DirectorMode>('custom');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -118,6 +120,29 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
   const directorFetchToken = useRef(0);
   const { suggestions, loading, enabled: autocompleteEnabled } =
     useMovieSuggestions(suggestOpen ? draft.title : '');
+
+  // A watchlist promotion arrives as a prefill: seed the draft once per entry
+  // so the user only adds the rating, date and review to condense the nebula.
+  useEffect(() => {
+    if (watchlistPrefill === null) return;
+    if (appliedPrefillId.current === watchlistPrefill.entryId) return;
+    appliedPrefillId.current = watchlistPrefill.entryId;
+    setDraft((current) => ({
+      ...current,
+      title: watchlistPrefill.title,
+      genre: watchlistPrefill.genre,
+    }));
+    setSelectedMovie(
+      watchlistPrefill.tmdbId === undefined
+        ? null
+        : {
+            tmdbId: watchlistPrefill.tmdbId,
+            posterPath: watchlistPrefill.posterPath ?? null,
+          },
+    );
+    setSuggestOpen(false);
+    setActiveIndex(-1);
+  }, [watchlistPrefill]);
 
   const directors = useMemo(() => {
     const byNormalizedName = new Map<string, string>();
@@ -251,6 +276,12 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
     setSelectedMovie(null);
     setSuggestOpen(false);
     setActiveIndex(-1);
+    // A successful log condenses the promoted nebula into this new star.
+    if (watchlistPrefill !== null) {
+      store.getState().commands.removeFromWatchlist(watchlistPrefill.entryId);
+      store.getState().commands.clearWatchlistPrefill();
+      appliedPrefillId.current = null;
+    }
   };
 
   const posterPreview = posterUrl(selectedMovie?.posterPath, 'w200');

@@ -138,6 +138,19 @@ export interface PlanetCollection {
   planets: OwnedPlanet[];
 }
 
+/** A work the user wants to see: a hazy nebula waiting to condense into a star. */
+export interface WatchlistEntry {
+  id: string;
+  title: string;
+  normalizedTitle: string;
+  genre: Genre;
+  addedAt: string;
+  /** Where its nebula drifts, the spot its star would be born. */
+  position: Vec3;
+  posterPath?: string;
+  tmdbId?: number;
+}
+
 export interface PersistedStore {
   schemaVersion: 2;
   stars: Star[];
@@ -150,6 +163,7 @@ export interface PersistedStore {
   };
   achievements: Achievement[];
   planetCollection: PlanetCollection;
+  watchlist: WatchlistEntry[];
 }
 
 export type PersistedStateV2 = PersistedStore;
@@ -195,11 +209,21 @@ export interface CommandDiagnostics {
   occurredAt: string | null;
 }
 
+/** Hand-off from the watchlist into the add-work form. */
+export interface WatchlistPrefill {
+  entryId: string;
+  title: string;
+  genre: Genre;
+  posterPath?: string;
+  tmdbId?: number;
+}
+
 export interface RuntimeStore {
   /** False only for a session bootstrapped without a persisted registration. */
   hasPersistedRegistration: boolean;
   selectedStarId: string | null;
   selectedGenres: Set<Genre>;
+  watchlistPrefill: WatchlistPrefill | null;
   constellationDraft: ConstellationDraft;
   isListDrawerOpen: boolean;
   isAchievementPanelOpen: boolean;

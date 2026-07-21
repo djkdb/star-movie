@@ -4,6 +4,8 @@ import {
   createDefaultStore,
   type SceneArchiveContent,
 } from '../domain/defaultState';
+import { GENRES, type WatchlistEntry, type WatchlistPrefill } from '../domain/models';
+import { normalizeDisplayText, normalizeText } from '../domain/normalization';
 import type {
   CameraPose,
   CameraRequest,
@@ -28,6 +30,9 @@ import {
   type WorkInput,
 } from '../domain/workInputValidation';
 import { decodePersistedV2 } from '../persistence/persistedStateCodec';
+
+/** Poster paths must look like TMDB CDN paths before they may persist. */
+const POSTER_RE = /^\/[\w./-]+\.(jpg|jpeg|png|webp)$/i;
 import type {
   LoadResult,
   PersistenceErrorCode,
@@ -119,6 +124,17 @@ export interface ArchiveCommands {
   hardDelete(starId: string): CommandResult<DeleteWorkValue>;
   softDelete(starId: string): CommandResult<DeleteWorkValue>;
   restoreArchived(starId: string): CommandResult<RestoreWorkValue>;
+  /** Adds a want-to-watch work; it drifts in the sky as a hazy nebula. */
+  addToWatchlist(input: {
+    title: unknown;
+    genre: unknown;
+    posterPath?: string;
+    tmdbId?: number;
+  }): CommandResult<{ entryId: string }>;
+  removeFromWatchlist(entryId: string): CommandResult<{ entryId: string }>;
+  /** Hands a watchlist entry to the add-work form as a prefill. */
+  beginWatchlistPromotion(entryId: string): void;
+  clearWatchlistPrefill(): void;
   /** Notes another viewing of a work; each rewatch brightens its star. */
   markRewatched(starId: string): CommandResult<{ rewatchCount: number }>;
   pullPlanet(): CommandResult<PullPlanetValue>;
@@ -608,6 +624,82 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
           };
         },
       }),
+    addToWatchlist: (input) => {
+      const title = normalizeDisplayText(typeof input.title === 'string' ? input.title : '');
+      if (title.length === 0 || title.length > 200) {
+        return validationFailure('제목은 1자 이상 200자 이하로 입력해 주세요.', {});
+      }
+      const genre = input.genre;
+      if (typeof genre !== 'string' || !(GENRES as readonly string[]).includes(genre)) {
+        return validationFailure('장르를 선택해 주세요.', {});
+      }
+      const normalizedTitle = normalizeText(title);
+      const current = store.getState().persisted.watchlist;
+      if (current.length >= 100) {
+        return validationFailure('보고 싶은 작품은 100개까지 담을 수 있어요.', {});
+      }
+      if (current.some((entry) => entry.normalizedTitle === normalizedTitle)) {
+        return validationFailure('이미 담아 둔 작품이에요.', {});
+      }
+      const posterPath =
+        typeof input.posterPath === 'string' && POSTER_RE.test(input.posterPath)
+          ? input.posterPath
+          : undefined;
+      return executor.execute({
+        operation: 'addToWatchlist',
+        derive: (snapshot) => {
+          const id = providers.nextUuid();
+          const entry: WatchlistEntry = {
+            id,
+            title,
+            normalizedTitle,
+            genre: genre as Genre,
+            addedAt: providers.nowIso(),
+            position: createDeterministicStarPosition(id, genre as Genre),
+            ...(posterPath === undefined ? {} : { posterPath }),
+            ...(typeof input.tmdbId === 'number' && Number.isInteger(input.tmdbId) && input.tmdbId > 0
+              ? { tmdbId: input.tmdbId }
+              : {}),
+          };
+          const candidate = structuredClone(snapshot);
+          candidate.watchlist.push(entry);
+          return { candidate, value: { entryId: id }, completionEvents: [] };
+        },
+      });
+    },
+    removeFromWatchlist: (entryId) => {
+      const exists = store.getState().persisted.watchlist.some(({ id }) => id === entryId);
+      if (!exists) return validationFailure('담아 둔 작품을 찾을 수 없습니다.', {});
+      return executor.execute({
+        operation: 'removeFromWatchlist',
+        derive: (snapshot) => {
+          const candidate = structuredClone(snapshot);
+          const remaining = candidate.watchlist.filter(({ id }) => id !== entryId);
+          candidate.watchlist.length = 0;
+          candidate.watchlist.push(...remaining);
+          return { candidate, value: { entryId }, completionEvents: [] };
+        },
+      });
+    },
+    beginWatchlistPromotion: (entryId) => {
+      const entry = store.getState().persisted.watchlist.find(({ id }) => id === entryId);
+      if (entry === undefined) return;
+      const prefill: WatchlistPrefill = {
+        entryId: entry.id,
+        title: entry.title,
+        genre: entry.genre,
+        ...(entry.posterPath === undefined ? {} : { posterPath: entry.posterPath }),
+        ...(entry.tmdbId === undefined ? {} : { tmdbId: entry.tmdbId }),
+      };
+      store.setState((state) => ({
+        runtime: { ...state.runtime, watchlistPrefill: prefill },
+      }));
+    },
+    clearWatchlistPrefill: () => {
+      store.setState((state) => ({
+        runtime: { ...state.runtime, watchlistPrefill: null },
+      }));
+    },
     markRewatched: (starId) => {
       const exists = store.getState().persisted.stars.some(({ id }) => id === starId);
       if (!exists) return validationFailure('작품을 찾을 수 없습니다.', {});

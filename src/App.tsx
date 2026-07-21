@@ -9,6 +9,7 @@ import { GenreFilter } from './components/GenreFilter';
 import { HUD } from './components/HUD';
 import { ListView } from './components/ListView';
 import { PlanetCodexPanel } from './components/PlanetCodexPanel';
+import { WatchlistPanel } from './components/WatchlistPanel';
 import { TmdbAttribution } from './components/TmdbAttribution';
 import { ToastRegion } from './components/ToastRegion';
 import { WorkCard } from './components/WorkCard';
@@ -47,6 +48,12 @@ function DockGlyph({ children }: { children: ReactNode }) {
 }
 
 const DOCK_ICONS = {
+  watchlist: (
+    <DockGlyph>
+      <circle cx="12" cy="12" r="6.5" strokeDasharray="2.6 2.2" />
+      <circle cx="12" cy="12" fill="currentColor" r="1.6" stroke="none" opacity="0.75" />
+    </DockGlyph>
+  ),
   overview: (
     <DockGlyph>
       <path d="M3 20 L8 11 L12 15 L17 6 L21 12" />
@@ -171,6 +178,12 @@ export function App({ store }: AppProps) {
       icon: DOCK_ICONS.add,
       content: <AddWorkForm store={archiveStore} />,
       wide: true,
+    },
+    {
+      id: 'watchlist',
+      label: '보고 싶은 작품',
+      icon: DOCK_ICONS.watchlist,
+      content: <WatchlistPanel store={archiveStore} />,
     },
     {
       id: 'constellation',

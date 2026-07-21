@@ -2220,3 +2220,50 @@ progress::-moz-progress-bar {
   top: 1.2rem;
   right: 1.2rem;
 }
+
+/* ---- Watchlist panel ---- */
+.watchlist-panel {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.watchlist-intro {
+  color: rgba(226, 236, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.watchlist-form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.watchlist-notice {
+  color: #9fdcff;
+  font-size: 0.85rem;
+}
+
+.watchlist-count {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.watchlist-list {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  padding: 0;
+}
+
+.watchlist-list li {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.6rem;
+}
+
+.watchlist-entry-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}

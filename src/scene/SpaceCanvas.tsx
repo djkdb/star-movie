@@ -20,6 +20,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useModalFocusTrap } from '../components/useModalFocusTrap';
 import type {
   ArchivedStar,
+  WatchlistEntry,
   CameraPose,
   CameraRequest,
   Constellation,
@@ -75,6 +76,7 @@ import {
   SelectiveBloomPass,
 } from './selectiveBloom';
 import { StarRenderer } from './StarRenderer';
+import { WatchlistNebulaRenderer } from './WatchlistNebulaRenderer';
 import { VisibilityClock, useVisibleElapsedSeconds } from './VisibilityClock';
 import type { StarDragPayload } from './starVisualModel';
 
@@ -145,6 +147,7 @@ export interface SpaceSceneViewModel {
   milestoneRewards: readonly MilestoneRewardViewModel[];
   archiveContent: SceneArchiveContent;
   planets: readonly OwnedPlanet[];
+  watchlist: readonly WatchlistEntry[];
 }
 
 export function createSpaceSceneViewModel(
@@ -162,6 +165,7 @@ export function createSpaceSceneViewModel(
         }
       : { stars: [], constellations: [], archivedWorks: [] },
     planets: hasPersistedRegistration ? persisted.planetCollection.planets : [],
+    watchlist: hasPersistedRegistration ? persisted.watchlist : [],
   };
 }
 
@@ -591,6 +595,10 @@ function SpaceScene({
         />
         <PlanetCollectionRenderer
           planets={viewModel.planets}
+          reducedMotion={reducedMotion}
+        />
+        <WatchlistNebulaRenderer
+          entries={viewModel.watchlist}
           reducedMotion={reducedMotion}
         />
         <ParticleManager
