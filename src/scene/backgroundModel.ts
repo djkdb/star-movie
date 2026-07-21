@@ -1,8 +1,10 @@
 export const SPACE_BACKGROUND_COLOR = '#000104';
 export const SPACE_CAMERA_FOV = 60;
-// Far enough to take in the whole archive at once, but still inside the
-// backdrop sky, so zooming out can never leave the starry universe.
-export const SPACE_CAMERA_MAX_DISTANCE = 320;
+// Fully zoomed out the camera rests just inside the outermost backdrop
+// stars (radius ~950-1020): the whole archive reads tiny at the center, the
+// farthest stars are right in front of you, and the sky still surrounds the
+// camera — it can never exit into empty black space.
+export const SPACE_CAMERA_MAX_DISTANCE = 900;
 export const TWINKLE_AMPLITUDE = 0.3;
 export const MIN_TWINKLE_PERIOD_SECONDS = 1;
 export const MAX_TWINKLE_PERIOD_SECONDS = 4;
