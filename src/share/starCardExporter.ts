@@ -1,6 +1,7 @@
 import type { Star } from '../domain/models';
 import { GALAXY_POSTER_EYEBROW } from '../scene/galaxyCaptureModel';
 import { posterUrl } from '../services/tmdbClient';
+import { getStarAppearance } from '../scene/starVisualModel';
 
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
@@ -87,6 +88,42 @@ export async function exportStarCard(star: Star): Promise<boolean> {
   context.fillStyle = backdrop;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
   drawStarfield(context, star.id);
+
+  // The work's own star — same deterministic color and spikes as in the sky —
+  // blazing in the card's upper-right corner.
+  {
+    const appearance = getStarAppearance(star.id, star.rating, star.genre, star.rewatchCount ?? 0);
+    const cx = CARD_WIDTH - 170;
+    const cy = 190;
+    const glow = context.createRadialGradient(cx, cy, 0, cx, cy, 150);
+    glow.addColorStop(0, appearance.color);
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    context.globalAlpha = 0.85;
+    context.fillStyle = glow;
+    context.beginPath();
+    context.arc(cx, cy, 150, 0, Math.PI * 2);
+    context.fill();
+    context.globalAlpha = 1;
+    const spikes = Math.max(appearance.spikeCount, 4);
+    context.save();
+    context.translate(cx, cy);
+    context.rotate(appearance.spikeRotation);
+    context.strokeStyle = 'rgba(255,255,255,0.9)';
+    context.lineCap = 'round';
+    for (let index = 0; index < spikes; index += 1) {
+      context.rotate((Math.PI * 2) / spikes);
+      context.lineWidth = 5;
+      context.beginPath();
+      context.moveTo(0, -26);
+      context.lineTo(0, -105);
+      context.stroke();
+    }
+    context.restore();
+    context.fillStyle = '#ffffff';
+    context.beginPath();
+    context.arc(cx, cy, 20, 0, Math.PI * 2);
+    context.fill();
+  }
 
   const poster = await loadPoster(star.posterPath);
   let textTop = 200;

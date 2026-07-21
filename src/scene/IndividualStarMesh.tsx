@@ -105,6 +105,22 @@ export function IndividualStarMesh({
         dragPayload,
       }}
     >
+      {/* Generous invisible tap target: the core sphere is far too small for a
+          fingertip, so taps kept missing on phones. */}
+      <mesh
+        name={`star-hit-${star.id}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(star.id);
+        }}
+        onPointerCancel={handlePointerUp}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        userData={{ archiveObjectType: 'star-hit', starId: star.id }}
+      >
+        <sphereGeometry args={[Math.max(visual.radius * 3, 2.4), 12, 8]} />
+        <meshBasicMaterial colorWrite={false} depthWrite={false} opacity={0} transparent />
+      </mesh>
       <mesh
         dispose={null}
         name={`star-${star.id}`}
