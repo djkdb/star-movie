@@ -9,6 +9,7 @@ import { useStore } from 'zustand';
 
 import type { Rating } from '../domain/models';
 import { posterUrl } from '../services/tmdbClient';
+import { exportStarCard } from '../share/starCardExporter';
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { ConfirmDialog } from './ConfirmDialog';
 import {
@@ -232,6 +233,13 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
           type="button"
         >
           별자리에 묶기
+        </button>
+        <button
+          className="secondary-action"
+          onClick={() => { void exportStarCard(star); }}
+          type="button"
+        >
+          카드로 공유
         </button>
         <button
           className="secondary-action"

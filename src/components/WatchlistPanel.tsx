@@ -53,14 +53,14 @@ export function WatchlistPanel({ store }: WatchlistPanelProps) {
       </p>
 
       <div className="watchlist-form">
-        <label htmlFor="watchlist-title">제목</label>
+        <label htmlFor="watchlist-title">보고 싶은 작품 제목</label>
         <input
           id="watchlist-title"
           maxLength={200}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
-        <label htmlFor="watchlist-genre">장르</label>
+        <label htmlFor="watchlist-genre">예상 장르</label>
         <select
           id="watchlist-genre"
           value={genre}
