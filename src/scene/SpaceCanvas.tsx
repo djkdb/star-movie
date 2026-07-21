@@ -76,6 +76,9 @@ import { StarRenderer } from './StarRenderer';
 import { VisibilityClock, useVisibleElapsedSeconds } from './VisibilityClock';
 import type { StarDragPayload } from './starVisualModel';
 
+// How much a bright star's point sprite is enlarged to host its spikes.
+const STAR_SPIKE_GROW = 3.0;
+
 const BACKGROUND_VERTEX_SHADER = `
   attribute float aPeriod;
   attribute float aPhase;
@@ -87,15 +90,23 @@ const BACKGROUND_VERTEX_SHADER = `
   uniform vec2 uParallax;
   varying float vOpacity;
   varying vec3 vColor;
+  varying float vSpike;
 
   void main() {
-    float pulse = 1.0 + ${TWINKLE_AMPLITUDE.toFixed(1)} * sin((uTime / aPeriod) * 6.28318530718 + aPhase);
+    // Two-frequency scintillation reads as atmospheric shimmer rather than a
+    // single mechanical pulse.
+    float phase = (uTime / aPeriod) * 6.28318530718 + aPhase;
+    float pulse = 1.0 + ${TWINKLE_AMPLITUDE.toFixed(1)}
+      * (0.65 * sin(phase) + 0.35 * sin(phase * 2.7 + aPhase * 1.3));
     vOpacity = aBaseOpacity * pulse;
     vColor = aColor;
+    // Only the rare, large (bright) stars earn diffraction spikes, like the
+    // brightest points in a long-exposure sky photograph.
+    vSpike = smoothstep(2.8, 3.8, aSize);
     vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
     viewPosition.xy += uParallax * max(1.0, -viewPosition.z);
     gl_Position = projectionMatrix * viewPosition;
-    gl_PointSize = aSize * uPixelRatio;
+    gl_PointSize = aSize * uPixelRatio * (1.0 + vSpike * ${STAR_SPIKE_GROW.toFixed(1)});
   }
 `;
 
@@ -103,14 +114,26 @@ const BACKGROUND_FRAGMENT_SHADER = `
   precision highp float;
   varying float vOpacity;
   varying vec3 vColor;
+  varying float vSpike;
 
   void main() {
-    float distanceFromCenter = distance(gl_PointCoord, vec2(0.5));
+    vec2 pc = gl_PointCoord - 0.5;
+    // Keep the core the same apparent size on the enlarged spiky sprites.
+    float grow = 1.0 + vSpike * ${STAR_SPIKE_GROW.toFixed(1)};
+    float dCore = length(pc) * grow;
     // Sharp core with a faint halo so bright stars bloom slightly while dim
     // ones stay pinpoint, echoing long-exposure sky photography.
-    float core = 1.0 - smoothstep(0.0, 0.3, distanceFromCenter);
-    float halo = 1.0 - smoothstep(0.12, 0.5, distanceFromCenter);
-    float alpha = clamp(core * 1.25 + halo * 0.4, 0.0, 1.0);
+    float core = 1.0 - smoothstep(0.0, 0.3, dCore);
+    float halo = 1.0 - smoothstep(0.12, 0.5, dCore);
+
+    // Four-point diffraction spikes: two thin tapering beams across the sprite.
+    float ax = abs(pc.x);
+    float ay = abs(pc.y);
+    float beamH = exp(-ay * ay * 170.0) * (1.0 - smoothstep(0.0, 0.5, ax));
+    float beamV = exp(-ax * ax * 170.0) * (1.0 - smoothstep(0.0, 0.5, ay));
+    float spike = (beamH + beamV) * vSpike;
+
+    float alpha = clamp(core * 1.25 + halo * 0.4 + spike * 0.6, 0.0, 1.0);
     if (alpha <= 0.003) discard;
     gl_FragColor = vec4(vColor, alpha * vOpacity);
   }
