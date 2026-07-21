@@ -108,13 +108,13 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
 
   void main(){
     float sc = max(uScale, 0.001);
-    float RS    = 1.9 * sc;
-    float DIN   = 2.35 * sc;
-    float DOUT  = 9.0 * sc;
-    float RINF  = 10.4 * sc;
+    float RS    = 1.35 * sc;
+    float DIN   = 1.85 * sc;
+    float DOUT  = 9.6 * sc;
+    float RINF  = 11.0 * sc;
     float LENS  = 0.34 / sc;
-    float RINGB = 3.1 * sc;
-    float RINGW = 0.11 * sc;
+    float RINGB = 2.2 * sc;
+    float RINGW = 0.1 * sc;
     float STEP  = 2.3 * RINF / float(max(uSteps, 24));
 
     vec3 ro = uCameraPos - uCenter;
@@ -161,7 +161,7 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
         float hr2 = length(tPos.xz);
         if (hr2 > DIN * 0.92 && hr2 < DOUT && alpha < 0.995){
           float nR2 = clamp((hr2 - DIN) / (DOUT - DIN), 0.0, 1.0);
-          float thick = (0.2 + 0.55 * nR2) * sc;
+          float thick = (0.11 + 0.62 * nR2) * sc;
           float dens = exp(-pow(tPos.y / thick, 2.0));
           float prof = (1.0 - smoothstep(0.5, 1.0, nR2)) * smoothstep(0.0, 0.05, nR2);
           float em = dens * prof * (2.4 - 1.5 * nR2) * 0.055 * (STEP / sc);
@@ -191,9 +191,9 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
           float beta = 0.4 * inversesqrt(hr / DIN);
           float dopp = pow(1.0 / (1.0 - beta * dot(vel, toDisk(rd))), 3.0);
 
-          float inEdge = smoothstep(0.0, 0.05, nR);
+          float inEdge = smoothstep(-0.04, 0.16, nR);
           float outEdge = 1.0 - smoothstep(0.62, 1.0, nR);
-          float rim = 1.0 + 1.2 * smoothstep(0.16, 0.0, nR);
+          float rim = 1.0 + 1.35 * smoothstep(0.24, 0.0, nR);
           float bright = tex * rim * inEdge * outEdge * clamp(dopp, 0.3, 3.6);
           bright *= (2.6 - 1.35 * nR) + uArousal * 0.9;
 
