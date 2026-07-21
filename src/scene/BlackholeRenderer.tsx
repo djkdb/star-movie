@@ -32,7 +32,7 @@ import { useVisibleElapsedSeconds } from './VisibilityClock';
  * quad only needs to cover the lensed footprint; it is scaled with the hole's
  * mass so a heavier hole still fits.
  */
-const BLACKHOLE_RAYMARCH_HALF = 12;
+const BLACKHOLE_RAYMARCH_HALF = 14;
 
 /** Raymarch step budget per quality tier; degrades with the FPS controller. */
 const RAYMARCH_STEPS_BY_QUALITY: Readonly<Record<QualityLevel, number>> = {
@@ -70,7 +70,10 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
   uniform vec3 uCenter;
   uniform float uScale;
   uniform int uSteps;
-  uniform float uDiskTilt;
+  uniform vec3 uDiskX;
+  uniform vec3 uDiskN;
+  uniform vec3 uDiskZ;
+  uniform float uGain;
 
   float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
   float noise(vec2 p){
@@ -86,107 +89,136 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
     return v;
   }
 
-  vec3 blackbody(float x){ // x: 0 = white-hot (inner), 1 = deep red (outer)
-    vec3 hot  = vec3(1.0, 0.98, 0.92);
-    vec3 warm = vec3(1.0, 0.60, 0.24);
-    vec3 deep = vec3(0.66, 0.20, 0.08);
-    vec3 c = mix(hot, warm, smoothstep(0.0, 0.5, x));
-    return mix(c, deep, smoothstep(0.5, 1.0, x));
+  // Fiery accretion ramp: white-hot inner rim -> gold -> orange -> deep ember.
+  vec3 diskRamp(float x){
+    vec3 white  = vec3(1.06, 1.02, 0.94);
+    vec3 gold   = vec3(1.0, 0.83, 0.46);
+    vec3 orange = vec3(1.0, 0.5, 0.14);
+    vec3 deep   = vec3(0.42, 0.11, 0.03);
+    vec3 c = mix(white, gold, smoothstep(0.0, 0.22, x));
+    c = mix(c, orange, smoothstep(0.18, 0.55, x));
+    return mix(c, deep, smoothstep(0.58, 1.0, x));
   }
 
-  // Rotate a point about the local X axis, to tilt the disk plane.
-  vec3 tiltX(vec3 p, float c, float s){
-    return vec3(p.x, p.y * c - p.z * s, p.y * s + p.z * c);
+  // Express a point in the disk's frame: x/z span the disk plane, y is the
+  // distance along its normal.
+  vec3 toDisk(vec3 p){
+    return vec3(dot(p, uDiskX), dot(p, uDiskN), dot(p, uDiskZ));
   }
 
   void main(){
     float sc = max(uScale, 0.001);
-    // Length scales grow with the hole's mass; LENS carries 1/sc so the
-    // deflection angle stays identical at every size.
-    float RS    = 1.9 * sc;   // event-horizon (shadow) radius
-    float DIN   = 2.4 * sc;   // disk inner radius
-    float DOUT  = 6.8 * sc;   // disk outer radius
-    float RINF  = 13.0 * sc;  // influence sphere
-    float STEP  = 0.22 * sc;
-    float LENS  = 1.45 / sc;
-    float RINGB = 3.05 * sc;  // photon-ring impact parameter
-    float RINGW = 0.32 * sc;
+    float RS    = 1.9 * sc;
+    float DIN   = 2.35 * sc;
+    float DOUT  = 9.0 * sc;
+    float RINF  = 10.4 * sc;
+    float LENS  = 0.34 / sc;
+    float RINGB = 3.1 * sc;
+    float RINGW = 0.11 * sc;
+    float STEP  = 2.3 * RINF / float(max(uSteps, 24));
 
     vec3 ro = uCameraPos - uCenter;
     vec3 rd0 = normalize(vWorldPos - uCameraPos);
     vec3 rd = rd0;
 
-    // Enter the influence sphere; skip the empty space in front of it.
     float b = dot(ro, rd);
     float c = dot(ro, ro) - RINF * RINF;
     float disc = b * b - c;
     if (disc < 0.0) discard;
     vec3 posv = ro + rd * max(-b - sqrt(disc), 0.0);
-
-    // Straight-line impact parameter: continuous across the screen, so a photon
-    // ring keyed to it never bands with the step size.
+    // Per-pixel start jitter dithers away the step-quantization banding.
+    posv += rd * STEP * (hash(vWorldPos.xy * 13.7) - 0.5);
     float bImpact = length(ro - dot(ro, rd0) * rd0);
 
     vec3 col = vec3(0.0);
     float alpha = 0.0;
     float captured = 0.0;
+    float hits = 0.0;
     vec3 prev = posv;
 
-    for (int i = 0; i < 220; i++){
+    for (int i = 0; i < 240; i++){
       if (i >= uSteps) break;
       float r = length(posv);
       if (r < RS){ captured = 1.0; break; }
       if (r > RINF + STEP) break;
 
       vec3 toC = -posv / r;
-      rd = normalize(rd + toC * (RS * RS) / (r * r) * STEP * LENS);
+      // Weak-field 1/r^2 bending plus a strong-field 1/r^3 boost near the
+      // photon sphere, which pulls the lensed far-disk arch in tight against
+      // the ring instead of leaving a dark gap.
+      float bend = (RS * RS) / (r * r) * (1.0 + 1.15 * RS / r) * STEP * LENS;
+      rd = normalize(rd + toC * bend);
       prev = posv;
       posv += rd * STEP;
 
-      // Accretion disk in a plane tilted by uDiskTilt about the local X axis, so
-      // a distant hole can present a fuller 3/4 disk instead of a thin edge.
-      float ct = cos(uDiskTilt);
-      float st = sin(uDiskTilt);
-      vec3 tPrev = tiltX(prev, ct, st);
-      vec3 tPos = tiltX(posv, ct, st);
-      if (tPrev.y * tPos.y < 0.0 && alpha < 0.99){
+      vec3 tPrev = toDisk(prev);
+      vec3 tPos = toDisk(posv);
+
+      // Volumetric glowing gas around the disk plane: thin hot slab flaring
+      // outward, integrated every step so the disk reads as thick fire, and
+      // edge-on paths glow the brightest like the reference.
+      {
+        float hr2 = length(tPos.xz);
+        if (hr2 > DIN * 0.92 && hr2 < DOUT && alpha < 0.995){
+          float nR2 = clamp((hr2 - DIN) / (DOUT - DIN), 0.0, 1.0);
+          float thick = (0.2 + 0.55 * nR2) * sc;
+          float dens = exp(-pow(tPos.y / thick, 2.0));
+          float prof = (1.0 - smoothstep(0.5, 1.0, nR2)) * smoothstep(0.0, 0.05, nR2);
+          float em = dens * prof * (2.4 - 1.5 * nR2) * 0.055 * (STEP / sc);
+          // Keep the shadow pitch-black: no gas glow on rays bound for it.
+          em *= smoothstep(RINGB * 0.95, RINGB * 1.55, bImpact);
+          float rem2 = 1.0 - alpha;
+          col += diskRamp(pow(nR2, 0.85)) * em * rem2 * (1.0 + uArousal * 0.4);
+          alpha += rem2 * em * 0.55;
+        }
+      }
+
+      if (tPrev.y * tPos.y < 0.0 && alpha < 0.995 && hits < 3.0){
         float t = -tPrev.y / (tPos.y - tPrev.y);
         vec3 hit = mix(tPrev, tPos, t);
         float hr = length(hit.xz);
         if (hr > DIN && hr < DOUT){
+          hits += 1.0;
           float ang = atan(hit.z, hit.x);
           float nR = (hr - DIN) / (DOUT - DIN);
-          float temp = pow(1.0 - nR, 1.25);
-          vec3 dcol = blackbody(1.0 - temp);
 
-          // Keplerian swirl + turbulence (scale-normalized so texture is stable).
-          float phase = uTime * -1.1 / pow(hr / sc, 1.5);
-          float swirl = fbm(vec2(ang * 2.2 + phase * 6.2831, (hr / sc) * 0.7 + phase));
-          float tex = 0.45 + 0.7 * swirl;
+          // Fine concentric streaks smeared by differential rotation.
+          float phase = uTime * -0.9 / pow(hr / sc, 1.5);
+          float streak = fbm(vec2(ang * 2.4 + phase * 6.2831, (hr / sc) * 5.0));
+          float tex = 0.32 + 1.05 * streak;
 
-          // Relativistic Doppler beaming on the tangential orbital velocity.
           vec3 vel = normalize(vec3(-sin(ang), 0.0, cos(ang)));
-          float beta = 0.42 * inversesqrt(hr / DIN);
-          float dopp = pow(1.0 / (1.0 - beta * dot(vel, tiltX(rd, ct, st))), 3.0);
+          float beta = 0.4 * inversesqrt(hr / DIN);
+          float dopp = pow(1.0 / (1.0 - beta * dot(vel, toDisk(rd))), 3.0);
 
-          float edge = smoothstep(0.0, 0.10, nR) * smoothstep(1.0, 0.72, nR);
-          float bright = tex * edge * clamp(dopp, 0.25, 4.5);
-          bright *= 1.7 + uArousal * 0.9;
+          float inEdge = smoothstep(0.0, 0.05, nR);
+          float outEdge = 1.0 - smoothstep(0.62, 1.0, nR);
+          float rim = 1.0 + 1.2 * smoothstep(0.16, 0.0, nR);
+          float bright = tex * rim * inEdge * outEdge * clamp(dopp, 0.3, 3.6);
+          bright *= (2.6 - 1.35 * nR) + uArousal * 0.9;
 
           float rem = 1.0 - alpha;
-          col += dcol * bright * rem;
-          alpha += rem * clamp(bright, 0.0, 1.0) * edge;
+          col += diskRamp(pow(nR, 0.85)) * bright * rem;
+          alpha += rem * clamp(bright * 0.6, 0.0, 1.0) * inEdge * outEdge;
         }
       }
     }
 
+    // Photon ring hugging the shadow edge.
     float ring = exp(-pow((bImpact - RINGB) / RINGW, 2.0));
-    col += vec3(1.0, 0.96, 0.88) * ring * (1.3 + uArousal * 0.7);
+    col += vec3(1.0, 0.98, 0.9) * ring * ((1.3 + uArousal) / max(uGain, 0.3));
     alpha = max(alpha, ring);
 
+    // Soft warm halo just outside the ring so the structure blooms.
+    float halo = exp(-pow(max(bImpact - RINGB, 0.0) / (3.2 * sc), 1.5));
+    halo *= smoothstep(RINGB - 0.5 * sc, RINGB + 0.6 * sc, bImpact);
+    col += vec3(1.0, 0.72, 0.38) * halo * 0.08;
+    alpha = max(alpha, halo * 0.12);
+
     float outA = captured > 0.5 ? 1.0 : clamp(alpha, 0.0, 1.0);
+    vec3 mapped = vec3(1.0) - exp(-col * 1.5 * uGain);
     if (outA <= 0.003) discard;
-    gl_FragColor = vec4(pow(col, vec3(1.0 / 1.5)), outA);
+    gl_FragColor = vec4(pow(mapped, vec3(1.0 / 1.75)), outA);
   }
 `;
 
@@ -331,7 +363,10 @@ export function BlackholeRenderer({
       },
       uScale: { value: 1 },
       uSteps: { value: RAYMARCH_STEPS_BY_QUALITY.full },
-      uDiskTilt: { value: 0 },
+      uDiskX: { value: new Vector3(1, 0, 0) },
+      uDiskN: { value: new Vector3(0, 1, 0) },
+      uDiskZ: { value: new Vector3(0, 0, 1) },
+      uGain: { value: 1 },
     }),
     [],
   );
