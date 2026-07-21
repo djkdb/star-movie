@@ -6,6 +6,7 @@ import { ArchiveDomNavigation } from './components/ArchiveDomNavigation';
 import { ArchiveShell, type ShellPanelDefinition } from './components/ArchiveShell';
 import { ConstellationControls } from './components/ConstellationControls';
 import { GenreFilter } from './components/GenreFilter';
+import { GestureGuide } from './components/GestureGuide';
 import { HUD } from './components/HUD';
 import { ListView } from './components/ListView';
 import { PlanetCodexPanel } from './components/PlanetCodexPanel';
@@ -13,6 +14,7 @@ import { WatchlistPanel } from './components/WatchlistPanel';
 import { TmdbAttribution } from './components/TmdbAttribution';
 import { ToastRegion } from './components/ToastRegion';
 import { WorkCard } from './components/WorkCard';
+import { selectMonthAgoMemories, todayLocalDate } from './domain/memoryLane';
 import {
   getBootstrappedPersistedState,
   getBootstrappedPersistenceService,
@@ -114,6 +116,36 @@ export interface AppProps {
 
 export function App({ store }: AppProps) {
   const archiveStore = store ?? getBrowserStore();
+
+  // One gentle note per day: works watched exactly a month ago resurface as a
+  // soft memory toast instead of a demanding streak.
+  useEffect(() => {
+    const state = archiveStore.getState();
+    if (!state.runtime.hasPersistedRegistration) return;
+    const now = new Date();
+    const today = todayLocalDate(now);
+    const memoryKey = 'space-movie-archive:memory-note-shown';
+    try {
+      if (window.localStorage.getItem(memoryKey) === today) return;
+    } catch {
+      return;
+    }
+    const memories = selectMonthAgoMemories(state.persisted.stars, now);
+    if (memories.length === 0) return;
+    const first = memories[0]!;
+    const others = memories.length - 1;
+    archiveStore.getState().commands.pushGentleToast(
+      '한 달 전 오늘',
+      others > 0
+        ? `『${first.title}』 외 ${others}편을 본 지 한 달이 됐어요. 별은 여전히 빛나고 있어요.`
+        : `『${first.title}』을(를) 본 지 한 달이 됐어요. 별은 여전히 빛나고 있어요.`,
+    );
+    try {
+      window.localStorage.setItem(memoryKey, today);
+    } catch {
+      // Best effort; the note may repeat if storage is unavailable.
+    }
+  }, [archiveStore]);
   const benchmarkEnabled = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('benchmark') === '1';
   const [sceneContentMounted, setSceneContentMounted] = useState(!benchmarkEnabled);
@@ -227,6 +259,7 @@ export function App({ store }: AppProps) {
         panels={panels}
       />
       <WorkCard store={archiveStore} />
+      <GestureGuide store={archiveStore} />
       <AchievementPanel store={archiveStore} />
       <ToastRegion store={archiveStore} />
     </main>

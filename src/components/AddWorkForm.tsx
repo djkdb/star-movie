@@ -262,6 +262,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       return;
     }
 
+    const wasEmptySky = store.getState().persisted.stars.length === 0;
     const result = store.getState().commands.addWork(input);
     if (!result.ok) {
       if (isValidationError(result.error)) {
@@ -270,6 +271,17 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       return;
     }
 
+    // First light: fly to the very first star while its fireworks bloom.
+    if (wasEmptySky) {
+      store.getState().commands.requestCameraFocus({
+        type: 'star',
+        starId: result.value.starId,
+      });
+      store.getState().commands.pushGentleToast(
+        '첫 별이 떠올랐습니다',
+        '당신의 우주가 시작됐어요. 이야기가 쌓일수록 하늘이 넓어집니다.',
+      );
+    }
     setDraft(EMPTY_DRAFT);
     setDirectorMode('custom');
     setErrors({});

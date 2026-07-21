@@ -18,6 +18,7 @@ import { useStore } from 'zustand';
 
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { BLACKHOLE_POSITION } from './blackholeModel';
+import { meteorIntervalScale } from './meteorShowerCalendar';
 import { getStarHaloTexture } from './starSpriteTextures';
 import {
   BackgroundMeteorScheduler,
@@ -1217,6 +1218,8 @@ export function ParticleManager({
     random,
     spawn: (effect, onExpired) => controller.start(effect, onExpired),
     cancel: (effectId) => controller.cancel(effectId),
+    // On the great meteor-shower nights the sky sends them far more often.
+    intervalScale: meteorIntervalScale(new Date()),
   }), [controller, random, timer]);
 
   useEffect(() => {

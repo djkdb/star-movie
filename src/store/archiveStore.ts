@@ -162,6 +162,8 @@ export interface ArchiveCommands {
   scheduleAutosave(): void;
   consumeCompletionEvent(eventId: string): void;
   consumeToastEvent(eventId: string): void;
+  /** Pushes a soft, non-blocking note toast (memories, first-light moments). */
+  pushGentleToast(title: string, message: string): void;
 }
 
 export interface ArchiveStoreState extends Store {
@@ -693,6 +695,22 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
       };
       store.setState((state) => ({
         runtime: { ...state.runtime, watchlistPrefill: prefill },
+      }));
+    },
+    pushGentleToast: (title, message) => {
+      store.setState((state) => ({
+        runtime: {
+          ...state.runtime,
+          toastEvents: [
+            ...state.runtime.toastEvents,
+            {
+              id: providers.nextUuid(),
+              type: 'gentle-note',
+              occurredAt: providers.nowIso(),
+              payload: { title, message },
+            },
+          ],
+        },
       }));
     },
     clearWatchlistPrefill: () => {

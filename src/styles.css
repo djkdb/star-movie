@@ -2267,3 +2267,32 @@ progress::-moz-progress-bar {
   gap: 0.45rem;
   flex-wrap: wrap;
 }
+
+/* ---- First-visit gesture guide ---- */
+.gesture-guide {
+  position: fixed;
+  left: 50%;
+  bottom: 1.4rem;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+  max-width: min(92vw, 34rem);
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.8rem;
+  background: rgba(4, 8, 20, 0.82);
+  backdrop-filter: blur(14px);
+  text-align: center;
+}
+
+.gesture-guide-moves {
+  color: rgba(232, 240, 255, 0.92);
+  font-size: 0.88rem;
+}
+
+.gesture-guide-cta {
+  color: #9fdcff;
+  font-size: 0.85rem;
+}
