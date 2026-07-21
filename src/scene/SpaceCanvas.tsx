@@ -481,6 +481,7 @@ function SpaceScene({
         />
         <SelectiveBloomPass
           enabled={bloom.enabled}
+          reducedMotion={reducedMotion}
           reducedQuality={quality.reducedBloom}
         />
         <BlackholeRenderer
