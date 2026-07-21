@@ -6,11 +6,12 @@ import {
   AdditiveBlending,
   Color,
   DoubleSide,
+  Vector3,
   type Group,
   type ShaderMaterial,
 } from 'three';
 
-import type { ArchivedStar } from '../domain/models';
+import type { ArchivedStar, QualityLevel } from '../domain/models';
 import type { StarDragPayload } from './starVisualModel';
 import {
   BLACKHOLE_DISTORTION_MAX_STRENGTH,
@@ -26,163 +27,155 @@ import { GENRE_FIREWORK_COLORS } from './particleManagerModel';
 import { getStarHaloTexture } from './starSpriteTextures';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 
-/** Half-size of the billboarded quad; the event horizon sits at 0.30 of this. */
-const BLACKHOLE_PLANE_HALF = 10;
-
 /**
- * Half-size of the lensing-glow quad behind the disk. Larger than the disk so
- * the god-ray caustics and Einstein ring reach well past the accretion fan.
+ * Half-size of the billboarded quad the black hole is raymarched through. The
+ * quad only needs to cover the lensed footprint; it is scaled with the hole's
+ * mass so a heavier hole still fits.
  */
-const BLACKHOLE_LENS_HALF = 22;
+const BLACKHOLE_RAYMARCH_HALF = 12;
 
-/**
- * A camera-facing "Gargantua" shader: pure-black event horizon, a hot photon
- * ring hugging its edge, a lensed halo that reads as the accretion disk wrapping
- * over and under the shadow, and an equatorial fan that streams outward with
- * Doppler-beamed brightness and slowly churning turbulence. The billboard keeps
- * the photographic front-on read no matter where the camera orbits.
- */
-const GARGANTUA_VERTEX_SHADER = `
-  varying vec2 vUv;
+/** Raymarch step budget per quality tier; degrades with the FPS controller. */
+const RAYMARCH_STEPS_BY_QUALITY: Readonly<Record<QualityLevel, number>> = {
+  full: 120,
+  reducedBackground: 88,
+  minimumParticles: 60,
+  reducedBloom: 48,
+};
+
+const BLACKHOLE_VERTEX_SHADER = `
+  varying vec3 vWorldPos;
   void main() {
-    vUv = uv;
+    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
-const GARGANTUA_FRAGMENT_SHADER = `
+/**
+ * A true raymarched "Gargantua" black hole. For every fragment a view ray is
+ * bent by the hole's gravity as it steps through the influence sphere: rays
+ * that fall past the horizon are the pure-black shadow (opaque, so it occludes
+ * the sky), rays that graze it draw the bright photon ring, and rays that cross
+ * the equatorial accretion plane pick up its Doppler-beamed, blackbody-colored,
+ * turbulent light — including the far side of the disk lensed up and over the
+ * shadow. Everything else stays transparent so the hole composites into the
+ * existing star sky. The disk lives in the world horizontal plane, so orbiting
+ * the camera reveals its real 3D structure rather than a fixed billboard.
+ */
+const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
   precision highp float;
-  varying vec2 vUv;
+  varying vec3 vWorldPos;
   uniform float uTime;
   uniform float uArousal;
+  uniform vec3 uCameraPos;
+  uniform vec3 uCenter;
+  uniform float uScale;
+  uniform int uSteps;
 
-  float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
-  }
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
+  float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
+  float noise(vec2 p){
+    vec2 i = floor(p); vec2 f = fract(p);
+    float a = hash(i), b = hash(i + vec2(1.0, 0.0)),
+          c = hash(i + vec2(0.0, 1.0)), d = hash(i + vec2(1.0, 1.0));
     vec2 u = f * f * (3.0 - 2.0 * f);
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
   }
-  float fbm(vec2 p) {
-    float v = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 4; i++) {
-      v += a * noise(p);
-      p *= 2.0;
-      a *= 0.5;
-    }
+  float fbm(vec2 p){
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 5; i++){ v += a * noise(p); p *= 2.02; a *= 0.5; }
     return v;
   }
 
-  void main() {
-    vec2 p = (vUv - 0.5) * 2.0;
-    float r = length(p);
-    float ang = atan(p.y, p.x);
+  vec3 blackbody(float x){ // x: 0 = white-hot (inner), 1 = deep red (outer)
+    vec3 hot  = vec3(1.0, 0.98, 0.92);
+    vec3 warm = vec3(1.0, 0.60, 0.24);
+    vec3 deep = vec3(0.66, 0.20, 0.08);
+    vec3 c = mix(hot, warm, smoothstep(0.0, 0.5, x));
+    return mix(c, deep, smoothstep(0.5, 1.0, x));
+  }
 
-    float horizon = 0.30;
-    float ringR = 0.355;
+  void main(){
+    float sc = max(uScale, 0.001);
+    // Length scales grow with the hole's mass; LENS carries 1/sc so the
+    // deflection angle stays identical at every size.
+    float RS    = 1.9 * sc;   // event-horizon (shadow) radius
+    float DIN   = 2.4 * sc;   // disk inner radius
+    float DOUT  = 6.8 * sc;   // disk outer radius
+    float RINF  = 13.0 * sc;  // influence sphere
+    float STEP  = 0.22 * sc;
+    float LENS  = 1.45 / sc;
+    float RINGB = 3.05 * sc;  // photon-ring impact parameter
+    float RINGW = 0.32 * sc;
 
-    // Inside the event horizon: pure black, fully opaque so it occludes.
-    if (r < horizon) {
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-      return;
+    vec3 ro = uCameraPos - uCenter;
+    vec3 rd0 = normalize(vWorldPos - uCameraPos);
+    vec3 rd = rd0;
+
+    // Enter the influence sphere; skip the empty space in front of it.
+    float b = dot(ro, rd);
+    float c = dot(ro, ro) - RINF * RINF;
+    float disc = b * b - c;
+    if (disc < 0.0) discard;
+    vec3 posv = ro + rd * max(-b - sqrt(disc), 0.0);
+
+    // Straight-line impact parameter: continuous across the screen, so a photon
+    // ring keyed to it never bands with the step size.
+    float bImpact = length(ro - dot(ro, rd0) * rd0);
+
+    vec3 col = vec3(0.0);
+    float alpha = 0.0;
+    float captured = 0.0;
+    vec3 prev = posv;
+
+    for (int i = 0; i < 220; i++){
+      if (i >= uSteps) break;
+      float r = length(posv);
+      if (r < RS){ captured = 1.0; break; }
+      if (r > RINF + STEP) break;
+
+      vec3 toC = -posv / r;
+      rd = normalize(rd + toC * (RS * RS) / (r * r) * STEP * LENS);
+      prev = posv;
+      posv += rd * STEP;
+
+      // Accretion-disk plane (local XZ, y = 0). A sign flip means we crossed it.
+      if (prev.y * posv.y < 0.0 && alpha < 0.99){
+        float t = -prev.y / (posv.y - prev.y);
+        vec3 hit = mix(prev, posv, t);
+        float hr = length(hit.xz);
+        if (hr > DIN && hr < DOUT){
+          float ang = atan(hit.z, hit.x);
+          float nR = (hr - DIN) / (DOUT - DIN);
+          float temp = pow(1.0 - nR, 1.25);
+          vec3 dcol = blackbody(1.0 - temp);
+
+          // Keplerian swirl + turbulence (scale-normalized so texture is stable).
+          float phase = uTime * -1.1 / pow(hr / sc, 1.5);
+          float swirl = fbm(vec2(ang * 2.2 + phase * 6.2831, (hr / sc) * 0.7 + phase));
+          float tex = 0.45 + 0.7 * swirl;
+
+          // Relativistic Doppler beaming on the tangential orbital velocity.
+          vec3 vel = normalize(vec3(-sin(ang), 0.0, cos(ang)));
+          float beta = 0.42 * inversesqrt(hr / DIN);
+          float dopp = pow(1.0 / (1.0 - beta * dot(vel, rd)), 3.0);
+
+          float edge = smoothstep(0.0, 0.10, nR) * smoothstep(1.0, 0.72, nR);
+          float bright = tex * edge * clamp(dopp, 0.25, 4.5);
+          bright *= 1.7 + uArousal * 0.9;
+
+          float rem = 1.0 - alpha;
+          col += dcol * bright * rem;
+          alpha += rem * clamp(bright, 0.0, 1.0) * edge;
+        }
+      }
     }
 
-    // Hot photon ring hugging the shadow.
-    float ring = exp(-pow((r - ringR) / 0.028, 2.0));
-    // Lensed halo: the disk appears to wrap over and under the shadow.
-    float halo = exp(-pow((r - ringR - 0.02) / 0.09, 2.0));
-    // Equatorial fan streaming outward on both sides, thin near the ring and
-    // widening as it goes.
-    float widen = 0.055 + 0.19 * max(0.0, abs(p.x) - ringR);
-    float equator = exp(-pow(p.y / widen, 2.0));
-    float radialFade = smoothstep(1.55, ringR, r);
-    float fan = equator * radialFade * step(ringR - 0.03, r);
+    float ring = exp(-pow((bImpact - RINGB) / RINGW, 2.0));
+    col += vec3(1.0, 0.96, 0.88) * ring * (1.3 + uArousal * 0.7);
+    alpha = max(alpha, ring);
 
-    // Slowly churning turbulence for the wispy accretion texture.
-    float swirl = fbm(vec2(ang * 1.7 + r * 4.0 - uTime * 0.22, r * 3.0 + uTime * 0.1));
-    float texture = 0.62 + 0.38 * swirl;
-
-    // Mild relativistic Doppler beaming: the approaching (right) side reads a
-    // touch brighter, but both sides of the disk stay clearly visible.
-    float doppler = 1.0 + 0.28 * (p.x / max(r, 0.001));
-
-    float brightness = (ring * 1.7 + halo * 0.85 + fan * 1.5 * texture) * doppler;
-    brightness *= 1.0 + uArousal * 0.9;
-
-    // Temperature gradient: white-hot at the ring, amber then deep-red outward.
-    vec3 hot = vec3(1.0, 0.98, 0.92);
-    vec3 warm = vec3(1.0, 0.63, 0.26);
-    vec3 deep = vec3(0.72, 0.26, 0.11);
-    float t = clamp((r - ringR) / 0.85, 0.0, 1.0);
-    vec3 col = mix(hot, warm, smoothstep(0.0, 0.5, t));
-    col = mix(col, deep, smoothstep(0.5, 1.0, t));
-    // A faint cool tint on the receding side sells the Doppler shift.
-    col = mix(col, vec3(0.55, 0.62, 0.95), clamp(-p.x / max(r, 0.001), 0.0, 1.0) * 0.18);
-
-    vec3 outColor = col * brightness;
-    float alpha = clamp(brightness, 0.0, 1.0);
-    alpha *= smoothstep(1.0, 0.8, r);
-
-    if (alpha <= 0.003) discard;
-    gl_FragColor = vec4(outColor, alpha);
-  }
-`;
-
-/**
- * The gravitational-lens layer that sits behind the accretion disk: a bright
- * Einstein ring where background starlight bends around the shadow, a broad
- * cool halo it sits within, and faint lensing caustics — thin light streaks
- * curving off the hole. It is deliberately cool blue so it reads as light
- * *around* the hole rather than more of the warm disk, and stays additive with
- * no framebuffer reads, so it cannot reintroduce the depth-blit flicker.
- */
-const GRAVITATIONAL_LENS_FRAGMENT_SHADER = `
-  precision highp float;
-  varying vec2 vUv;
-  uniform float uTime;
-  uniform float uArousal;
-
-  void main() {
-    vec2 p = (vUv - 0.5) * 2.0;
-    float r = length(p);
-    float ang = atan(p.y, p.x);
-
-    // Leave the very centre to the shadow and disk drawn in front.
-    if (r < 0.07 || r > 0.98) discard;
-
-    // Lensing caustics: thin light streaks bent around the hole. Two counter-
-    // drifting frequencies keep them irregular rather than a clean pinwheel.
-    float rot = uTime * 0.05;
-    float ray1 = pow(abs(sin(ang * 11.0 + rot)), 8.0);
-    float ray2 = pow(abs(sin(ang * 19.0 - rot * 0.6 + 2.1)), 14.0);
-    float rays = ray1 * 0.7 + ray2 * 0.45;
-    float godRays = rays * smoothstep(1.0, 0.14, r);
-
-    // Einstein ring: a second, cooler ring of lensed background light sitting
-    // just *outside* the disk's hot photon ring, so the two read as a double
-    // halo rather than one fat blob.
-    float einstein = exp(-pow((r - 0.44) / 0.05, 2.0));
-
-    // Broad lensing halo the rings sit within.
-    float halo = exp(-pow(r / 0.55, 2.0));
-
-    float brightness = godRays * 0.4 + einstein * 0.55 + halo * 0.28;
-    brightness *= 1.0 + uArousal * 1.1;
-
-    vec3 cool = vec3(0.52, 0.68, 1.0);
-    vec3 bright = vec3(0.82, 0.9, 1.0);
-    vec3 col = mix(cool, bright, clamp(einstein + godRays * 0.5, 0.0, 1.0));
-
-    float alpha = clamp(brightness, 0.0, 1.0) * smoothstep(0.98, 0.7, r);
-    if (alpha <= 0.003) discard;
-    gl_FragColor = vec4(col * brightness, alpha);
+    float outA = captured > 0.5 ? 1.0 : clamp(alpha, 0.0, 1.0);
+    if (outA <= 0.003) discard;
+    gl_FragColor = vec4(pow(col, vec3(1.0 / 1.5)), outA);
   }
 `;
 
@@ -291,6 +284,7 @@ export interface BlackholeRendererProps {
   activeDragPayload?: StarDragPayload | null;
   archivedWorks?: readonly ArchivedStar[];
   reducedMotion?: boolean;
+  qualityLevel?: QualityLevel;
   onDropStar(payload: StarDragPayload): void;
   onOpenArchive(): void;
 }
@@ -299,12 +293,12 @@ export function BlackholeRenderer({
   activeDragPayload = null,
   archivedWorks = [],
   reducedMotion = false,
+  qualityLevel = 'full',
   onDropStar,
   onOpenArchive,
 }: BlackholeRendererProps) {
   const billboardRef = useRef<Group>(null);
   const materialRef = useRef<ShaderMaterial>(null);
-  const lensMaterialRef = useRef<ShaderMaterial>(null);
   const arousalRef = useRef(0);
   const didDropRef = useRef(false);
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
@@ -312,13 +306,33 @@ export function BlackholeRenderer({
     () => [BLACKHOLE_POSITION.x, BLACKHOLE_POSITION.y, BLACKHOLE_POSITION.z] as const,
     [],
   );
+  const raymarchUniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uArousal: { value: 0 },
+      uCameraPos: { value: new Vector3() },
+      uCenter: {
+        value: new Vector3(
+          BLACKHOLE_POSITION.x,
+          BLACKHOLE_POSITION.y,
+          BLACKHOLE_POSITION.z,
+        ),
+      },
+      uScale: { value: 1 },
+      uSteps: { value: RAYMARCH_STEPS_BY_QUALITY.full },
+    }),
+    [],
+  );
   // Everything the hole has swallowed adds visible mass.
   const massScale = getBlackholeMassScale(archivedWorks.length);
+  const baseSteps = RAYMARCH_STEPS_BY_QUALITY[qualityLevel];
+  // Reduced motion signals a device that wants less GPU work; cap the march.
+  const raymarchSteps = reducedMotion ? Math.min(baseSteps, 72) : baseSteps;
 
   const dragActive = isValidBlackholeDragPayload(activeDragPayload);
 
   useFrame((state, delta) => {
-    // Face the camera so the disk keeps its photographic front-on silhouette.
+    // Face the camera so the raymarch quad always covers the hole's footprint.
     const billboard = billboardRef.current;
     if (billboard !== null) {
       billboard.quaternion.copy(state.camera.quaternion);
@@ -328,19 +342,18 @@ export function BlackholeRenderer({
     const target = dragActive ? 1 : 0;
     const rate = Math.min(1, delta * 3.5);
     arousalRef.current += (target - arousalRef.current) * rate;
-    const breathe = 0.04 * Math.sin(elapsedVisibleSeconds.current * 1.3);
+    const breathe = reducedMotion ? 0 : 0.04 * Math.sin(elapsedVisibleSeconds.current * 1.3);
     const arousal = arousalRef.current + breathe + (massScale - 1) * 0.5;
-    if (materialRef.current !== null) {
-      materialRef.current.uniforms.uTime!.value = elapsedVisibleSeconds.current;
-      materialRef.current.uniforms.uArousal!.value = arousal;
-    }
-    if (lensMaterialRef.current !== null) {
-      lensMaterialRef.current.uniforms.uTime!.value = elapsedVisibleSeconds.current;
-      lensMaterialRef.current.uniforms.uArousal!.value = arousal;
-    }
-    if (billboard !== null) {
-      const scale = (1 + arousalRef.current * 0.08 + breathe * 0.5) * massScale;
-      billboard.scale.setScalar(scale);
+    const scale = (1 + arousalRef.current * 0.08 + breathe * 0.5) * massScale;
+    if (billboard !== null) billboard.scale.setScalar(scale);
+    const material = materialRef.current;
+    if (material !== null) {
+      // Freezing time under reduced motion stills the disk turbulence.
+      material.uniforms.uTime!.value = reducedMotion ? 0 : elapsedVisibleSeconds.current;
+      material.uniforms.uArousal!.value = arousal;
+      material.uniforms.uScale!.value = scale;
+      material.uniforms.uSteps!.value = raymarchSteps;
+      (material.uniforms.uCameraPos!.value as Vector3).copy(state.camera.position);
     }
   });
 
@@ -385,45 +398,25 @@ export function BlackholeRenderer({
         <meshBasicMaterial colorWrite={false} depthWrite={false} transparent opacity={0} />
       </mesh>
       <group ref={billboardRef}>
-        {/* Gravitational-lens glow, drawn behind the disk so the disk's opaque
-            shadow keeps ownership of the centre while the ring and caustics
-            bloom out past the accretion fan. Non-interactive. */}
-        <mesh name="blackhole-lens-glow" position={[0, 0, -0.1]} renderOrder={1}>
-          <planeGeometry args={[BLACKHOLE_LENS_HALF * 2, BLACKHOLE_LENS_HALF * 2]} />
-          <shaderMaterial
-            blending={AdditiveBlending}
-            depthWrite={false}
-            fragmentShader={GRAVITATIONAL_LENS_FRAGMENT_SHADER}
-            ref={lensMaterialRef}
-            side={DoubleSide}
-            transparent
-            toneMapped={false}
-            uniforms={{
-              uTime: { value: 0 },
-              uArousal: { value: 0 },
-            }}
-            vertexShader={GARGANTUA_VERTEX_SHADER}
-          />
-        </mesh>
+        {/* The raymarched hole: shadow, photon ring and lensed accretion disk
+            all resolved per-fragment on this camera-facing quad, transparent
+            everywhere else so it composites into the star sky. */}
         <mesh
           name="blackhole-accretion-disk"
           renderOrder={2}
           onClick={handleOpenArchive}
           onPointerUp={handleDrop}
         >
-          <planeGeometry args={[BLACKHOLE_PLANE_HALF * 2, BLACKHOLE_PLANE_HALF * 2]} />
+          <planeGeometry args={[BLACKHOLE_RAYMARCH_HALF * 2, BLACKHOLE_RAYMARCH_HALF * 2]} />
           <shaderMaterial
             depthWrite={false}
-            fragmentShader={GARGANTUA_FRAGMENT_SHADER}
+            fragmentShader={BLACKHOLE_RAYMARCH_FRAGMENT_SHADER}
             ref={materialRef}
             side={DoubleSide}
             transparent
             toneMapped={false}
-            uniforms={{
-              uTime: { value: 0 },
-              uArousal: { value: 0 },
-            }}
-            vertexShader={GARGANTUA_VERTEX_SHADER}
+            uniforms={raymarchUniforms}
+            vertexShader={BLACKHOLE_VERTEX_SHADER}
           />
         </mesh>
         <ArchivedEmberRing

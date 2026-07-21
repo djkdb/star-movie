@@ -538,6 +538,7 @@ function SpaceScene({
           archivedWorks={viewModel.archiveContent.archivedWorks}
           onDropStar={onBlackholeDrop}
           onOpenArchive={onBlackholeOpen}
+          qualityLevel={qualityLevel}
           reducedMotion={reducedMotion}
         />
         <PlanetCollectionRenderer
