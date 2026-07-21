@@ -1,7 +1,18 @@
-import { Bloom, EffectComposer } from '@react-three/postprocessing';
+import {
+  Bloom,
+  ChromaticAberration,
+  EffectComposer,
+  Noise,
+  Vignette,
+} from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
+import { Vector2 } from 'three';
 
 import type { Constellation, Star } from '../domain/models';
 import { createConstellationLineViewModels } from './constellationRendererModel';
+
+/** Per-channel pixel offset for the chromatic fringe — tiny, a lens quality. */
+const CHROMATIC_ABERRATION_OFFSET = new Vector2(0.0006, 0.0009);
 
 export const BLOOM_TARGET_USER_DATA_KEY = 'selectiveBloomTarget';
 
@@ -32,24 +43,28 @@ export function createSelectiveBloomViewModel(
   };
 }
 
-/** Mounted only while the Selection context contains a Star or active line. */
+/**
+ * The scene's post-processing stack. Bloom makes bright things glow; a subtle
+ * cinematic grade on top — a faint chromatic fringe, a vignette that frames the
+ * sky, and a whisper of film grain — makes the whole thing read like a long-
+ * exposure astrophotograph rather than a flat WebGL render. All of these are
+ * pure screen-space passes (no depth re-render), so none reintroduce the
+ * SelectiveBloom depth-blit flicker that a threshold Bloom was chosen to avoid.
+ *
+ * Mounted only while the Selection context contains a Star or active line.
+ */
 export function SelectiveBloomPass({
   enabled,
   reducedQuality = false,
+  reducedMotion = false,
 }: {
   enabled: boolean;
   reducedQuality?: boolean;
+  reducedMotion?: boolean;
 }) {
   if (!enabled) return null;
 
   return (
-    // A plain threshold bloom, not SelectiveBloom. SelectiveBloom re-renders the
-    // selected objects sharing the scene depth buffer, and its depth blit aliases
-    // the read/write depth-stencil attachment ("cannot be the same image"), which
-    // flickered or blacked out the scene on real GPUs whenever an effect added
-    // geometry. A luminance threshold keeps only genuinely bright things — star
-    // cores, constellation lines, fireworks, the accretion ring — glowing while
-    // the dim nebula stays matte.
     <EffectComposer multisampling={reducedQuality ? 0 : 4}>
       <Bloom
         intensity={0.9}
@@ -57,6 +72,24 @@ export function SelectiveBloomPass({
         luminanceSmoothing={0.25}
         mipmapBlur={!reducedQuality}
       />
+      {/* Cinematic grade. Chromatic aberration and grain are the animated/heavier
+          touches, so they step aside under reduced quality or reduced motion. */}
+      {!reducedQuality ? (
+        <ChromaticAberration
+          blendFunction={BlendFunction.NORMAL}
+          offset={CHROMATIC_ABERRATION_OFFSET}
+          radialModulation={false}
+          modulationOffset={0}
+        />
+      ) : (
+        <></>
+      )}
+      <Vignette eskil={false} offset={0.32} darkness={0.62} />
+      {!reducedQuality && !reducedMotion ? (
+        <Noise blendFunction={BlendFunction.OVERLAY} opacity={0.04} premultiply />
+      ) : (
+        <></>
+      )}
     </EffectComposer>
   );
 }

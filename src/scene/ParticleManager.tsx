@@ -75,6 +75,14 @@ function effectColor(kind: ParticleEffectDescriptor['kind']): string {
  * then a loosening downward dissolve.
  */
 const FIREWORK_MOTION_GLSL = `
+  // A stable per-spark unit direction for the secondary burst, from its seed.
+  vec3 sparkBurstDir(float seed) {
+    float a = seed * 6.2831853;
+    float z = fract(seed * 91.7) * 2.0 - 1.0;
+    float r = sqrt(max(0.0, 1.0 - z * z));
+    return vec3(cos(a) * r, sin(a) * r, z);
+  }
+
   vec3 sparkPos(vec3 slot, float t, float seed, float clockTime) {
     float x = clamp(t / 0.3, 0.0, 1.0);
     float c1 = 1.70158;
@@ -84,9 +92,14 @@ const FIREWORK_MOTION_GLSL = `
     vec3 pos = slot * form;
     pos.x += sin(clockTime * 1.2 + seed * 43.0) * 1.1 * settled;
     pos.y += cos(clockTime * 0.9 + seed * 57.0) * 1.1 * settled;
+
+    // Finale: the held figure detonates a second time — each spark pops outward
+    // along its own direction, swells, and then rains down under gravity.
+    float burst = smoothstep(0.7, 0.86, t);
+    pos += sparkBurstDir(seed) * burst * 9.0;
     float fall = smoothstep(0.7, 1.0, t);
     pos *= 1.0 + fall * 0.25;
-    pos.y -= fall * fall * 22.0;
+    pos.y -= fall * fall * 26.0;
     return pos;
   }
 
@@ -119,17 +132,22 @@ const FIREWORK_VERTEX_SHADER = `
 
     float settled = smoothstep(0.26, 0.4, t);
     float appear = smoothstep(0.0, 0.04, t);
-    float fade = 1.0 - smoothstep(0.74, 1.0, t);
+    // Hold brightness through the second burst, then fade out on the rain-down.
+    float fade = 1.0 - smoothstep(0.82, 1.0, t);
     float twinkle = 0.8 + 0.2 * sin(uTime * 8.0 + aSeed * 89.0);
     // Glitter sparks strobe once the figure has formed, like crackle stars.
     float strobe = step(0.35, fract(sin(floor(uTime * 14.0) + aSeed * 61.0) * 43758.5453));
     float crackle = mix(1.0, strobe * 1.6, settled);
-    vAlpha = appear * fade * mix(twinkle, crackle, aGlitter);
+    // Secondary-burst flash: every spark briefly re-ignites as the figure detonates.
+    float reburst = smoothstep(0.7, 0.75, t) * (1.0 - smoothstep(0.75, 0.9, t));
+    vAlpha = appear * fade * mix(twinkle, crackle, aGlitter) * (1.0 + reburst * 1.6);
 
-    // Color evolution: white-hot launch flash -> figure tint -> dim ember.
+    // Color evolution: white-hot launch flash -> figure tint -> white-hot second
+    // burst -> dim ember.
     vec3 tinted = mix(vec3(1.0), aColor, smoothstep(0.02, 0.3, t));
+    tinted = mix(tinted, vec3(1.0), reburst * 0.7);
     vec3 ember = aColor * 0.55 + vec3(0.12, 0.04, 0.0);
-    vColor = mix(tinted, ember, smoothstep(0.82, 1.0, t));
+    vColor = mix(tinted, ember, smoothstep(0.88, 1.0, t));
 
     // Cap the screen-space size: nearby sparks otherwise balloon into huge
     // additive quads whose overdraw stalls weaker GPUs into dropped frames.
@@ -161,17 +179,20 @@ const FIREWORK_TRAIL_VERTEX_SHADER = `
     vec3 tail = sparkPos(position, tTail, aSeed, uTime - 0.22);
     vec3 span = tail - head;
     float len = length(span);
-    // Cap the streak so settled sparks keep short, elegant tails.
-    if (len > 16.0) span *= 16.0 / len;
+    // Cap the streak so settled sparks keep short tails, but allow long comet
+    // streaks during the fast launch and the second-burst rain-down.
+    if (len > 24.0) span *= 24.0 / len;
     vec3 pos = head + span * aTrail;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 
     float appear = smoothstep(0.0, 0.04, tHead);
-    float fade = 1.0 - smoothstep(0.74, 1.0, tHead);
-    // Streak brightness follows speed, so trails live only while moving.
-    float speedGlow = clamp(len / 5.0, 0.0, 1.0);
-    vAlpha = appear * fade * speedGlow * (1.0 - aTrail) * 0.75;
+    // Trails linger almost to the end so the rain-down leaves comet streaks.
+    float fade = 1.0 - smoothstep(0.9, 1.0, tHead);
+    // Streak brightness follows speed, so trails blaze while racing outward and
+    // again as the figure bursts apart, and rest quietly while it hovers.
+    float speedGlow = clamp(len / 4.0, 0.0, 1.0);
+    vAlpha = appear * fade * speedGlow * (1.0 - aTrail) * 0.9;
 
     vec3 tinted = mix(vec3(1.0), aColor, smoothstep(0.02, 0.3, tHead));
     vColor = tinted;
