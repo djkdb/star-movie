@@ -81,7 +81,7 @@ export function SkyUtilities({ store }: { store: ArchiveStoreApi }) {
   };
 
   const recenter = () => {
-    store.getState().commands.requestCameraFocus({ type: 'free', pose: HOME_POSE });
+    store.getState().commands.requestCameraHome(HOME_POSE);
   };
 
   return (

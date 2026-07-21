@@ -145,6 +145,8 @@ export interface ArchiveCommands {
   toggleListDrawer(): void;
   degradeQuality(): QualityLevel;
   requestCameraFocus(request: CameraRequest): CommandResult<CameraRequest>;
+  /** Eases the camera back to the given home pose from anywhere. */
+  requestCameraHome(pose: CameraPose): void;
   clearCameraRequest(request?: CameraRequest): void;
   capturePreFocusPose(pose: CameraPose): void;
   requestCameraReturn(): void;
@@ -862,6 +864,14 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
         runtime: { ...current.runtime, pendingCameraRequest: request },
       }));
       return { ok: true, value: request, completionEvents: [] };
+    },
+    requestCameraHome: (pose) => {
+      store.setState((current) => ({
+        runtime: {
+          ...current.runtime,
+          pendingCameraRequest: { type: 'free', pose },
+        },
+      }));
     },
     clearCameraRequest: (request) => {
       const pending = store.getState().runtime.pendingCameraRequest;
