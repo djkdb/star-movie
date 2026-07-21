@@ -40,7 +40,7 @@ export const ASTEROID_IMPACT_DURATION_SECONDS = 0.8;
 export const BLACKHOLE_SPIRAL_DURATION_SECONDS = 1.2;
 export const BLACKHOLE_SPIRAL_ROTATIONS = 2;
 export const BACKGROUND_METEOR_INTERVAL_SECONDS = [15, 40] as const;
-export const BACKGROUND_METEOR_DURATION_SECONDS = [0.5, 1] as const;
+export const BACKGROUND_METEOR_DURATION_SECONDS = [1.1, 1.9] as const;
 
 export type ParticleEffectKind =
   | 'fireworks'
