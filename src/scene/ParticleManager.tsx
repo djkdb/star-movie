@@ -808,13 +808,14 @@ const METEOR_FRAGMENT_SHADER = `
     float head = pow(vUv.x, 2.4);
     float taper = 3.0 + 10.0 * (1.0 - vUv.x);
     float across = exp(-pow((vUv.y - 0.5) * taper, 2.0));
-    // Lengthwise shimmer so the trail flickers like burning debris.
-    float shimmer = 0.85 + 0.15 * sin(vUv.x * 46.0 - uTime * 34.0);
+    // Gentle lengthwise drift; fast strobing here pulsed the whole screen's
+    // bloom every time a shooting star crossed the sky.
+    float shimmer = 0.94 + 0.06 * sin(vUv.x * 18.0 - uTime * 7.0);
     float alpha = head * across * shimmer * uFade;
     if (alpha <= 0.004) discard;
     // White-hot head cooling into the icy tint along the tail.
     vec3 color = mix(uTint, vec3(1.0), pow(vUv.x, 5.0));
-    gl_FragColor = vec4(color * (0.8 + 0.7 * head), alpha);
+    gl_FragColor = vec4(color * (0.7 + 0.35 * head), alpha);
   }
 `;
 
@@ -914,7 +915,7 @@ export function MeteorVisual({ controller, effect }: MeteorVisualProps) {
         Math.max(0, (progress - streak.delayFraction) / Math.max(0.2, 1 - streak.delayFraction)),
       );
       // Quick ignition, long graceful fade-out.
-      const fade = Math.min(local / 0.12, 1) * (1 - Math.max(0, (local - 0.72) / 0.28));
+      const fade = Math.min(local / 0.3, 1) * (1 - Math.max(0, (local - 0.68) / 0.32));
 
       const trailMaterial = trailMaterials[index];
       if (trailMaterial !== undefined) {
@@ -922,7 +923,7 @@ export function MeteorVisual({ controller, effect }: MeteorVisualProps) {
         trailMaterial.uniforms.uTime!.value = elapsedRef.current;
       }
       const headMaterial = headMaterials[index];
-      if (headMaterial !== undefined) headMaterial.opacity = Math.max(0, fade) * 0.9;
+      if (headMaterial !== undefined) headMaterial.opacity = Math.max(0, fade) * 0.6;
 
       const group = groupRefs.current[index];
       if (group !== null && group !== undefined) {
