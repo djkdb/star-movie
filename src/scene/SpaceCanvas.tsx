@@ -62,6 +62,11 @@ import {
   type SceneBenchmarkSource,
 } from './performanceBenchmark';
 import { SmoothWheelZoom } from './SmoothWheelZoom';
+import { SpiralGalaxyField } from './SpiralGalaxyField';
+import {
+  GALAXY_TEXTURE_SIZE_FULL,
+  GALAXY_TEXTURE_SIZE_REDUCED,
+} from './spiralGalaxyModel';
 import { sceneResourceRegistry } from './threeResourceRegistry';
 import {
   createSelectiveBloomViewModel,
@@ -464,6 +469,15 @@ function SpaceScene({
     [viewModel.archiveContent.constellations, viewModel.archiveContent.stars],
   );
   const quality = getSceneQualitySettings(qualityLevel);
+  // The GPGPU galaxy is the heaviest background element, so it runs at full
+  // particle count only at full quality, halves its grid one step down, and
+  // drops out entirely once the scene is degrading for performance.
+  const galaxyTextureSize =
+    qualityLevel === 'full'
+      ? GALAXY_TEXTURE_SIZE_FULL
+      : qualityLevel === 'reducedBackground'
+        ? GALAXY_TEXTURE_SIZE_REDUCED
+        : 0;
   const backgroundLayers = useMemo(
     () => BACKGROUND_LAYER_DEFINITIONS.map((definition) => ({
       ...definition,
@@ -490,6 +504,12 @@ function SpaceScene({
         {backgroundLayers.map((definition) => (
           <BackgroundLayer definition={definition} key={definition.kind} />
         ))}
+        {galaxyTextureSize > 0 && (
+          <SpiralGalaxyField
+            reducedMotion={reducedMotion}
+            textureSize={galaxyTextureSize}
+          />
+        )}
         <MilkyWayField />
         <NebulaField />
         <MilestoneRewardRenderer rewards={viewModel.milestoneRewards} />
