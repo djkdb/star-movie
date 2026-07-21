@@ -197,7 +197,7 @@ export function App({ store }: AppProps) {
   return (
     <main className="app-shell">
       <header className="sky-brand">
-        <p className="eyebrow">SPACE MOVIE ARCHIVE</p>
+        <p className="eyebrow">ASTERON</p>
         <h1>나만의 밤하늘</h1>
       </header>
       <ArchiveShell

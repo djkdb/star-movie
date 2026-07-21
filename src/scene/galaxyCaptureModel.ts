@@ -7,7 +7,7 @@ export interface GalaxyPosterStats {
 }
 
 export const GALAXY_POSTER_TITLE = '내가 본 영화들로 만든 우주';
-export const GALAXY_POSTER_EYEBROW = 'SPACE MOVIE ARCHIVE';
+export const GALAXY_POSTER_EYEBROW = 'ASTERON';
 
 /** One-line stat summary shown along the bottom of the poster. */
 export function galaxyStatsLine(stats: GalaxyPosterStats): string {
