@@ -198,7 +198,9 @@ export function App({ store }: AppProps) {
     <main className="app-shell">
       <header className="sky-brand">
         <p className="eyebrow">ASTERON</p>
-        <h1>나만의 밤하늘</h1>
+        {/* Kept for the document outline and tests, but no longer painted on
+            the sky — the brand eyebrow alone marks the corner. */}
+        <h1 className="visually-hidden">나만의 밤하늘</h1>
       </header>
       <ArchiveShell
         canvas={(
