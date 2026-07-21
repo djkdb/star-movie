@@ -3,12 +3,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import {
   AdditiveBlending,
   BufferGeometry,
-  Euler,
   Float32BufferAttribute,
   FloatType,
   Points,
   ShaderMaterial,
-  Vector3,
 } from 'three';
 import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
 
@@ -24,11 +22,16 @@ export interface SpiralGalaxyFieldProps {
   /** GPGPU texture edge length; particle count is its square. */
   textureSize: number;
   reducedMotion: boolean;
+  /** Where the galaxy hangs, its tilt, and its size — so several can be spread
+   *  across the deep background at different scales. Defaults to the original. */
+  origin?: readonly [number, number, number];
+  tilt?: readonly [number, number, number];
+  scale?: number;
 }
 
-/** Where the galaxy hangs in the sky and how it is tilted and scaled. */
-const GALAXY_ORIGIN = new Vector3(-300, 135, -470);
-const GALAXY_TILT = new Euler(1.12, 0.35, 0.42);
+/** Default placement: where the galaxy hangs, its tilt, and its scale. */
+const GALAXY_ORIGIN: readonly [number, number, number] = [-300, 135, -470];
+const GALAXY_TILT: readonly [number, number, number] = [1.12, 0.35, 0.42];
 const GALAXY_SCALE = 0.8;
 /** Longest GPGPU step; clamps integration when a frame hitches or tab-switches. */
 const MAX_STEP_SECONDS = 1 / 30;
@@ -42,7 +45,13 @@ const MAX_STEP_SECONDS = 1 / 30;
  * archive. Freezes (stops stepping) under reduced motion, and silently renders
  * nothing on GPUs without float-texture render support.
  */
-export function SpiralGalaxyField({ textureSize, reducedMotion }: SpiralGalaxyFieldProps) {
+export function SpiralGalaxyField({
+  textureSize,
+  reducedMotion,
+  origin = GALAXY_ORIGIN,
+  tilt = GALAXY_TILT,
+  scale = GALAXY_SCALE,
+}: SpiralGalaxyFieldProps) {
   const gl = useThree((state) => state.gl);
   const pointsRef = useRef<Points>(null);
 
@@ -134,10 +143,10 @@ export function SpiralGalaxyField({ textureSize, reducedMotion }: SpiralGalaxyFi
       geometry={resources.geometry}
       material={resources.material}
       name="spiral-galaxy"
-      position={GALAXY_ORIGIN}
+      position={origin as unknown as [number, number, number]}
       ref={pointsRef}
-      rotation={GALAXY_TILT}
-      scale={GALAXY_SCALE}
+      rotation={tilt as unknown as [number, number, number]}
+      scale={scale}
     />
   );
 }

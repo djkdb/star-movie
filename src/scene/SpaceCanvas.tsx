@@ -62,11 +62,8 @@ import {
   type SceneBenchmarkSource,
 } from './performanceBenchmark';
 import { SmoothWheelZoom } from './SmoothWheelZoom';
+import { BackgroundBlackhole } from './BackgroundBlackhole';
 import { SpiralGalaxyField } from './SpiralGalaxyField';
-import {
-  GALAXY_TEXTURE_SIZE_FULL,
-  GALAXY_TEXTURE_SIZE_REDUCED,
-} from './spiralGalaxyModel';
 import { sceneResourceRegistry } from './threeResourceRegistry';
 import {
   createSelectiveBloomViewModel,
@@ -115,6 +112,22 @@ const BACKGROUND_FRAGMENT_SHADER = `
     gl_FragColor = vec4(vColor, alpha * vOpacity);
   }
 `;
+
+/**
+ * Three small spiral galaxies scattered across the deep background, kept far
+ * from the grand background black hole and from one another so the sky reads as
+ * a wide, populated cosmos. Each is a third of the original galaxy's size.
+ */
+const BACKGROUND_GALAXY_TEXTURE_SIZE = 96;
+const BACKGROUND_GALAXIES: readonly {
+  origin: readonly [number, number, number];
+  tilt: readonly [number, number, number];
+  scale: number;
+}[] = [
+  { origin: [520, -160, -300], tilt: [1.0, 0.6, 0.2], scale: 0.27 },
+  { origin: [-430, -220, -350], tilt: [0.9, -0.4, 0.5], scale: 0.27 },
+  { origin: [60, -340, -560], tilt: [1.3, 0.2, -0.3], scale: 0.27 },
+];
 
 export interface SceneArchiveContent {
   stars: readonly Star[];
@@ -469,15 +482,11 @@ function SpaceScene({
     [viewModel.archiveContent.constellations, viewModel.archiveContent.stars],
   );
   const quality = getSceneQualitySettings(qualityLevel);
-  // The GPGPU galaxy is the heaviest background element, so it runs at full
-  // particle count only at full quality, halves its grid one step down, and
-  // drops out entirely once the scene is degrading for performance.
-  const galaxyTextureSize =
-    qualityLevel === 'full'
-      ? GALAXY_TEXTURE_SIZE_FULL
-      : qualityLevel === 'reducedBackground'
-        ? GALAXY_TEXTURE_SIZE_REDUCED
-        : 0;
+  // The raymarched background black hole is the heaviest backdrop element, so it
+  // only hangs in the sky at the top two quality tiers and drops out entirely
+  // once the scene starts degrading for performance.
+  const showBackgroundBlackhole =
+    qualityLevel === 'full' || qualityLevel === 'reducedBackground';
   const backgroundLayers = useMemo(
     () => BACKGROUND_LAYER_DEFINITIONS.map((definition) => ({
       ...definition,
@@ -504,11 +513,23 @@ function SpaceScene({
         {backgroundLayers.map((definition) => (
           <BackgroundLayer definition={definition} key={definition.kind} />
         ))}
-        {galaxyTextureSize > 0 && (
-          <SpiralGalaxyField
-            reducedMotion={reducedMotion}
-            textureSize={galaxyTextureSize}
-          />
+        {showBackgroundBlackhole && (
+          <>
+            <BackgroundBlackhole
+              qualityLevel={qualityLevel}
+              reducedMotion={reducedMotion}
+            />
+            {BACKGROUND_GALAXIES.map((galaxy, index) => (
+              <SpiralGalaxyField
+                key={`bg-galaxy-${index}`}
+                origin={galaxy.origin}
+                reducedMotion={reducedMotion}
+                scale={galaxy.scale}
+                textureSize={BACKGROUND_GALAXY_TEXTURE_SIZE}
+                tilt={galaxy.tilt}
+              />
+            ))}
+          </>
         )}
         <MilkyWayField />
         <NebulaField />
