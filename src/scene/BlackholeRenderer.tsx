@@ -91,13 +91,13 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
 
   // Fiery accretion ramp: white-hot inner rim -> gold -> orange -> deep ember.
   vec3 diskRamp(float x){
-    vec3 white  = vec3(1.15, 1.05, 0.82);
-    vec3 gold   = vec3(1.03, 0.7, 0.22);
-    vec3 orange = vec3(1.0, 0.42, 0.08);
-    vec3 deep   = vec3(0.34, 0.07, 0.015);
-    vec3 c = mix(white, gold, smoothstep(0.0, 0.22, x));
-    c = mix(c, orange, smoothstep(0.18, 0.55, x));
-    return mix(c, deep, smoothstep(0.58, 1.0, x));
+    vec3 white  = vec3(1.2, 1.08, 0.78);
+    vec3 gold   = vec3(1.05, 0.55, 0.05);
+    vec3 orange = vec3(0.92, 0.27, 0.015);
+    vec3 deep   = vec3(0.42, 0.1, 0.012);
+    vec3 c = mix(white, gold, smoothstep(0.0, 0.14, x));
+    c = mix(c, orange, smoothstep(0.12, 0.42, x));
+    return mix(c, deep, smoothstep(0.5, 0.95, x));
   }
 
   // Express a point in the disk's frame: x/z span the disk plane, y is the
@@ -108,12 +108,12 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
 
   void main(){
     float sc = max(uScale, 0.001);
-    float RS    = 1.35 * sc;
-    float DIN   = 1.85 * sc;
+    float RS    = 1.15 * sc;
+    float DIN   = 1.6 * sc;
     float DOUT  = 9.6 * sc;
     float RINF  = 11.0 * sc;
     float LENS  = 0.34 / sc;
-    float RINGB = 2.2 * sc;
+    float RINGB = 1.9 * sc;
     float RINGW = 0.1 * sc;
     float STEP  = 2.3 * RINF / float(max(uSteps, 24));
 
@@ -168,7 +168,7 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
           // Keep the shadow pitch-black: no gas glow on rays bound for it.
           em *= smoothstep(RINGB * 0.9, RINGB * 1.5, bImpact);
           float rem2 = 1.0 - alpha;
-          col += diskRamp(pow(nR2, 0.62)) * em * rem2 * (1.0 + uArousal * 0.4);
+          col += diskRamp(pow(nR2, 0.5)) * em * rem2 * (1.0 + uArousal * 0.4);
           alpha += rem2 * em * 0.55;
         }
       }
@@ -195,7 +195,7 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
           float outEdge = 1.0 - smoothstep(0.62, 1.0, nR);
           float rim = 1.0 + 3.2 * smoothstep(0.2, 0.0, nR);
           float bright = tex * rim * inEdge * outEdge * clamp(dopp, 0.3, 3.6);
-          bright *= (1.7 - 0.9 * nR) + uArousal * 0.9;
+          bright *= (1.45 - 0.85 * nR) + uArousal * 0.9;
 
           float rem = 1.0 - alpha;
           col += diskRamp(pow(nR, 0.62)) * bright * rem;
@@ -214,7 +214,14 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
     alpha = max(alpha, halo * 0.12);
 
     float outA = captured > 0.5 ? 1.0 : clamp(alpha, 0.0, 1.0);
-    vec3 mapped = vec3(1.0) - exp(-col * 1.5 * uGain);
+    // Hue-preserving tone map: plain per-channel exposure pushed the saturated
+    // orange toward flat yellow-white. Map luminance and rescale the color so
+    // the gradient survives, blending in a little per-channel clip so the
+    // white-hot inner rim can still bleach.
+    float lum = max(dot(col, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+    vec3 hueKept = col * ((1.0 - exp(-lum * 1.5 * uGain)) / lum);
+    vec3 clipped = vec3(1.0) - exp(-col * 1.5 * uGain);
+    vec3 mapped = mix(hueKept, clipped, 0.18);
     if (outA <= 0.003) discard;
     gl_FragColor = vec4(pow(mapped, vec3(1.0 / 1.75)), outA);
   }
