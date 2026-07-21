@@ -7,6 +7,7 @@ import {
 } from '../domain/achievementCatalog';
 import { MINIMUM_GALAXY_CENTER_DISTANCE } from '../domain/defaultState';
 import {
+  EMOTION_TAGS,
   GENRES,
   type AchievementRuleId,
   type Galaxy,
@@ -86,6 +87,10 @@ const starFields = {
     .max(200)
     .optional(),
   tmdbId: z.number().int().positive().optional(),
+  // Optional memory enrichment; absent on older documents, so no migration.
+  watchedWith: trimmedText(100).optional(),
+  emotion: z.enum(EMOTION_TAGS).optional(),
+  rewatchCount: z.number().int().min(1).max(999).optional(),
 } as const;
 
 function validateNormalizedStarText(

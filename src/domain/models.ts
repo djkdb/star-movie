@@ -11,6 +11,19 @@ export const GENRES = [
 
 export type Genre = (typeof GENRES)[number];
 export type Rating = 1 | 2 | 3 | 4 | 5;
+
+/** Fixed emotion tags a night with a work can be remembered by. */
+export const EMOTION_TAGS = [
+  '설렘',
+  '여운',
+  '눈물',
+  '통쾌',
+  '오싹',
+  '포근',
+  '뭉클',
+  '벅참',
+] as const;
+export type EmotionTag = (typeof EMOTION_TAGS)[number];
 export type Vec3 = Readonly<{ x: number; y: number; z: number }>;
 
 export interface Star {
@@ -29,6 +42,12 @@ export interface Star {
   posterPath?: string;
   /** TMDB movie id backing a picked work, for future metadata enrichment. */
   tmdbId?: number;
+  /** Who the night was shared with, if the memory includes them. */
+  watchedWith?: string;
+  /** One emotion tag capturing how the night felt. */
+  emotion?: EmotionTag;
+  /** Times rewatched after the first logging; each rewatch brightens the star. */
+  rewatchCount?: number;
 }
 
 export interface Constellation {

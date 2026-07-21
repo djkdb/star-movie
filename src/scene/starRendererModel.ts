@@ -135,7 +135,7 @@ export function updateInstancedStarColors(
   brightnessOf?: (star: Star) => number,
 ): void {
   bucket.stars.forEach((star, instanceId) => {
-    scratchColor.set(getStarDisplayColor(star.id, star.rating, star.genre));
+    scratchColor.set(getStarDisplayColor(star.id, star.rating, star.genre, star.rewatchCount ?? 0));
     const brightness = brightnessOf?.(star) ?? 1;
     if (brightness !== 1) scratchColor.multiplyScalar(brightness);
     mesh.setColorAt(instanceId, scratchColor);

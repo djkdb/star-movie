@@ -119,6 +119,8 @@ export interface ArchiveCommands {
   hardDelete(starId: string): CommandResult<DeleteWorkValue>;
   softDelete(starId: string): CommandResult<DeleteWorkValue>;
   restoreArchived(starId: string): CommandResult<RestoreWorkValue>;
+  /** Notes another viewing of a work; each rewatch brightens its star. */
+  markRewatched(starId: string): CommandResult<{ rewatchCount: number }>;
   pullPlanet(): CommandResult<PullPlanetValue>;
   toggleSelectedGenre(genre: Genre): void;
   setAchievementPanelOpen(isOpen: boolean): void;
@@ -606,6 +608,24 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
           };
         },
       }),
+    markRewatched: (starId) => {
+      const exists = store.getState().persisted.stars.some(({ id }) => id === starId);
+      if (!exists) return validationFailure('작품을 찾을 수 없습니다.', {});
+      return executor.execute({
+        operation: 'markRewatched',
+        derive: (snapshot) => {
+          const candidate = structuredClone(snapshot);
+          const star = candidate.stars.find(({ id }) => id === starId);
+          if (star === undefined) throw new Error('Star vanished during rewatch');
+          star.rewatchCount = Math.min(999, (star.rewatchCount ?? 0) + 1);
+          return {
+            candidate,
+            value: { rewatchCount: star.rewatchCount },
+            completionEvents: [],
+          };
+        },
+      });
+    },
     pullPlanet: () => {
       const collection = store.getState().persisted.planetCollection;
       if (availableTickets(collection) < 1) {

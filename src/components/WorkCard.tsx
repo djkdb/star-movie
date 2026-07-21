@@ -197,6 +197,18 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
           <dt>감상일</dt>
           <dd><time dateTime={star.watchedDate}>{star.watchedDate}</time></dd>
         </div>
+        {star.watchedWith !== undefined && (
+          <div>
+            <dt>함께 본 사람</dt>
+            <dd>{star.watchedWith}</dd>
+          </div>
+        )}
+        {star.emotion !== undefined && (
+          <div>
+            <dt>그날의 감정</dt>
+            <dd>{star.emotion}</dd>
+          </div>
+        )}
         <div className="work-card-review">
           <dt>감상평</dt>
           <dd>{star.review.length === 0 ? '작성된 감상평이 없습니다.' : star.review}</dd>
@@ -209,6 +221,15 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
           type="button"
         >
           별자리에 묶기
+        </button>
+        <button
+          className="secondary-action"
+          onClick={() => store.getState().commands.markRewatched(star.id)}
+          type="button"
+        >
+          {(star.rewatchCount ?? 0) > 0
+            ? `다시 봤어요 ✨ ${star.rewatchCount}회`
+            : '다시 봤어요'}
         </button>
         <button
           className="secondary-action"

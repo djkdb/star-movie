@@ -46,7 +46,7 @@ export function IndividualStarMesh({
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
   const [hovered, setHovered] = useState(false);
   const visual = useMemo(
-    () => getStarAppearance(star.id, star.rating, star.genre),
+    () => getStarAppearance(star.id, star.rating, star.genre, star.rewatchCount ?? 0),
     [star.id, star.rating, star.genre],
   );
   const spikeAngles = useMemo(() => {

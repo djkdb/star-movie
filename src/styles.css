@@ -2173,3 +2173,10 @@ progress::-moz-progress-bar {
   font-size: 0.68rem;
   line-height: 1.35;
 }
+
+/* Optional-field hint inside form labels. */
+.optional-hint {
+  color: rgba(226, 236, 255, 0.45);
+  font-size: 0.78em;
+  font-weight: 400;
+}

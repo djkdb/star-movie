@@ -157,6 +157,7 @@ export function getStarAppearance(
   starId: string,
   rating: Rating,
   genre?: Genre,
+  rewatchCount = 0,
 ): StarAppearance {
   if (starId.length === 0) throw new RangeError('starId must not be empty');
   const visual = RATING_VISUALS[rating];
@@ -175,12 +176,15 @@ export function getStarAppearance(
   const spikeCount: StarSpikeCount =
     rating === 5 ? 6 : spikeRoll < 25 ? 0 : spikeRoll < 75 ? 4 : 6;
 
+  // Every rewatch feeds the star a little more light, up to a gentle ceiling.
+  const rewatchGlow = Math.min(Math.max(rewatchCount, 0), 5) * 0.05;
+
   return {
     color,
     radius: visual.radius,
-    bloom: visual.bloom,
-    haloScale: 5 + visual.bloom * 3.5,
-    haloOpacity: 0.16 + visual.bloom * 0.3,
+    bloom: Math.min(1, visual.bloom + rewatchGlow),
+    haloScale: 5 + visual.bloom * 3.5 + rewatchGlow * 2,
+    haloOpacity: Math.min(0.6, 0.16 + visual.bloom * 0.3 + rewatchGlow * 0.5),
     spikeCount,
     spikeRotation: (((hash >>> 16) & 0xff) / 255) * Math.PI,
     spikeScale: 2.6 + visual.bloom * 3.2,
@@ -195,8 +199,9 @@ export function getStarDisplayColor(
   starId: string,
   rating: Rating,
   genre?: Genre,
+  rewatchCount = 0,
 ): string {
-  const appearance = getStarAppearance(starId, rating, genre);
+  const appearance = getStarAppearance(starId, rating, genre, rewatchCount);
   return scaleHexColor(appearance.color, 0.5 + appearance.bloom * 0.55);
 }
 
