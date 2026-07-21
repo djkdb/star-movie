@@ -15,7 +15,10 @@ import {
   createArchiveStore,
   createArchiveStoreFromLoadResult,
 } from './archiveStore';
-import { createDeterministicStarPosition } from './deterministicPlacement';
+import {
+  createDeterministicStarPosition,
+  STAR_FIELD_RADIUS,
+} from './deterministicPlacement';
 
 const STAR_ID = '10000000-0000-4000-8000-000000000001';
 const NOW = '2025-04-05T06:07:08.000Z';
@@ -49,23 +52,17 @@ function distance(left: Vec3, right: Vec3): number {
 }
 
 describe('deterministic star placement', () => {
-  it('R2.9-R2.10 returns the same bounded 3D position for the same UUID and genre', () => {
-    const galaxy = {
-      center: { x: -45, y: 0, z: -45 },
-      placementRadius: 18,
-    };
+  it('R2.9-R2.10 returns the same field-bounded 3D position for the same UUID and genre', () => {
+    const origin = { x: 0, y: 0, z: 0 };
 
-    const first = createDeterministicStarPosition(STAR_ID, 'SF', galaxy);
-    const second = createDeterministicStarPosition(STAR_ID, 'SF', galaxy);
-    const otherGenre = createDeterministicStarPosition(
-      STAR_ID,
-      '기타' as Genre,
-      galaxy,
-    );
+    const first = createDeterministicStarPosition(STAR_ID, 'SF');
+    const second = createDeterministicStarPosition(STAR_ID, 'SF');
+    const otherGenre = createDeterministicStarPosition(STAR_ID, '기타' as Genre);
 
     expect(first).toEqual(second);
     expect(first).not.toEqual(otherGenre);
-    expect(distance(first, galaxy.center)).toBeLessThanOrEqual(10);
+    // Scattered across the whole field, no longer clustered by genre.
+    expect(distance(first, origin)).toBeLessThanOrEqual(STAR_FIELD_RADIUS + 1e-9);
   });
 });
 

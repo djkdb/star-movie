@@ -21,11 +21,12 @@ export const STAR_LABEL_FADE_SECONDS = 0.3;
 export const STAR_DRAG_PAYLOAD_TYPE = 'application/x-space-movie-star';
 
 /**
- * Per-axis drift amplitude (units). Bounds proof (design "표류 수학"):
- * magnitude ≤ A·√3 = 0.34·1.7320… = 0.5889 < 0.6 (Requirement 1.2);
- * speed ≤ A·‖ω‖ = 0.34·0.4179 = 0.1421 < 0.15 units/s (Requirements 1.3, 1.5).
+ * Per-axis drift amplitude (units). Larger than the original 0.34 so stars
+ * visibly wander across the field. Bounds: magnitude ≤ A·√3 = 1.6·1.7320… =
+ * 2.771 < 2.8; speed ≤ A·‖ω‖ = 1.6·0.4179 = 0.6686 < 0.67 units/s — slow and
+ * continuous (no discontinuous jump between frames).
  */
-export const STAR_DRIFT_AMPLITUDE = 0.34;
+export const STAR_DRIFT_AMPLITUDE = 1.6;
 export const STAR_DRIFT_ANGULAR_FREQUENCIES = {
   x: 0.21,
   y: 0.24,

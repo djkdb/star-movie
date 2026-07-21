@@ -38,8 +38,9 @@ function particleDirection(seed: number, index: number): readonly [number, numbe
   ];
 }
 
-function effectColor(kind: ParticleEffectDescriptor['kind']): string {
-  switch (kind) {
+function effectColor(effect: ParticleEffectDescriptor): string {
+  if (effect.color !== undefined) return effect.color;
+  switch (effect.kind) {
     case 'fireworks':
       return '#ffe27a';
     case 'meteor-shower':
@@ -133,6 +134,17 @@ function EffectVisual({ controller, effect }: EffectVisualProps) {
         }
         const direction = directions[index];
         if (direction === undefined) return;
+        if (effect.kind === 'fireworks') {
+          // Ease-out burst with gravity so sparks shoot out then arc down.
+          const spread = (1 - remaining * remaining) * 11;
+          const gravity = progress * progress * 4.5;
+          child.position.set(
+            direction[0] * spread,
+            direction[1] * spread - gravity,
+            direction[2] * spread,
+          );
+          return;
+        }
         const distance = progress * 8;
         child.position.set(
           direction[0] * distance,
@@ -176,7 +188,7 @@ function EffectVisual({ controller, effect }: EffectVisualProps) {
             : <sphereGeometry args={[effect.kind === 'asteroid-impact' ? 0.18 : 0.12, 6, 4]} />}
           <meshBasicMaterial
             blending={AdditiveBlending}
-            color={effectColor(effect.kind)}
+            color={effectColor(effect)}
             depthWrite={false}
             opacity={1}
             transparent
@@ -189,7 +201,7 @@ function EffectVisual({ controller, effect }: EffectVisualProps) {
           <sphereGeometry args={[0.9, 14, 10]} />
           <meshBasicMaterial
             blending={AdditiveBlending}
-            color={effectColor(effect.kind)}
+            color={effectColor(effect)}
             depthWrite={false}
             transparent
             toneMapped={false}

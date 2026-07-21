@@ -39,14 +39,14 @@ const driftInputArbitrary = fc.record({
 });
 
 describe('Property 1: drift offset magnitude bound', () => {
-  it('R1.1 R1.2 keeps the offset finite, time-varying, and within 0.6 units of Base_Position', () => {
+  it('R1.1 R1.2 keeps the offset finite, time-varying, and within 2.8 units of Base_Position', () => {
     fc.assert(
       fc.property(driftInputArbitrary, ({ elapsedVisibleSeconds, phaseSeed }) => {
         const offset = sampleStarDriftOffset(elapsedVisibleSeconds, phaseSeed);
         expect(Number.isFinite(offset.x)).toBe(true);
         expect(Number.isFinite(offset.y)).toBe(true);
         expect(Number.isFinite(offset.z)).toBe(true);
-        expect(magnitude(offset)).toBeLessThanOrEqual(0.6);
+        expect(magnitude(offset)).toBeLessThanOrEqual(2.8);
       }),
       { numRuns: 100 },
     );
@@ -54,7 +54,7 @@ describe('Property 1: drift offset magnitude bound', () => {
 });
 
 describe('Property 2: drift speed and continuity bound', () => {
-  it('R1.3 R1.5 keeps ‖offset(t+Δ) − offset(t)‖ ≤ 0.15·Δ (bounded speed, no discontinuous jump)', () => {
+  it('R1.3 R1.5 keeps ‖offset(t+Δ) − offset(t)‖ ≤ 0.67·Δ (bounded speed, no discontinuous jump)', () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -74,7 +74,7 @@ describe('Property 2: drift speed and continuity bound', () => {
             z: after.z - before.z,
           });
           // Small tolerance absorbs floating-point error at the Lipschitz bound.
-          expect(displacement).toBeLessThanOrEqual(0.15 * delta + 1e-9);
+          expect(displacement).toBeLessThanOrEqual(0.67 * delta + 1e-9);
         },
       ),
       { numRuns: 100 },

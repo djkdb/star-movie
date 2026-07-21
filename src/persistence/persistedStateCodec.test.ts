@@ -147,14 +147,20 @@ describe('schemaVersion 2 persisted-state codec', () => {
     expect(safeDecodePersistedV2(tooClose).success).toBe(false);
   });
 
-  it('R8.5 rejects missing Genre galaxies and Stars outside their placement distance', () => {
+  it('R8.5 rejects missing Genre galaxies but accepts stars scattered anywhere with finite coordinates', () => {
     const missingGenre = createValidDocument();
     missingGenre.galaxies.pop();
     expect(safeDecodePersistedV2(missingGenre).success).toBe(false);
 
-    const misplacedStar = createValidDocument();
-    misplacedStar.stars[0]!.position = { x: 100, y: 100, z: 100 };
-    expect(safeDecodePersistedV2(misplacedStar).success).toBe(false);
+    // Positions are genre-independent now: any finite point is accepted.
+    const scatteredStar = createValidDocument();
+    scatteredStar.stars[0]!.position = { x: 100, y: -100, z: 100 };
+    expect(safeDecodePersistedV2(scatteredStar).success).toBe(true);
+
+    // Non-finite coordinates are still rejected by the vec3 schema.
+    const brokenStar = createValidDocument();
+    brokenStar.stars[0]!.position = { x: Number.NaN, y: 0, z: 0 };
+    expect(safeDecodePersistedV2(brokenStar).success).toBe(false);
   });
 
   it('R8.2-R8.9 rejects duplicate IDs in every persisted identity namespace', () => {

@@ -1,14 +1,12 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import {
-  createDefaultStore,
-  MINIMUM_GALAXY_CENTER_DISTANCE,
-} from '../../src/domain/defaultState';
+import { createDefaultStore } from '../../src/domain/defaultState';
 import { GENRES, type Vec3 } from '../../src/domain/models';
 import { normalizeDisplayText, normalizeText } from '../../src/domain/normalization';
 import { PersistenceService } from '../../src/persistence/persistenceService';
 import { createArchiveStore } from '../../src/store/archiveStore';
+import { STAR_FIELD_RADIUS } from '../../src/store/deterministicPlacement';
 import { FakeClock, FakeLocalStorageAdapter } from '../../src/test/providers';
 
 const CREATED_AT = '2032-03-04T05:06:07.000Z';
@@ -36,14 +34,8 @@ const validInputArbitrary = fc.record({
   director: fc.string({ maxLength: 175 }).map((value) => `  Director ${value}  `),
 });
 
-const placementRadiusArbitrary = fc.oneof(
-  fc.constantFrom(0.01, 9.99, 10, 10.01, 30),
-  fc.integer({ min: 1, max: 3_000 }).map((value) => value / 100),
-);
-
 const placementCaseArbitrary = fc.record({
   input: validInputArbitrary,
-  placementRadius: placementRadiusArbitrary,
   seed: fc.integer(),
 });
 
@@ -57,16 +49,15 @@ function distance(left: Vec3, right: Vec3): number {
   return Math.hypot(left.x - right.x, left.y - right.y, left.z - right.z);
 }
 
+const ORIGIN: Vec3 = { x: 0, y: 0, z: 0 };
+
 // Feature: space-movie-archive, Property 3: Star 생성 및 배치 불변식
 // **Validates: Requirements 2.9, 2.10, 3.11, 3.12**
 describe('Property 3: Star creation and placement invariants', () => {
-  it('R2.9 R2.10 R3.11 R3.12 creates complete stars inside every genre galaxy and preserves galaxy-center separation', () => {
+  it('R2.9 R2.10 R3.11 R3.12 creates complete stars scattered deterministically across the whole field', () => {
     fc.assert(
-      fc.property(placementCaseArbitrary, ({ input, placementRadius, seed }) => {
+      fc.property(placementCaseArbitrary, ({ input, seed }) => {
         const initialState = createDefaultStore(true);
-        initialState.persisted.galaxies.forEach((galaxy) => {
-          if (galaxy.kind.type === 'genre') galaxy.placementRadius = placementRadius;
-        });
 
         let genreIndex = 0;
         const persistence = new PersistenceService({
@@ -84,18 +75,15 @@ describe('Property 3: Star creation and placement invariants', () => {
         });
 
         try {
+          const positions: Vec3[] = [];
           for (const [index, genre] of GENRES.entries()) {
             const starId = seededUuid(seed, index);
             const result = store.getState().commands.addWork({ ...input, genre });
             expect(result).toMatchObject({ ok: true, value: { starId } });
 
             const star = store.getState().persisted.stars.at(-1);
-            const galaxy = store.getState().persisted.galaxies.find(
-              (candidate) => candidate.kind.type === 'genre' && candidate.kind.genre === genre,
-            );
             expect(star).toBeDefined();
-            expect(galaxy).toBeDefined();
-            if (star === undefined || galaxy === undefined) throw new Error('Missing generated star or genre galaxy');
+            if (star === undefined) throw new Error('Missing generated star');
 
             expect(Object.keys(star).sort()).toEqual([...STAR_FIELDS]);
             expect(star).toMatchObject({
@@ -114,24 +102,19 @@ describe('Property 3: Star creation and placement invariants', () => {
             expect(new Date(star.createdAt).toISOString()).toBe(star.createdAt);
             expect(Object.values(star.position).every(Number.isFinite)).toBe(true);
 
-            const maximumDistance = Math.min(galaxy.placementRadius, 10);
-            expect(distance(star.position, galaxy.center)).toBeLessThanOrEqual(maximumDistance + 1e-10);
+            // Every star lands inside the shared field sphere, no longer tied to
+            // a genre region — position is deterministic from the star id.
+            expect(distance(star.position, ORIGIN)).toBeLessThanOrEqual(
+              STAR_FIELD_RADIUS + 1e-9,
+            );
+            positions.push(star.position);
           }
 
-          const genreGalaxies = store.getState().persisted.galaxies.filter(
-            (galaxy) => galaxy.kind.type === 'genre',
+          // Distinct ids scatter to distinct points (no genre clustering).
+          const uniquePoints = new Set(
+            positions.map(({ x, y, z }) => `${x},${y},${z}`),
           );
-          expect(genreGalaxies).toHaveLength(GENRES.length);
-          for (let leftIndex = 0; leftIndex < genreGalaxies.length; leftIndex += 1) {
-            for (let rightIndex = leftIndex + 1; rightIndex < genreGalaxies.length; rightIndex += 1) {
-              const left = genreGalaxies[leftIndex];
-              const right = genreGalaxies[rightIndex];
-              if (left === undefined || right === undefined) throw new Error('Missing genre galaxy');
-              expect(distance(left.center, right.center)).toBeGreaterThanOrEqual(
-                MINIMUM_GALAXY_CENTER_DISTANCE,
-              );
-            }
-          }
+          expect(uniquePoints.size).toBe(positions.length);
         } finally {
           store.dispose();
         }

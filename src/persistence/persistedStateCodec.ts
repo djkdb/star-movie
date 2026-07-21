@@ -281,27 +281,9 @@ function validateDocument(state: ParsedState, context: z.RefinementCtx): void {
     }
   }
 
-  const galaxyByGenre = new Map(
-    genreGalaxies.map((galaxy) => [galaxy.kind.genre, galaxy] as const),
-  );
-  for (const [collectionName, stars] of [
-    ['stars', state.stars],
-    ['blackholeArchive', state.blackholeArchive],
-  ] as const) {
-    stars.forEach((star, index) => {
-      const galaxy = galaxyByGenre.get(star.genre);
-      if (
-        galaxy !== undefined &&
-        distance(star.position, galaxy.center) > Math.min(galaxy.placementRadius, 10) + 1e-10
-      ) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [collectionName, index, 'position'],
-          message: 'Star position exceeds its genre galaxy placement distance',
-        });
-      }
-    });
-  }
+  // Star positions are scattered freely across the field (genre grouping is
+  // expressed through constellations, not location), so only finite coordinates
+  // are required — enforced by vec3Schema. No genre-galaxy distance constraint.
 
   const activeIds = state.stars.map(({ id }) => id);
   const archivedIds = state.blackholeArchive.map(({ id }) => id);

@@ -50,7 +50,7 @@ describe('individual Star visual model', () => {
 
   it('R1.10 exposes drift constants and drops the old y oscillation API', async () => {
     expect(STAR_ROTATION_RADIANS_PER_SECOND).toBeCloseTo(Math.PI / 6);
-    expect(STAR_DRIFT_AMPLITUDE).toBe(0.34);
+    expect(STAR_DRIFT_AMPLITUDE).toBe(1.6);
     expect(STAR_DRIFT_ANGULAR_FREQUENCIES).toEqual({ x: 0.21, y: 0.24, z: 0.27 });
     expect(STAR_DRIFT_AXIS_PHASE_OFFSETS).toEqual({
       x: 0,
@@ -68,7 +68,7 @@ describe('individual Star visual model', () => {
     const offsetStart = sampleStarDriftOffset(0, 0);
     const offsetLater = sampleStarDriftOffset(12.5, 1.2);
     for (const offset of [offsetStart, offsetLater]) {
-      expect(Math.hypot(offset.x, offset.y, offset.z)).toBeLessThanOrEqual(0.6);
+      expect(Math.hypot(offset.x, offset.y, offset.z)).toBeLessThanOrEqual(2.8);
     }
     // A generic sampled instant moves on every axis (not a single-axis wobble).
     expect(offsetLater.x).not.toBe(0);

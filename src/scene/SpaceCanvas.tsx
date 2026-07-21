@@ -295,39 +295,6 @@ function MilkyWayField() {
   );
 }
 
-/**
- * Genre galaxies are marked with a barely-there radial glow instead of a
- * wireframe sphere, keeping the sky photographic while still hinting where
- * each genre region lives.
- */
-function GalaxyMarkers({ galaxies }: { galaxies: readonly Galaxy[] }) {
-  const texture = useMemo(createNebulaTexture, []);
-
-  useEffect(() => () => texture.dispose(), [texture]);
-
-  return (
-    <group name="genre-galaxies">
-      {galaxies.filter(({ kind, unlocked }) => kind.type === 'genre' && unlocked).map((galaxy) => (
-        <sprite
-          key={galaxy.id}
-          name={`galaxy-${galaxy.id}`}
-          position={[galaxy.center.x, galaxy.center.y, galaxy.center.z]}
-          scale={[galaxy.placementRadius * 2.6, galaxy.placementRadius * 2.6, 1]}
-        >
-          <spriteMaterial
-            blending={AdditiveBlending}
-            color={galaxy.primaryColor}
-            depthWrite={false}
-            map={texture}
-            opacity={0.035}
-            transparent
-          />
-        </sprite>
-      ))}
-    </group>
-  );
-}
-
 interface SpaceSceneProps {
   store: ArchiveStoreApi;
   viewModel: SpaceSceneViewModel;
@@ -415,7 +382,6 @@ function SpaceScene({
         ))}
         <MilkyWayField />
         <NebulaField />
-        <GalaxyMarkers galaxies={viewModel.galaxies} />
         <MilestoneRewardRenderer rewards={viewModel.milestoneRewards} />
         <Selection enabled={bloom.enabled}>
           <ConstellationRenderer
@@ -448,12 +414,16 @@ function SpaceScene({
         />
       </VisibilityClock>
       <OrbitControls
+        dampingFactor={0.06}
+        enableDamping
         enablePan
         enableRotate
         enableZoom
         maxDistance={SPACE_CAMERA_MAX_DISTANCE}
         ref={controlsRef}
         touches={ORBIT_TOUCH_GESTURES}
+        zoomSpeed={0.85}
+        zoomToCursor
       />
       <CameraRig
         constellations={viewModel.archiveContent.constellations}

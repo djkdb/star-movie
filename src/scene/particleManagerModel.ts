@@ -1,6 +1,33 @@
-import type { RuntimeEvent, Vec3 } from '../domain/models';
+import type { Genre, RuntimeEvent, Vec3 } from '../domain/models';
 
 export const FIREWORK_PARTICLE_RANGE = [30, 60] as const;
+export const FIREWORK_MAX_PARTICLES = 140;
+
+/** Vivid per-genre firework colors — "your" firework is tinted by its genre. */
+export const GENRE_FIREWORK_COLORS: Readonly<Record<Genre, string>> = {
+  SF: '#6fd8ff',
+  '로맨스': '#ff7ec2',
+  '스릴러': '#ff5a5a',
+  '드라마': '#ffc55a',
+  '애니': '#b18cff',
+  '코미디': '#ffe14d',
+  '액션': '#ff8a3d',
+  '기타': '#dfe8ff',
+};
+
+function firePayloadGenre(payload: RuntimeEvent['payload']): Genre | null {
+  const genre = payload.genre;
+  return typeof genre === 'string' && genre in GENRE_FIREWORK_COLORS
+    ? (genre as Genre)
+    : null;
+}
+
+/** Firework grows with the size of the collection for that genre. */
+function scaledFireworkCount(baseCount: number, payload: RuntimeEvent['payload']): number {
+  const count = typeof payload.genreStarCount === 'number' ? payload.genreStarCount : 1;
+  const growth = Math.max(0, count - 1) * 6;
+  return Math.min(FIREWORK_MAX_PARTICLES, baseCount + growth);
+}
 export const FIREWORK_DURATION_SECONDS = 1;
 export const METEOR_SHOWER_TRAIL_RANGE = [2, 3] as const;
 export const METEOR_SHOWER_DURATION_SECONDS = 1.5;
@@ -33,6 +60,8 @@ export interface ParticleEffectDescriptor {
   seed: number;
   scaleFrom: number;
   scaleTo: number;
+  /** Optional explicit color; when set it overrides the per-kind default. */
+  color?: string;
 }
 
 export interface ParticleTimer {
@@ -252,6 +281,7 @@ function descriptor(
     seed: Math.floor(finiteUnit(random()) * 0x1_0000_0000) >>> 0,
     scaleFrom: values.scaleFrom ?? 1,
     scaleTo: values.scaleTo ?? 1,
+    ...(values.color === undefined ? {} : { color: values.color }),
   };
 }
 
@@ -277,14 +307,19 @@ export function createParticleEffectsForEvent(
   const minimumCounts = quality.minimumCounts ?? false;
   switch (event.type) {
     case 'work-added': {
+      const genre = firePayloadGenre(event.payload);
+      const baseCount = boundedEffectCount(
+        random,
+        FIREWORK_PARTICLE_RANGE,
+        minimumCounts,
+      );
       const effects = [
         descriptor(event, 'fireworks', 0, random, {
-          particleCount: boundedEffectCount(
-            random,
-            FIREWORK_PARTICLE_RANGE,
-            minimumCounts,
-          ),
+          particleCount: minimumCounts
+            ? baseCount
+            : scaledFireworkCount(baseCount, event.payload),
           durationSeconds: FIREWORK_DURATION_SECONDS,
+          ...(genre === null ? {} : { color: GENRE_FIREWORK_COLORS[genre] }),
         }),
       ];
       if (event.payload.rating === 5) {

@@ -1,4 +1,11 @@
-import type { Galaxy, Genre, Vec3 } from '../domain/models';
+import type { Genre, Vec3 } from '../domain/models';
+
+/**
+ * Radius of the sphere new stars are scattered across. Chosen so the whole
+ * field sits comfortably inside the default camera framing while spreading
+ * stars across the entire viewable range rather than clustering them by genre.
+ */
+export const STAR_FIELD_RADIUS = 48;
 
 function hashSeed(value: string): number {
   let hash = 0x811c9dc5;
@@ -18,13 +25,16 @@ function xorshift32(state: number): number {
 }
 
 /**
- * Maps a stable work UUID and genre to a uniform point inside the genre
- * galaxy's allowed sphere. No mutable random source participates.
+ * Maps a stable work UUID (and its genre, for extra seed variety) to a uniform
+ * point inside the whole star field sphere. Placement is intentionally
+ * independent of genre so stars scatter freely across the entire range; genre
+ * and director grouping is expressed through constellations, not position. No
+ * mutable random source participates, so a work always lands at the same spot.
  */
 export function createDeterministicStarPosition(
   starId: string,
   genre: Genre,
-  galaxy: Pick<Galaxy, 'center' | 'placementRadius'>,
+  fieldRadius: number = STAR_FIELD_RADIUS,
 ): Vec3 {
   let state = hashSeed(`${starId}:${genre}`);
   const next = (): number => {
@@ -32,15 +42,14 @@ export function createDeterministicStarPosition(
     return state / 0x1_0000_0000;
   };
 
-  const maximumRadius = Math.min(galaxy.placementRadius, 10);
-  const radius = maximumRadius * Math.cbrt(next());
+  const radius = fieldRadius * Math.cbrt(next());
   const theta = 2 * Math.PI * next();
   const cosinePhi = 2 * next() - 1;
   const sinePhi = Math.sqrt(Math.max(0, 1 - cosinePhi * cosinePhi));
 
   return {
-    x: galaxy.center.x + radius * sinePhi * Math.cos(theta),
-    y: galaxy.center.y + radius * cosinePhi,
-    z: galaxy.center.z + radius * sinePhi * Math.sin(theta),
+    x: radius * sinePhi * Math.cos(theta),
+    y: radius * cosinePhi,
+    z: radius * sinePhi * Math.sin(theta),
   };
 }

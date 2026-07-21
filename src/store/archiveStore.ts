@@ -328,7 +328,11 @@ class AtomicCommandExecutor {
   }
 }
 
-function createWorkAddedEvent(star: Star, sequence: number): RuntimeEvent {
+function createWorkAddedEvent(
+  star: Star,
+  sequence: number,
+  genreStarCount: number,
+): RuntimeEvent {
   return {
     id: `work-added:${star.id}:${sequence}`,
     type: 'work-added',
@@ -337,6 +341,10 @@ function createWorkAddedEvent(star: Star, sequence: number): RuntimeEvent {
       starId: star.id,
       position: star.position,
       rating: star.rating,
+      genre: star.genre,
+      // Number of stars in this genre after the add — the firework grows with
+      // the size of "your" collection for that genre.
+      genreStarCount,
       particleEffects:
         star.rating === 5 ? ['fireworks', 'meteor-shower'] : ['fireworks'],
     },
@@ -430,25 +438,12 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
       return executor.execute({
         operation: 'addWork',
         derive: (snapshot) => {
-          const galaxy = snapshot.galaxies.find(
-            (candidate) =>
-              candidate.kind.type === 'genre' &&
-              candidate.kind.genre === validation.data.genre,
-          );
-          if (galaxy === undefined) {
-            throw new Error(`Genre galaxy not found: ${validation.data.genre}`);
-          }
-
           const id = providers.nextUuid();
           const createdAt = providers.nowIso();
           const star: Star = {
             id,
             ...validation.data,
-            position: createDeterministicStarPosition(
-              id,
-              validation.data.genre,
-              galaxy,
-            ),
+            position: createDeterministicStarPosition(id, validation.data.genre),
             createdAt,
           };
           const candidate = structuredClone(snapshot);
@@ -457,9 +452,13 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
             nowIso: createdAt,
             nextRewardId: providers.nextUuid,
           });
+          const genreStarCount = candidate.stars.filter(
+            (candidateStar) => candidateStar.genre === star.genre,
+          ).length;
           const completionEvent = createWorkAddedEvent(
             star,
             ++completionSequence,
+            genreStarCount,
           );
           return {
             candidate: progress.candidate,
