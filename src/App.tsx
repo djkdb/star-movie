@@ -8,6 +8,7 @@ import { ConstellationControls } from './components/ConstellationControls';
 import { GenreFilter } from './components/GenreFilter';
 import { GestureGuide } from './components/GestureGuide';
 import { HUD } from './components/HUD';
+import { SkyUtilities } from './components/SkyUtilities';
 import { ListView } from './components/ListView';
 import { PlanetCodexPanel } from './components/PlanetCodexPanel';
 import { WatchlistPanel } from './components/WatchlistPanel';
@@ -260,6 +261,7 @@ export function App({ store }: AppProps) {
       />
       <WorkCard store={archiveStore} />
       <GestureGuide store={archiveStore} />
+      <SkyUtilities store={archiveStore} />
       <AchievementPanel store={archiveStore} />
       <ToastRegion store={archiveStore} />
     </main>
