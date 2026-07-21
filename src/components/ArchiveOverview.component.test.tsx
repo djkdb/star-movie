@@ -84,7 +84,7 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
     const toastEventsBeforeNavigation = store.getState().runtime.toastEvents;
     await user.click(screen.getByRole('button', { name: '업적 0/6' }));
     expect(screen.getByRole('dialog', { name: '업적' })).toBeInTheDocument();
-    const nolanItem = screen.getByText('놀란 마스터').closest('li')!;
+    const nolanItem = screen.getByText('감독 마스터').closest('li')!;
     expect(within(nolanItem).getByText('0/10')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '업적 패널 닫기' }));
@@ -152,13 +152,13 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
     const { store } = createHarness();
     const user = userEvent.setup();
     const unlockEvent = {
-      id: 'achievement-unlocked:nolan-master:2025-06-01T00:00:00.000Z',
+      id: 'achievement-unlocked:director-master:2025-06-01T00:00:00.000Z',
       type: 'achievement-unlocked',
       occurredAt: '2025-06-01T00:00:00.000Z',
       payload: {
-        achievementId: 'nolan-master',
-        name: '놀란 마스터',
-        description: '크리스토퍼 놀란 감독의 고유 작품 10편을 기록하세요.',
+        achievementId: 'director-master',
+        name: 'Christopher Nolan 마스터',
+        description: 'Christopher Nolan 감독의 작품 10편을 기록하세요.',
       },
     } as const;
     act(() => {
@@ -172,7 +172,7 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
             createdAt: new Date(Date.UTC(2025, 0, 1, 0, 0, index)).toISOString(),
           })),
           achievements: state.persisted.achievements.map((achievement) =>
-            achievement.id === 'nolan-master'
+            achievement.id === 'director-master'
               ? {
                   ...achievement,
                   progress: 10,
@@ -193,7 +193,7 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
     render(<><HUD store={store} /><AchievementPanel store={store} /><ToastRegion store={store} /></>);
 
     expect(screen.getByRole('button', { name: '업적 1/6' })).toBeInTheDocument();
-    expect(screen.getByText('업적 해금: 놀란 마스터')).toBeInTheDocument();
+    expect(screen.getByText('업적 해금: Christopher Nolan 마스터')).toBeInTheDocument();
     expect(screen.getByText(unlockEvent.payload.description)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '업적 1/6' }));
@@ -201,7 +201,7 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
     expect(screen.getByText('해금')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '알림 닫기' }));
-    expect(screen.queryByText('업적 해금: 놀란 마스터')).not.toBeInTheDocument();
+    expect(screen.queryByText('업적 해금: Christopher Nolan 마스터')).not.toBeInTheDocument();
     expect(store.getState().runtime.toastEvents).toEqual([]);
     expect(store.getState().runtime.completionEvents).toEqual([unlockEvent]);
   });

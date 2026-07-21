@@ -17,10 +17,13 @@ export interface AchievementDefinition {
  */
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   {
-    id: 'nolan-master',
-    name: '놀란 마스터',
-    description: '크리스토퍼 놀란 감독의 고유 작품 10편을 기록하세요.',
-    ruleId: 'nolan-unique-work',
+    // Dynamic: any one director with 10 recorded works unlocks this, and the
+    // UI shows that director's name ("○○ 마스터"). The stored name is the
+    // generic fallback shown before any director leads.
+    id: 'director-master',
+    name: '감독 마스터',
+    description: '한 감독의 작품을 10편 기록하세요.',
+    ruleId: 'director-master',
     target: 10,
   },
   {

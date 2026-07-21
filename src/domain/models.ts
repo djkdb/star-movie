@@ -77,7 +77,7 @@ export interface Milestone {
 }
 
 export type AchievementRuleId =
-  | 'nolan-unique-work'
+  | 'director-master'
   | 'genre-explorer'
   | 'five-star-curator'
   | 'constellation-architect'

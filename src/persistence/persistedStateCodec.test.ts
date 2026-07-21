@@ -119,8 +119,8 @@ describe('schemaVersion 2 persisted-state codec', () => {
     expect(safeDecodePersistedV2(invalidDiscardedAt).success).toBe(false);
   });
 
-  it('backfills newly shipped achievements onto older documents, preserving earned ones', () => {
-    // A document that predates the extra achievements: only nolan-master, unlocked.
+  it('migrates the legacy Nolan achievement to director-master and backfills the rest', () => {
+    // A legacy document: the old hard-coded nolan achievement, unlocked.
     const legacy = createValidDocument();
     legacy.achievements = [
       {
@@ -133,16 +133,19 @@ describe('schemaVersion 2 persisted-state codec', () => {
         unlocked: true,
         unlockedAt: '2025-03-01T00:00:00.000Z',
       },
-    ];
+    ] as unknown as typeof legacy.achievements;
 
     const decoded = decodePersistedV2(legacy);
-    // The pre-existing earned achievement is untouched.
+    // The earned achievement is renamed to the generic director-master, keeping
+    // its unlock state; its name becomes the generic fallback.
     expect(decoded.achievements[0]).toMatchObject({
-      id: 'nolan-master',
+      id: 'director-master',
+      ruleId: 'director-master',
+      name: '감독 마스터',
       unlocked: true,
       unlockedAt: '2025-03-01T00:00:00.000Z',
     });
-    // The rest are appended locked at zero progress.
+    // The other five achievements are appended locked at zero progress.
     expect(decoded.achievements).toHaveLength(6);
     const backfilled = decoded.achievements.slice(1);
     expect(backfilled.every((a) => !a.unlocked && a.progress === 0)).toBe(true);

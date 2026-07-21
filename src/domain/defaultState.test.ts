@@ -34,7 +34,7 @@ describe('deterministic default store', () => {
     expect(first.achievements).toEqual(createSeedAchievements());
     expect(first.achievements).toHaveLength(6);
     expect(first.achievements.every((a) => !a.unlocked && a.progress === 0)).toBe(true);
-    expect(first.achievements.map((a) => a.ruleId)).toContain('nolan-unique-work');
+    expect(first.achievements.map((a) => a.ruleId)).toContain('director-master');
   });
 
   it('R3.12 creates exactly one themed galaxy per Genre with center distances of at least 25', () => {

@@ -20,7 +20,7 @@ import {
   ownedCountBySpecies,
   starsUntilNextTicket,
 } from '../domain/planetGacha';
-import { calculateAchievementProgress } from './progressReconciler';
+import { calculateAchievementProgress, directorMasterDisplay } from './progressReconciler';
 
 export type ListSortOption = 'rating' | 'latest';
 
@@ -157,16 +157,23 @@ function toMilestoneViewModel(
 
 /** Recalculates current progress while retaining persisted sticky unlock metadata. */
 export function selectAchievementViewModels(store: Readonly<Store>): AchievementViewModel[] {
-  return store.persisted.achievements.map((achievement) => ({
-    id: achievement.id,
-    name: achievement.name,
-    description: achievement.description,
-    ruleId: achievement.ruleId,
-    progress: calculateAchievementProgress(achievement, store.persisted),
-    target: achievement.target,
-    unlocked: achievement.unlocked,
-    unlockedAt: achievement.unlockedAt,
-  }));
+  return store.persisted.achievements.map((achievement) => {
+    // The director-master achievement shows the leading director's name.
+    const display =
+      achievement.ruleId === 'director-master'
+        ? directorMasterDisplay(store.persisted.stars)
+        : { name: achievement.name, description: achievement.description };
+    return {
+      id: achievement.id,
+      name: display.name,
+      description: display.description,
+      ruleId: achievement.ruleId,
+      progress: calculateAchievementProgress(achievement, store.persisted),
+      target: achievement.target,
+      unlocked: achievement.unlocked,
+      unlockedAt: achievement.unlockedAt,
+    };
+  });
 }
 
 export function selectAchievementPanelViewModel(

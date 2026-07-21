@@ -94,9 +94,10 @@ export function createDemoSeedPersistedStore(): PersistedStore {
       createdAt: '2025-02-20T12:00:00.000Z',
     },
   ];
-  // Two unique Christopher Nolan works are seeded (인터스텔라, 인셉션).
+  // Two unique Christopher Nolan works are seeded (인터스텔라, 인셉션), so the
+  // dynamic director-master achievement already reads "크리스토퍼 놀란" as leader.
   store.achievements = store.achievements.map((achievement) =>
-    achievement.ruleId === 'nolan-unique-work'
+    achievement.ruleId === 'director-master'
       ? { ...achievement, progress: 2 }
       : achievement,
   );

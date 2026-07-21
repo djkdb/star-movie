@@ -523,6 +523,37 @@ function backfillLegacyShape(value: unknown): unknown {
 }
 
 /**
+ * Migrates the legacy hard-coded "Nolan master" achievement to the generic
+ * data-driven "director master", preserving its earned state. Any director with
+ * ten works now unlocks it, and the UI names that director.
+ */
+function migrateLegacyAchievements(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  if (!Array.isArray(record.achievements)) return value;
+
+  let changed = false;
+  const migrated = record.achievements.map((entry) => {
+    if (typeof entry !== 'object' || entry === null) return entry;
+    const achievement = entry as Record<string, unknown>;
+    if (achievement.id === 'nolan-master' || achievement.ruleId === 'nolan-unique-work') {
+      changed = true;
+      return {
+        ...achievement,
+        id: 'director-master',
+        ruleId: 'director-master',
+        name: '감독 마스터',
+        description: '한 감독의 작품을 10편 기록하세요.',
+      };
+    }
+    return entry;
+  });
+  return changed ? { ...record, achievements: migrated } : value;
+}
+
+/**
  * Appends any newly shipped achievements a document predates, locked and at
  * zero progress, without touching achievements it already has (their earned
  * state is preserved). Progress recomputes on the next mutation.
@@ -555,7 +586,7 @@ function backfillMissingAchievements(value: unknown): unknown {
 export function decodePersistedV2(value: unknown): PersistedStateV2 {
   const parsed = typeof value === 'string' ? parseJson(value) : value;
   return validateAndRoundTrip(
-    backfillMissingAchievements(backfillLegacyShape(parsed)),
+    backfillMissingAchievements(migrateLegacyAchievements(backfillLegacyShape(parsed))),
   );
 }
 

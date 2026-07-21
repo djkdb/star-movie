@@ -86,8 +86,10 @@ describe('milestone progress reconciliation', () => {
   it('R16.1-R16.14 unlocks 50 then 100 exactly once and preserves sticky rewards after decrease and re-crossing', () => {
     const initial = createDefaultStore(true).persisted;
     const crossing = structuredClone(initial);
+    // Distinct directors so the director-master achievement never fires and the
+    // event list stays purely about the 50/100 milestones under test.
     crossing.stars = Array.from({ length: 100 }, (_, index) =>
-      createStar(crossing, index + 1),
+      createStar(crossing, index + 1, `Work ${index + 1}`, `Director ${index + 1}`),
     );
 
     const first = reconcile(initial, crossing, [uuid(901), uuid(902)]);
@@ -158,18 +160,19 @@ describe('achievement progress reconciliation', () => {
     const first = reconcile(initial, crossing, []);
     const achievement = first.candidate.achievements[0]!;
     expect(achievement).toMatchObject({
-      id: 'nolan-master',
+      id: 'director-master',
       progress: 10,
       target: 10,
       unlocked: true,
       unlockedAt: NOW,
     });
+    // The unlock event names the actual leading director, not a hard-coded one.
     expect(first.completionEvents).toEqual([
       expect.objectContaining({
         type: 'achievement-unlocked',
         payload: expect.objectContaining({
-          achievementId: 'nolan-master',
-          name: '놀란 마스터',
+          achievementId: 'director-master',
+          name: 'Christopher Nolan 마스터',
         }),
       }),
     ]);
@@ -199,8 +202,10 @@ describe('achievement progress reconciliation', () => {
 describe('archive store progress integration', () => {
   it('R16.1 R16.6 R16.8 reconciles add and hard delete in the existing atomic command flow', () => {
     const initial: Store = createDefaultStore(true);
+    // Distinct directors keep director-master locked so only the 50-work
+    // milestone event accompanies the add under test.
     initial.persisted.stars = Array.from({ length: 49 }, (_, index) =>
-      createStar(initial.persisted, index + 1),
+      createStar(initial.persisted, index + 1, `Seed ${index + 1}`, `Director ${index + 1}`),
     );
     const generatedIds = [uuid(800), uuid(801)];
     let generatedIndex = 0;
@@ -219,7 +224,7 @@ describe('archive store progress integration', () => {
       rating: 5,
       review: '',
       watchedDate: '2025-05-31',
-      director: 'Other Director',
+      director: 'Threshold Director',
     });
     expect(added.ok).toBe(true);
     expect(added.ok && added.completionEvents.map(({ type }) => type)).toEqual([
