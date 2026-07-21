@@ -9,6 +9,7 @@ import { useStore } from 'zustand';
 
 import type { Rating } from '../domain/models';
 import { posterUrl } from '../services/tmdbClient';
+import { exportStarCard } from '../share/starCardExporter';
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { ConfirmDialog } from './ConfirmDialog';
 import {
@@ -55,6 +56,7 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
   );
   const closeRef = useRef<HTMLButtonElement>(null);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [posterLightboxOpen, setPosterLightboxOpen] = useState(false);
   const [viewportStyle, setViewportStyle] = useState<CSSProperties>({});
   const closeCard = () => {
     if (star !== undefined) clearSelection(store, star.id);
@@ -112,10 +114,13 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && pendingDelete === null) {
-        event.preventDefault();
-        clearSelection(store, star.id);
+      if (event.key !== 'Escape' || pendingDelete !== null) return;
+      event.preventDefault();
+      if (posterLightboxOpen) {
+        setPosterLightboxOpen(false);
+        return;
       }
+      clearSelection(store, star.id);
     };
 
     document.addEventListener('pointerdown', handlePointerDown);
@@ -124,7 +129,7 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [focusTrap.containerRef, pendingDelete, star, store]);
+  }, [focusTrap.containerRef, pendingDelete, posterLightboxOpen, star, store]);
 
   if (star === undefined || selectedStarId === null) return null;
 
@@ -173,12 +178,19 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
       <p className="eyebrow">SELECTED STAR</p>
       <div className={poster !== null ? 'work-card-heading has-poster' : 'work-card-heading'}>
         {poster !== null && (
-          <img
-            alt={`${star.title} 포스터`}
-            className="work-card-poster"
-            loading="lazy"
-            src={poster}
-          />
+          <button
+            aria-label={`${star.title} 포스터 크게 보기`}
+            className="work-card-poster-button"
+            onClick={() => setPosterLightboxOpen(true)}
+            type="button"
+          >
+            <img
+              alt={`${star.title} 포스터`}
+              className="work-card-poster"
+              loading="lazy"
+              src={poster}
+            />
+          </button>
         )}
         <div className="work-card-heading-text">
           <h2 id="work-card-title">{star.title}</h2>
@@ -197,6 +209,18 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
           <dt>감상일</dt>
           <dd><time dateTime={star.watchedDate}>{star.watchedDate}</time></dd>
         </div>
+        {star.watchedWith !== undefined && (
+          <div>
+            <dt>함께 본 사람</dt>
+            <dd>{star.watchedWith}</dd>
+          </div>
+        )}
+        {star.emotion !== undefined && (
+          <div>
+            <dt>그날의 감정</dt>
+            <dd>{star.emotion}</dd>
+          </div>
+        )}
         <div className="work-card-review">
           <dt>감상평</dt>
           <dd>{star.review.length === 0 ? '작성된 감상평이 없습니다.' : star.review}</dd>
@@ -209,6 +233,22 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
           type="button"
         >
           별자리에 묶기
+        </button>
+        <button
+          className="secondary-action"
+          onClick={() => { void exportStarCard(star); }}
+          type="button"
+        >
+          카드로 공유
+        </button>
+        <button
+          className="secondary-action"
+          onClick={() => store.getState().commands.markRewatched(star.id)}
+          type="button"
+        >
+          {(star.rewatchCount ?? 0) > 0
+            ? `다시 봤어요 ✨ ${star.rewatchCount}회`
+            : '다시 봤어요'}
         </button>
         <button
           className="secondary-action"
@@ -225,6 +265,27 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
           작품 영구 삭제
         </button>
       </div>
+
+      {posterLightboxOpen && poster !== null && (
+        <div
+          className="poster-lightbox"
+          onClick={() => setPosterLightboxOpen(false)}
+          role="presentation"
+        >
+          <img
+            alt={`${star.title} 포스터 원본`}
+            src={posterUrl(star.posterPath, 'w780') ?? poster}
+          />
+          <button
+            aria-label="포스터 닫기"
+            className="card-close-button poster-lightbox-close"
+            onClick={() => setPosterLightboxOpen(false)}
+            type="button"
+          >
+            닫기
+          </button>
+        </div>
+      )}
 
       {pendingDelete !== null && (
         <ConfirmDialog

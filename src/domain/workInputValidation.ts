@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { GENRES, type Genre, type Rating } from './models';
+import { EMOTION_TAGS, GENRES, type EmotionTag, type Genre, type Rating } from './models';
 import { normalizeDisplayText, normalizeText } from './normalization';
 
 export interface WorkInput {
@@ -12,6 +12,8 @@ export interface WorkInput {
   director: unknown;
   posterPath?: unknown;
   tmdbId?: unknown;
+  watchedWith?: unknown;
+  emotion?: unknown;
 }
 
 export interface ValidatedWorkInput {
@@ -25,6 +27,8 @@ export interface ValidatedWorkInput {
   normalizedDirector: string;
   posterPath?: string;
   tmdbId?: number;
+  watchedWith?: string;
+  emotion?: EmotionTag;
 }
 
 export type WorkInputValidationResult =
@@ -71,6 +75,13 @@ const workInputSchema = z
       .max(200)
       .optional(),
     tmdbId: z.number().int().positive().optional(),
+    // Optional memory fields; the form omits them entirely when left blank.
+    watchedWith: z
+      .string()
+      .transform(normalizeDisplayText)
+      .pipe(z.string().min(1).max(100))
+      .optional(),
+    emotion: z.enum(EMOTION_TAGS).optional(),
   })
   .strict();
 
@@ -84,8 +95,10 @@ export function validateWorkInput(input: WorkInput): WorkInputValidationResult {
     };
   }
 
-  const { title, genre, rating, review, watchedDate, director, posterPath, tmdbId } =
-    result.data;
+  const {
+    title, genre, rating, review, watchedDate, director, posterPath, tmdbId,
+    watchedWith, emotion,
+  } = result.data;
   return {
     success: true,
     data: {
@@ -101,6 +114,8 @@ export function validateWorkInput(input: WorkInput): WorkInputValidationResult {
       // stars never gain `undefined`-valued fields.
       ...(posterPath === undefined ? {} : { posterPath }),
       ...(tmdbId === undefined ? {} : { tmdbId }),
+      ...(watchedWith === undefined ? {} : { watchedWith }),
+      ...(emotion === undefined ? {} : { emotion }),
     },
   };
 }

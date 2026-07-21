@@ -527,6 +527,8 @@ export interface BackgroundMeteorSchedulerOptions {
     onExpired: () => void,
   ): boolean;
   cancel(effectId: string): void;
+  /** Scales the idle interval; meteor-shower nights use ~0.25. */
+  intervalScale?: number;
 }
 
 /** Visibility-aware one-at-a-time background meteor scheduler. */
@@ -579,7 +581,7 @@ export class BackgroundMeteorScheduler {
       this.options.random,
       BACKGROUND_METEOR_INTERVAL_SECONDS[0],
       BACKGROUND_METEOR_INTERVAL_SECONDS[1],
-    );
+    ) * (this.options.intervalScale ?? 1);
     this.lastScheduledDelaySeconds = delaySeconds;
     this.pendingTimerId = this.options.timer.setTimeout(() => {
       this.pendingTimerId = null;

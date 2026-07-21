@@ -250,6 +250,7 @@ const persistedStateV2Arbitrary: fc.Arbitrary<PersistedStateV2> = fc
           milestoneUnlocks: { fifty, hundred },
           achievements,
           planetCollection,
+          watchlist: [],
         };
       });
   });

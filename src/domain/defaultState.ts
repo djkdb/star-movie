@@ -152,6 +152,7 @@ export function createDefaultPersistedStore(): PersistedStore {
       pullsPerformed: 0,
       planets: [],
     },
+    watchlist: [],
   };
 }
 
@@ -160,6 +161,7 @@ export function createDefaultRuntimeStore(hasPersistedRegistration = false): Run
     hasPersistedRegistration,
     selectedStarId: null,
     selectedGenres: new Set<Genre>(),
+    watchlistPrefill: null,
     constellationDraft: {
       active: false,
       phase: 'selecting',

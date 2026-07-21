@@ -39,6 +39,14 @@ function toastContent(event: Readonly<{ type: string; payload: Readonly<Record<s
     };
   }
 
+  if (event.type === 'gentle-note') {
+    return {
+      title: stringPayload(event.payload, 'title') ?? '알림',
+      message: stringPayload(event.payload, 'message') ?? '',
+      isUnlock: true,
+    };
+  }
+
   return {
     title: event.type === 'user-save-failed' ? '저장 실패' : '작업 실패',
     message: stringPayload(event.payload, 'message')

@@ -11,6 +11,19 @@ export const GENRES = [
 
 export type Genre = (typeof GENRES)[number];
 export type Rating = 1 | 2 | 3 | 4 | 5;
+
+/** Fixed emotion tags a night with a work can be remembered by. */
+export const EMOTION_TAGS = [
+  '설렘',
+  '여운',
+  '눈물',
+  '통쾌',
+  '오싹',
+  '포근',
+  '뭉클',
+  '벅참',
+] as const;
+export type EmotionTag = (typeof EMOTION_TAGS)[number];
 export type Vec3 = Readonly<{ x: number; y: number; z: number }>;
 
 export interface Star {
@@ -29,6 +42,12 @@ export interface Star {
   posterPath?: string;
   /** TMDB movie id backing a picked work, for future metadata enrichment. */
   tmdbId?: number;
+  /** Who the night was shared with, if the memory includes them. */
+  watchedWith?: string;
+  /** One emotion tag capturing how the night felt. */
+  emotion?: EmotionTag;
+  /** Times rewatched after the first logging; each rewatch brightens the star. */
+  rewatchCount?: number;
 }
 
 export interface Constellation {
@@ -119,6 +138,19 @@ export interface PlanetCollection {
   planets: OwnedPlanet[];
 }
 
+/** A work the user wants to see: a hazy nebula waiting to condense into a star. */
+export interface WatchlistEntry {
+  id: string;
+  title: string;
+  normalizedTitle: string;
+  genre: Genre;
+  addedAt: string;
+  /** Where its nebula drifts, the spot its star would be born. */
+  position: Vec3;
+  posterPath?: string;
+  tmdbId?: number;
+}
+
 export interface PersistedStore {
   schemaVersion: 2;
   stars: Star[];
@@ -131,6 +163,7 @@ export interface PersistedStore {
   };
   achievements: Achievement[];
   planetCollection: PlanetCollection;
+  watchlist: WatchlistEntry[];
 }
 
 export type PersistedStateV2 = PersistedStore;
@@ -176,11 +209,21 @@ export interface CommandDiagnostics {
   occurredAt: string | null;
 }
 
+/** Hand-off from the watchlist into the add-work form. */
+export interface WatchlistPrefill {
+  entryId: string;
+  title: string;
+  genre: Genre;
+  posterPath?: string;
+  tmdbId?: number;
+}
+
 export interface RuntimeStore {
   /** False only for a session bootstrapped without a persisted registration. */
   hasPersistedRegistration: boolean;
   selectedStarId: string | null;
   selectedGenres: Set<Genre>;
+  watchlistPrefill: WatchlistPrefill | null;
   constellationDraft: ConstellationDraft;
   isListDrawerOpen: boolean;
   isAchievementPanelOpen: boolean;

@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useStore } from 'zustand';
 
-import { GENRES } from '../domain/models';
+import { EMOTION_TAGS, GENRES } from '../domain/models';
 import {
   validateWorkInput,
   type WorkInput,
@@ -24,6 +24,8 @@ interface SelectedMovie {
 type Draft = Record<Exclude<FormField, 'director'>, string> & {
   existingDirector: string;
   customDirector: string;
+  watchedWith: string;
+  emotion: string;
 };
 
 type FieldErrors = Partial<Record<FormField, string>>;
@@ -54,6 +56,8 @@ const EMPTY_DRAFT: Draft = {
   watchedDate: '',
   existingDirector: '',
   customDirector: '',
+  watchedWith: '',
+  emotion: '',
 };
 
 function mapFieldErrors(
@@ -86,6 +90,8 @@ function createWorkInput(
     director: selectedDirector(draft, mode),
     ...(selected?.posterPath != null ? { posterPath: selected.posterPath } : {}),
     ...(selected !== null ? { tmdbId: selected.tmdbId } : {}),
+    ...(draft.watchedWith.trim().length > 0 ? { watchedWith: draft.watchedWith } : {}),
+    ...(draft.emotion.length > 0 ? { emotion: draft.emotion } : {}),
   };
 }
 
@@ -99,6 +105,8 @@ export interface AddWorkFormProps {
 
 export function AddWorkForm({ store }: AddWorkFormProps) {
   const stars = useStore(store, (state) => state.persisted.stars);
+  const watchlistPrefill = useStore(store, (state) => state.runtime.watchlistPrefill);
+  const appliedPrefillId = useRef<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [directorMode, setDirectorMode] = useState<DirectorMode>('custom');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -112,6 +120,29 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
   const directorFetchToken = useRef(0);
   const { suggestions, loading, enabled: autocompleteEnabled } =
     useMovieSuggestions(suggestOpen ? draft.title : '');
+
+  // A watchlist promotion arrives as a prefill: seed the draft once per entry
+  // so the user only adds the rating, date and review to condense the nebula.
+  useEffect(() => {
+    if (watchlistPrefill === null) return;
+    if (appliedPrefillId.current === watchlistPrefill.entryId) return;
+    appliedPrefillId.current = watchlistPrefill.entryId;
+    setDraft((current) => ({
+      ...current,
+      title: watchlistPrefill.title,
+      genre: watchlistPrefill.genre,
+    }));
+    setSelectedMovie(
+      watchlistPrefill.tmdbId === undefined
+        ? null
+        : {
+            tmdbId: watchlistPrefill.tmdbId,
+            posterPath: watchlistPrefill.posterPath ?? null,
+          },
+    );
+    setSuggestOpen(false);
+    setActiveIndex(-1);
+  }, [watchlistPrefill]);
 
   const directors = useMemo(() => {
     const byNormalizedName = new Map<string, string>();
@@ -127,6 +158,8 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
 
   const updateDraft = (field: keyof Draft, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
+    // Optional memory fields never carry validation errors to clear.
+    if (field === 'watchedWith' || field === 'emotion') return;
     const errorField =
       field === 'existingDirector' || field === 'customDirector' ? 'director' : field;
     setErrors((current) => {
@@ -229,6 +262,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       return;
     }
 
+    const wasEmptySky = store.getState().persisted.stars.length === 0;
     const result = store.getState().commands.addWork(input);
     if (!result.ok) {
       if (isValidationError(result.error)) {
@@ -237,12 +271,29 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       return;
     }
 
+    // First light: fly to the very first star while its fireworks bloom.
+    if (wasEmptySky) {
+      store.getState().commands.requestCameraFocus({
+        type: 'star',
+        starId: result.value.starId,
+      });
+      store.getState().commands.pushGentleToast(
+        '첫 별이 떠올랐습니다',
+        '당신의 우주가 시작됐어요. 이야기가 쌓일수록 하늘이 넓어집니다.',
+      );
+    }
     setDraft(EMPTY_DRAFT);
     setDirectorMode('custom');
     setErrors({});
     setSelectedMovie(null);
     setSuggestOpen(false);
     setActiveIndex(-1);
+    // A successful log condenses the promoted nebula into this new star.
+    if (watchlistPrefill !== null) {
+      store.getState().commands.removeFromWatchlist(watchlistPrefill.entryId);
+      store.getState().commands.clearWatchlistPrefill();
+      appliedPrefillId.current = null;
+    }
   };
 
   const posterPreview = posterUrl(selectedMovie?.posterPath, 'w200');
@@ -381,6 +432,29 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
           />
           <span className="character-count" aria-live="off">{draft.review.length}/100</span>
           {errors.review !== undefined && <p id="review-error" className="field-error">{errors.review}</p>}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="work-watched-with">함께 본 사람 <span className="optional-hint">(선택)</span></label>
+          <input
+            id="work-watched-with"
+            maxLength={100}
+            placeholder="예: 혼자, 가족, 영화 동아리"
+            value={draft.watchedWith}
+            onChange={(event) => updateDraft('watchedWith', event.target.value)}
+          />
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="work-emotion">그날의 감정 <span className="optional-hint">(선택)</span></label>
+          <select
+            id="work-emotion"
+            value={draft.emotion}
+            onChange={(event) => updateDraft('emotion', event.target.value)}
+          >
+            <option value="">선택 안 함</option>
+            {EMOTION_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+          </select>
         </div>
 
         <div className="form-field">
