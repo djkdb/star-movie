@@ -91,10 +91,10 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
 
   // Fiery accretion ramp: white-hot inner rim -> gold -> orange -> deep ember.
   vec3 diskRamp(float x){
-    vec3 white  = vec3(1.06, 1.02, 0.94);
-    vec3 gold   = vec3(1.0, 0.83, 0.46);
-    vec3 orange = vec3(1.0, 0.5, 0.14);
-    vec3 deep   = vec3(0.42, 0.11, 0.03);
+    vec3 white  = vec3(1.15, 1.05, 0.82);
+    vec3 gold   = vec3(1.03, 0.7, 0.22);
+    vec3 orange = vec3(1.0, 0.42, 0.08);
+    vec3 deep   = vec3(0.34, 0.07, 0.015);
     vec3 c = mix(white, gold, smoothstep(0.0, 0.22, x));
     c = mix(c, orange, smoothstep(0.18, 0.55, x));
     return mix(c, deep, smoothstep(0.58, 1.0, x));
@@ -108,13 +108,13 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
 
   void main(){
     float sc = max(uScale, 0.001);
-    float RS    = 1.9 * sc;
-    float DIN   = 2.35 * sc;
-    float DOUT  = 9.0 * sc;
-    float RINF  = 10.4 * sc;
+    float RS    = 1.35 * sc;
+    float DIN   = 1.85 * sc;
+    float DOUT  = 9.6 * sc;
+    float RINF  = 11.0 * sc;
     float LENS  = 0.34 / sc;
-    float RINGB = 3.1 * sc;
-    float RINGW = 0.11 * sc;
+    float RINGB = 2.2 * sc;
+    float RINGW = 0.1 * sc;
     float STEP  = 2.3 * RINF / float(max(uSteps, 24));
 
     vec3 ro = uCameraPos - uCenter;
@@ -161,14 +161,14 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
         float hr2 = length(tPos.xz);
         if (hr2 > DIN * 0.92 && hr2 < DOUT && alpha < 0.995){
           float nR2 = clamp((hr2 - DIN) / (DOUT - DIN), 0.0, 1.0);
-          float thick = (0.2 + 0.55 * nR2) * sc;
+          float thick = (0.11 + 0.62 * nR2) * sc;
           float dens = exp(-pow(tPos.y / thick, 2.0));
           float prof = (1.0 - smoothstep(0.5, 1.0, nR2)) * smoothstep(0.0, 0.05, nR2);
           float em = dens * prof * (2.4 - 1.5 * nR2) * 0.055 * (STEP / sc);
           // Keep the shadow pitch-black: no gas glow on rays bound for it.
-          em *= smoothstep(RINGB * 0.95, RINGB * 1.55, bImpact);
+          em *= smoothstep(RINGB * 0.9, RINGB * 1.5, bImpact);
           float rem2 = 1.0 - alpha;
-          col += diskRamp(pow(nR2, 0.85)) * em * rem2 * (1.0 + uArousal * 0.4);
+          col += diskRamp(pow(nR2, 0.62)) * em * rem2 * (1.0 + uArousal * 0.4);
           alpha += rem2 * em * 0.55;
         }
       }
@@ -185,34 +185,32 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
           // Fine concentric streaks smeared by differential rotation.
           float phase = uTime * -0.9 / pow(hr / sc, 1.5);
           float streak = fbm(vec2(ang * 2.4 + phase * 6.2831, (hr / sc) * 5.0));
-          float tex = 0.32 + 1.05 * streak;
+          float tex = 0.22 + 1.35 * streak;
 
           vec3 vel = normalize(vec3(-sin(ang), 0.0, cos(ang)));
           float beta = 0.4 * inversesqrt(hr / DIN);
           float dopp = pow(1.0 / (1.0 - beta * dot(vel, toDisk(rd))), 3.0);
 
-          float inEdge = smoothstep(0.0, 0.05, nR);
+          float inEdge = smoothstep(-0.04, 0.16, nR);
           float outEdge = 1.0 - smoothstep(0.62, 1.0, nR);
-          float rim = 1.0 + 1.2 * smoothstep(0.16, 0.0, nR);
+          float rim = 1.0 + 3.2 * smoothstep(0.2, 0.0, nR);
           float bright = tex * rim * inEdge * outEdge * clamp(dopp, 0.3, 3.6);
-          bright *= (2.6 - 1.35 * nR) + uArousal * 0.9;
+          bright *= (1.7 - 0.9 * nR) + uArousal * 0.9;
 
           float rem = 1.0 - alpha;
-          col += diskRamp(pow(nR, 0.85)) * bright * rem;
+          col += diskRamp(pow(nR, 0.62)) * bright * rem;
           alpha += rem * clamp(bright * 0.6, 0.0, 1.0) * inEdge * outEdge;
         }
       }
     }
 
-    // Photon ring hugging the shadow edge.
-    float ring = exp(-pow((bImpact - RINGB) / RINGW, 2.0));
-    col += vec3(1.0, 0.98, 0.9) * ring * ((1.3 + uArousal) / max(uGain, 0.3));
-    alpha = max(alpha, ring);
+    // No painted photon ring: the blazing rim around the shadow is simply the
+    // lensed image of the disk's inner edge, so it can never detach.
 
     // Soft warm halo just outside the ring so the structure blooms.
     float halo = exp(-pow(max(bImpact - RINGB, 0.0) / (3.2 * sc), 1.5));
     halo *= smoothstep(RINGB - 0.5 * sc, RINGB + 0.6 * sc, bImpact);
-    col += vec3(1.0, 0.72, 0.38) * halo * 0.08;
+    col += vec3(1.0, 0.6, 0.22) * halo * 0.07;
     alpha = max(alpha, halo * 0.12);
 
     float outA = captured > 0.5 ? 1.0 : clamp(alpha, 0.0, 1.0);
