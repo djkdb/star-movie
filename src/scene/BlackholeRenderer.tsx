@@ -30,6 +30,12 @@ import { useVisibleElapsedSeconds } from './VisibilityClock';
 const BLACKHOLE_PLANE_HALF = 10;
 
 /**
+ * Half-size of the lensing-glow quad behind the disk. Larger than the disk so
+ * the god-ray caustics and Einstein ring reach well past the accretion fan.
+ */
+const BLACKHOLE_LENS_HALF = 22;
+
+/**
  * A camera-facing "Gargantua" shader: pure-black event horizon, a hot photon
  * ring hugging its edge, a lensed halo that reads as the accretion disk wrapping
  * over and under the shadow, and an equatorial fan that streams outward with
@@ -126,6 +132,57 @@ const GARGANTUA_FRAGMENT_SHADER = `
 
     if (alpha <= 0.003) discard;
     gl_FragColor = vec4(outColor, alpha);
+  }
+`;
+
+/**
+ * The gravitational-lens layer that sits behind the accretion disk: a bright
+ * Einstein ring where background starlight bends around the shadow, a broad
+ * cool halo it sits within, and faint lensing caustics — thin light streaks
+ * curving off the hole. It is deliberately cool blue so it reads as light
+ * *around* the hole rather than more of the warm disk, and stays additive with
+ * no framebuffer reads, so it cannot reintroduce the depth-blit flicker.
+ */
+const GRAVITATIONAL_LENS_FRAGMENT_SHADER = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform float uTime;
+  uniform float uArousal;
+
+  void main() {
+    vec2 p = (vUv - 0.5) * 2.0;
+    float r = length(p);
+    float ang = atan(p.y, p.x);
+
+    // Leave the very centre to the shadow and disk drawn in front.
+    if (r < 0.07 || r > 0.98) discard;
+
+    // Lensing caustics: thin light streaks bent around the hole. Two counter-
+    // drifting frequencies keep them irregular rather than a clean pinwheel.
+    float rot = uTime * 0.05;
+    float ray1 = pow(abs(sin(ang * 11.0 + rot)), 8.0);
+    float ray2 = pow(abs(sin(ang * 19.0 - rot * 0.6 + 2.1)), 14.0);
+    float rays = ray1 * 0.7 + ray2 * 0.45;
+    float godRays = rays * smoothstep(1.0, 0.14, r);
+
+    // Einstein ring: a second, cooler ring of lensed background light sitting
+    // just *outside* the disk's hot photon ring, so the two read as a double
+    // halo rather than one fat blob.
+    float einstein = exp(-pow((r - 0.44) / 0.05, 2.0));
+
+    // Broad lensing halo the rings sit within.
+    float halo = exp(-pow(r / 0.55, 2.0));
+
+    float brightness = godRays * 0.4 + einstein * 0.55 + halo * 0.28;
+    brightness *= 1.0 + uArousal * 1.1;
+
+    vec3 cool = vec3(0.52, 0.68, 1.0);
+    vec3 bright = vec3(0.82, 0.9, 1.0);
+    vec3 col = mix(cool, bright, clamp(einstein + godRays * 0.5, 0.0, 1.0));
+
+    float alpha = clamp(brightness, 0.0, 1.0) * smoothstep(0.98, 0.7, r);
+    if (alpha <= 0.003) discard;
+    gl_FragColor = vec4(col * brightness, alpha);
   }
 `;
 
@@ -247,6 +304,7 @@ export function BlackholeRenderer({
 }: BlackholeRendererProps) {
   const billboardRef = useRef<Group>(null);
   const materialRef = useRef<ShaderMaterial>(null);
+  const lensMaterialRef = useRef<ShaderMaterial>(null);
   const arousalRef = useRef(0);
   const didDropRef = useRef(false);
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
@@ -271,10 +329,14 @@ export function BlackholeRenderer({
     const rate = Math.min(1, delta * 3.5);
     arousalRef.current += (target - arousalRef.current) * rate;
     const breathe = 0.04 * Math.sin(elapsedVisibleSeconds.current * 1.3);
+    const arousal = arousalRef.current + breathe + (massScale - 1) * 0.5;
     if (materialRef.current !== null) {
       materialRef.current.uniforms.uTime!.value = elapsedVisibleSeconds.current;
-      materialRef.current.uniforms.uArousal!.value =
-        arousalRef.current + breathe + (massScale - 1) * 0.5;
+      materialRef.current.uniforms.uArousal!.value = arousal;
+    }
+    if (lensMaterialRef.current !== null) {
+      lensMaterialRef.current.uniforms.uTime!.value = elapsedVisibleSeconds.current;
+      lensMaterialRef.current.uniforms.uArousal!.value = arousal;
     }
     if (billboard !== null) {
       const scale = (1 + arousalRef.current * 0.08 + breathe * 0.5) * massScale;
@@ -323,6 +385,26 @@ export function BlackholeRenderer({
         <meshBasicMaterial colorWrite={false} depthWrite={false} transparent opacity={0} />
       </mesh>
       <group ref={billboardRef}>
+        {/* Gravitational-lens glow, drawn behind the disk so the disk's opaque
+            shadow keeps ownership of the centre while the ring and caustics
+            bloom out past the accretion fan. Non-interactive. */}
+        <mesh name="blackhole-lens-glow" position={[0, 0, -0.1]} renderOrder={1}>
+          <planeGeometry args={[BLACKHOLE_LENS_HALF * 2, BLACKHOLE_LENS_HALF * 2]} />
+          <shaderMaterial
+            blending={AdditiveBlending}
+            depthWrite={false}
+            fragmentShader={GRAVITATIONAL_LENS_FRAGMENT_SHADER}
+            ref={lensMaterialRef}
+            side={DoubleSide}
+            transparent
+            toneMapped={false}
+            uniforms={{
+              uTime: { value: 0 },
+              uArousal: { value: 0 },
+            }}
+            vertexShader={GARGANTUA_VERTEX_SHADER}
+          />
+        </mesh>
         <mesh
           name="blackhole-accretion-disk"
           renderOrder={2}
