@@ -204,10 +204,19 @@ export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
       }
     }
 
-    // Photon ring hugging the shadow edge.
-    float ring = exp(-pow((bImpact - RINGB) / RINGW, 2.0));
-    col += vec3(1.0, 0.98, 0.9) * ring * ((1.3 + uArousal) / max(uGain, 0.3));
-    alpha = max(alpha, ring);
+    // Photon ring woven into the disk rather than stamped on top: the
+    // near-side disk in front occludes it, it blazes where it meets the disk
+    // plane and dims toward its top and bottom, and its outer skirt bleeds
+    // softly into the disk's inner rim.
+    vec3 perp = ro - dot(ro, rd0) * rd0;
+    float vertical = abs(dot(perp, uDiskN)) / max(bImpact, 0.001);
+    float ringW = RINGW * (bImpact > RINGB ? 2.6 : 1.0);
+    float ring = exp(-pow((bImpact - RINGB) / ringW, 2.0));
+    ring *= mix(1.12, 0.5, smoothstep(0.2, 0.95, vertical));
+    float ringRem = 1.0 - alpha;
+    col += vec3(1.0, 0.98, 0.9) * ring
+      * ((1.3 + uArousal) / max(uGain, 0.3)) * mix(0.15, 1.0, ringRem);
+    alpha = max(alpha, ring * clamp(ringRem + 0.3, 0.0, 1.0));
 
     // Soft warm halo just outside the ring so the structure blooms.
     float halo = exp(-pow(max(bImpact - RINGB, 0.0) / (3.2 * sc), 1.5));
