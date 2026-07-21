@@ -42,7 +42,7 @@ const RAYMARCH_STEPS_BY_QUALITY: Readonly<Record<QualityLevel, number>> = {
   reducedBloom: 48,
 };
 
-const BLACKHOLE_VERTEX_SHADER = `
+export const BLACKHOLE_VERTEX_SHADER = `
   varying vec3 vWorldPos;
   void main() {
     vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
@@ -61,7 +61,7 @@ const BLACKHOLE_VERTEX_SHADER = `
  * existing star sky. The disk lives in the world horizontal plane, so orbiting
  * the camera reveals its real 3D structure rather than a fixed billboard.
  */
-const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
+export const BLACKHOLE_RAYMARCH_FRAGMENT_SHADER = `
   precision highp float;
   varying vec3 vWorldPos;
   uniform float uTime;
