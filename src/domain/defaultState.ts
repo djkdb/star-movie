@@ -1,6 +1,6 @@
+import { createSeedAchievements } from './achievementCatalog';
 import {
   GENRES,
-  type Achievement,
   type Galaxy,
   type Genre,
   type Milestone,
@@ -123,19 +123,6 @@ function createLockedMilestone(target: 50 | 100): Milestone {
   return { target, unlocked: false, unlockedAt: null, rewardId: null };
 }
 
-function createNolanMaster(): Achievement {
-  return {
-    id: 'nolan-master',
-    name: '놀란 마스터',
-    description: '크리스토퍼 놀란 감독의 고유 작품 10편을 기록하세요.',
-    ruleId: 'nolan-unique-work',
-    progress: 0,
-    target: 10,
-    unlocked: false,
-    unlockedAt: null,
-  };
-}
-
 function createGenreGalaxies(): Galaxy[] {
   return GENRE_GALAXY_DEFAULTS.map((galaxy) => ({
     id: galaxy.id,
@@ -159,7 +146,7 @@ export function createDefaultPersistedStore(): PersistedStore {
       fifty: createLockedMilestone(50),
       hundred: createLockedMilestone(100),
     },
-    achievements: [createNolanMaster()],
+    achievements: createSeedAchievements(),
     planetCollection: {
       lifetimeStarsAdded: 0,
       pullsPerformed: 0,

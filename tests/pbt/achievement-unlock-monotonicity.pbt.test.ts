@@ -210,13 +210,15 @@ describe('Property 26: Achievement unlock monotonicity and event uniqueness', ()
             if (shouldUnlock) {
               unlockNotificationCount += notifications.length;
               firstUnlockedAt = nowIso;
+              // Every seeded work is by Christopher Nolan, so the dynamic
+              // director-master event names that director.
               expect(notifications[0]).toMatchObject({
                 type: 'achievement-unlocked',
                 occurredAt: nowIso,
                 payload: {
-                  achievementId: 'nolan-master',
-                  name: '놀란 마스터',
-                  description: before.description,
+                  achievementId: 'director-master',
+                  name: 'Christopher Nolan 마스터',
+                  description: 'Christopher Nolan 감독의 작품 10편을 기록하세요.',
                 },
               });
             }

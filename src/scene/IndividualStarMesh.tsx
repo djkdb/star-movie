@@ -96,6 +96,9 @@ export function IndividualStarMesh({
       ref={groupRef}
       position={[star.position.x, star.position.y, star.position.z]}
       scale={hovered ? STAR_HOVER_SCALE : STAR_IDLE_SCALE}
+      // A filtered-out star (dimmed by the genre spotlight) is removed from the
+      // sky entirely so only the chosen genre remains — spotlit stars stay lit.
+      visible={opacity > 0.5}
       userData={{
         archiveObjectType: 'star',
         starId: star.id,

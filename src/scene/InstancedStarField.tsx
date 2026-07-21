@@ -16,7 +16,7 @@ import {
   Object3D,
 } from 'three';
 
-import type { Star } from '../domain/models';
+import type { Genre, Star } from '../domain/models';
 import { useThreeResourceTracking } from './threeResourceRegistry';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 import {
@@ -34,10 +34,12 @@ import {
   updateInstancedStarMatrices,
   type InstancedStarBucket,
 } from './starRendererModel';
+import { resolveGenreOpacity } from './genreSpotlight';
 
 export interface InstancedStarFieldProps {
   stars: readonly Star[];
   selectedStarId: string | null;
+  selectedGenres: ReadonlySet<Genre>;
   reducedMotion: boolean;
   onSelect: (starId: string) => void;
   onDragStart?: (payload: StarDragPayload) => void;
@@ -48,6 +50,7 @@ interface RatingInstancedMeshProps {
   bucket: InstancedStarBucket;
   hoveredStarId: string | null;
   selectedStarId: string | null;
+  selectedGenres: ReadonlySet<Genre>;
   reducedMotion: boolean;
   onHoverChange: (starId: string | null) => void;
   onSelect: (starId: string) => void;
@@ -59,6 +62,7 @@ function RatingInstancedMesh({
   bucket,
   hoveredStarId,
   selectedStarId,
+  selectedGenres,
   reducedMotion,
   onHoverChange,
   onSelect,
@@ -94,14 +98,24 @@ function RatingInstancedMesh({
     );
   }, [bucket, hoveredStarId, reducedMotion, temporaryObject]);
 
+  // Genre spotlight: dim filtered-out stars toward black so only the selected
+  // genre still glows. Re-runs whenever the bucket or the selection changes.
+  const applyColors = useCallback(() => {
+    const mesh = meshRef.current;
+    if (mesh === null) return;
+    updateInstancedStarColors(mesh, bucket, scratchColor, (star) =>
+      resolveGenreOpacity(star.genre, selectedGenres),
+    );
+  }, [bucket, scratchColor, selectedGenres]);
+
   useLayoutEffect(() => {
     const mesh = meshRef.current;
     if (mesh === null) return;
 
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
-    updateInstancedStarColors(mesh, bucket, scratchColor);
+    applyColors();
     updateMatrices(elapsedVisibleSeconds.current);
-  }, [bucket, elapsedVisibleSeconds, scratchColor, updateMatrices]);
+  }, [applyColors, bucket, elapsedVisibleSeconds, updateMatrices]);
 
   useFrame(() => updateMatrices(elapsedVisibleSeconds.current));
 
@@ -171,6 +185,7 @@ function RatingInstancedMesh({
 export function InstancedStarField({
   stars,
   selectedStarId,
+  selectedGenres,
   reducedMotion,
   onSelect,
   onDragStart,
@@ -233,6 +248,7 @@ export function InstancedStarField({
           onHoverChange={handleHoverChange}
           onSelect={onSelect}
           reducedMotion={reducedMotion}
+          selectedGenres={selectedGenres}
           selectedStarId={selectedStarId}
         />
       ))}

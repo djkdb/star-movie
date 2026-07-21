@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { createSeedAchievements } from './achievementCatalog';
 import { GENRES, type Star } from './models';
 import {
   MINIMUM_GALAXY_CENTER_DISTANCE,
@@ -30,18 +31,10 @@ describe('deterministic default store', () => {
       fifty: { target: 50, unlocked: false, unlockedAt: null, rewardId: null },
       hundred: { target: 100, unlocked: false, unlockedAt: null, rewardId: null },
     });
-    expect(first.achievements).toEqual([
-      {
-        id: 'nolan-master',
-        name: '놀란 마스터',
-        description: '크리스토퍼 놀란 감독의 고유 작품 10편을 기록하세요.',
-        ruleId: 'nolan-unique-work',
-        progress: 0,
-        target: 10,
-        unlocked: false,
-        unlockedAt: null,
-      },
-    ]);
+    expect(first.achievements).toEqual(createSeedAchievements());
+    expect(first.achievements).toHaveLength(6);
+    expect(first.achievements.every((a) => !a.unlocked && a.progress === 0)).toBe(true);
+    expect(first.achievements.map((a) => a.ruleId)).toContain('director-master');
   });
 
   it('R3.12 creates exactly one themed galaxy per Genre with center distances of at least 25', () => {

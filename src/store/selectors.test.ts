@@ -87,7 +87,7 @@ describe('HUD and achievement selectors', () => {
     const hud = selectHudViewModel(state);
     expect(hud.milestones.fifty.current).toBe(50);
     expect(hud.milestones.hundred.current).toBe(100);
-    expect(hud.achievementSummary).toEqual({ unlockedCount: 1, totalCount: 1 });
+    expect(hud.achievementSummary).toEqual({ unlockedCount: 1, totalCount: 6 });
   });
 
   it('R17.11 recalculates current achievement progress and preserves saved unlock metadata', () => {
@@ -111,10 +111,10 @@ describe('HUD and achievement selectors', () => {
     });
 
     state.runtime.isAchievementPanelOpen = true;
-    expect(selectAchievementPanelViewModel(state)).toMatchObject({
-      isOpen: true,
-      achievements: [{ progress: 2, unlocked: true }],
-    });
+    const panel = selectAchievementPanelViewModel(state);
+    expect(panel.isOpen).toBe(true);
+    expect(panel.achievements).toHaveLength(6);
+    expect(panel.achievements[0]).toMatchObject({ progress: 2, unlocked: true });
   });
 });
 

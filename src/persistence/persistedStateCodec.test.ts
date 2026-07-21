@@ -119,6 +119,39 @@ describe('schemaVersion 2 persisted-state codec', () => {
     expect(safeDecodePersistedV2(invalidDiscardedAt).success).toBe(false);
   });
 
+  it('migrates the legacy Nolan achievement to director-master and backfills the rest', () => {
+    // A legacy document: the old hard-coded nolan achievement, unlocked.
+    const legacy = createValidDocument();
+    legacy.achievements = [
+      {
+        id: 'nolan-master',
+        name: '놀란 마스터',
+        description: '크리스토퍼 놀란 감독의 고유 작품 10편을 기록하세요.',
+        ruleId: 'nolan-unique-work',
+        progress: 10,
+        target: 10,
+        unlocked: true,
+        unlockedAt: '2025-03-01T00:00:00.000Z',
+      },
+    ] as unknown as typeof legacy.achievements;
+
+    const decoded = decodePersistedV2(legacy);
+    // The earned achievement is renamed to the generic director-master, keeping
+    // its unlock state; its name becomes the generic fallback.
+    expect(decoded.achievements[0]).toMatchObject({
+      id: 'director-master',
+      ruleId: 'director-master',
+      name: '감독 마스터',
+      unlocked: true,
+      unlockedAt: '2025-03-01T00:00:00.000Z',
+    });
+    // The other five achievements are appended locked at zero progress.
+    expect(decoded.achievements).toHaveLength(6);
+    const backfilled = decoded.achievements.slice(1);
+    expect(backfilled.every((a) => !a.unlocked && a.progress === 0)).toBe(true);
+    expect(decoded.achievements.map((a) => a.id)).toContain('genre-explorer');
+  });
+
   it('R8.2 rejects broken normalized linkage and non-finite coordinates', () => {
     const invalidNormalizedTitle = createValidDocument();
     invalidNormalizedTitle.stars[0]!.normalizedTitle = 'not-the-title';

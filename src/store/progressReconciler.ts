@@ -5,12 +5,7 @@ import type {
   RuntimeEvent,
   Star,
 } from '../domain/models';
-import {
-  getStarUniqueWorkKey,
-  normalizeText,
-} from '../domain/normalization';
-
-const NOLAN_NORMALIZED_DIRECTOR = normalizeText('Christopher Nolan');
+import { getStarUniqueWorkKey } from '../domain/normalization';
 
 const MILESTONES = [
   { key: 'fifty', target: 50, rewardType: 'planet' },
@@ -36,23 +31,76 @@ export interface ProgressReconcileResult {
   completionEvents: RuntimeEvent[];
 }
 
-function nolanUniqueWorkProgress(stars: readonly Star[]): number {
-  const uniqueWorks = new Set<string>();
+/**
+ * The director the user has recorded the most unique works for, and that count.
+ * Drives the dynamic "○○ 마스터" achievement — no hard-coded director. Ties are
+ * broken by first appearance, so the leader is stable as works accrue.
+ */
+export function topDirectorUniqueWork(
+  stars: readonly Star[],
+): { director: string | null; count: number } {
+  const byDirector = new Map<string, { display: string; works: Set<string> }>();
   for (const star of stars) {
-    if (star.normalizedDirector === NOLAN_NORMALIZED_DIRECTOR) {
-      uniqueWorks.add(getStarUniqueWorkKey(star));
+    let entry = byDirector.get(star.normalizedDirector);
+    if (entry === undefined) {
+      entry = { display: star.director, works: new Set() };
+      byDirector.set(star.normalizedDirector, entry);
+    }
+    entry.works.add(getStarUniqueWorkKey(star));
+  }
+
+  let best: { director: string | null; count: number } = { director: null, count: 0 };
+  for (const entry of byDirector.values()) {
+    if (entry.works.size > best.count) {
+      best = { director: entry.display, count: entry.works.size };
     }
   }
-  return uniqueWorks.size;
+  return best;
+}
+
+/** Dynamic display for the director-master achievement, keyed on the leader. */
+export function directorMasterDisplay(
+  stars: readonly Star[],
+): { name: string; description: string } {
+  const { director } = topDirectorUniqueWork(stars);
+  if (director === null) {
+    return { name: '감독 마스터', description: '한 감독의 작품을 10편 기록하세요.' };
+  }
+  return {
+    name: `${director} 마스터`,
+    description: `${director} 감독의 작품 10편을 기록하세요.`,
+  };
+}
+
+/** Everything an achievement rule may need to measure its progress. */
+export type AchievementProgressContext = Pick<
+  PersistedStateV2,
+  'stars' | 'constellations' | 'blackholeArchive' | 'planetCollection'
+>;
+
+function distinctCount<T>(items: readonly T[], key: (item: T) => string): number {
+  const seen = new Set<string>();
+  for (const item of items) seen.add(key(item));
+  return seen.size;
 }
 
 export function calculateAchievementProgress(
   achievement: Pick<Achievement, 'ruleId'>,
-  stars: readonly Star[],
+  context: AchievementProgressContext,
 ): number {
   switch (achievement.ruleId) {
-    case 'nolan-unique-work':
-      return nolanUniqueWorkProgress(stars);
+    case 'director-master':
+      return topDirectorUniqueWork(context.stars).count;
+    case 'genre-explorer':
+      return distinctCount(context.stars, (star) => star.genre);
+    case 'five-star-curator':
+      return context.stars.filter((star) => star.rating === 5).length;
+    case 'constellation-architect':
+      return context.constellations.length;
+    case 'blackhole-keeper':
+      return context.blackholeArchive.length;
+    case 'planet-pioneer':
+      return distinctCount(context.planetCollection.planets, (planet) => planet.speciesId);
   }
 }
 
@@ -126,7 +174,7 @@ function reconcileAchievements(
   const events: RuntimeEvent[] = [];
   candidate.achievements = candidate.achievements.map((achievement) => {
     const prior = previous.achievements.find(({ id }) => id === achievement.id);
-    const progress = calculateAchievementProgress(achievement, candidate.stars);
+    const progress = calculateAchievementProgress(achievement, candidate);
 
     if (prior?.unlocked === true) {
       return {
@@ -144,7 +192,12 @@ function reconcileAchievements(
         unlocked: true,
         unlockedAt: nowIso,
       };
-      events.push(createAchievementUnlockEvent(unlocked, nowIso));
+      // The stored name stays generic; the toast names the actual director.
+      const announced =
+        achievement.ruleId === 'director-master'
+          ? { ...unlocked, ...directorMasterDisplay(candidate.stars) }
+          : unlocked;
+      events.push(createAchievementUnlockEvent(announced, nowIso));
       return unlocked;
     }
 

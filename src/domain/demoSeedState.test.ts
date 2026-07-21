@@ -53,9 +53,9 @@ describe('demo seed state', () => {
       expect(normalized).toBeLessThanOrEqual(1 + 1e-9);
     }
 
-    // Milestones stay locked below fifty works; Nolan progress matches seeds.
+    // Milestones stay locked below fifty works; director-master progress matches seeds.
     expect(seed.milestoneUnlocks.fifty.unlocked).toBe(false);
-    expect(seed.achievements.find(({ ruleId }) => ruleId === 'nolan-unique-work')!.progress)
+    expect(seed.achievements.find(({ ruleId }) => ruleId === 'director-master')!.progress)
       .toBe(2);
   });
 

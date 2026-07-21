@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
+import { ACHIEVEMENT_DEFINITIONS } from '../../src/domain/achievementCatalog';
 import { createDefaultPersistedStore } from '../../src/domain/defaultState';
 import {
   GENRES,
@@ -107,29 +108,30 @@ const milestoneArbitrary = (
         }),
   );
 
+// A canonical current document holds exactly the shipped achievements (by id);
+// only per-user progress and unlock state vary. Generating the full catalog
+// keeps the decode-time achievement backfill a no-op so the round-trip holds.
 const achievementArbitrary: fc.Arbitrary<Achievement[]> = fc
-  .array(
-    fc.record({
-      name: displayTextArbitrary('Achievement ', 30),
-      description: displayTextArbitrary('Description ', 60),
-      progress: fc.integer({ min: 0, max: 200 }),
-      target: fc.integer({ min: 1, max: 200 }),
-      unlockedAt: fc.option(isoTimestampArbitrary, { nil: null }),
-    }),
-    { maxLength: 4 },
+  .tuple(
+    ...ACHIEVEMENT_DEFINITIONS.map((definition) =>
+      fc
+        .record({
+          progress: fc.integer({ min: 0, max: definition.target * 2 }),
+          unlockedAt: fc.option(isoTimestampArbitrary, { nil: null }),
+        })
+        .map<Achievement>((seed) => ({
+          id: definition.id,
+          name: definition.name,
+          description: definition.description,
+          ruleId: definition.ruleId,
+          progress: seed.progress,
+          target: definition.target,
+          unlocked: seed.unlockedAt !== null,
+          unlockedAt: seed.unlockedAt,
+        })),
+    ),
   )
-  .map((seeds) =>
-    seeds.map((seed, index) => ({
-      id: `achievement-${index}-${seed.target}`,
-      name: seed.name,
-      description: seed.description,
-      ruleId: 'nolan-unique-work' as const,
-      progress: seed.progress,
-      target: seed.target,
-      unlocked: seed.unlockedAt !== null,
-      unlockedAt: seed.unlockedAt,
-    })),
-  );
+  .map((achievements) => [...achievements]);
 
 const planetCollectionArbitrary: fc.Arbitrary<PlanetCollection> = fc
   .nat({ max: 6 })

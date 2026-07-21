@@ -131,9 +131,13 @@ export function updateInstancedStarColors(
   mesh: InstancedMesh,
   bucket: InstancedStarBucket,
   scratchColor: Color,
+  /** Per-star brightness multiplier (1 = full). Drives the genre spotlight. */
+  brightnessOf?: (star: Star) => number,
 ): void {
   bucket.stars.forEach((star, instanceId) => {
     scratchColor.set(getStarDisplayColor(star.id, star.rating, star.genre));
+    const brightness = brightnessOf?.(star) ?? 1;
+    if (brightness !== 1) scratchColor.multiplyScalar(brightness);
     mesh.setColorAt(instanceId, scratchColor);
   });
   if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true;

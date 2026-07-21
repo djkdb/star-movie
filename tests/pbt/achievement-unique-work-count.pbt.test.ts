@@ -28,7 +28,6 @@ interface WorkGroup {
 }
 
 const NOW = '2031-02-03T04:05:06.000Z';
-const NOLAN_DIRECTOR = 'christopher nolan';
 const whitespaceArbitrary = fc.constantFrom(
   '',
   ' ',
@@ -113,7 +112,8 @@ function createActiveWorks(
   );
   if (galaxy === undefined) throw new Error('Missing SF galaxy');
 
-  const expectedUniqueWorks = new Set<string>();
+  // Distinct works per director; the achievement measures the leading director.
+  const worksByDirector = new Map<string, Set<string>>();
   const stars: Star[] = [];
 
   for (const group of groups) {
@@ -124,9 +124,12 @@ function createActiveWorks(
       const normalizedTitle = normalizeBySpecification(rawTitle);
       const normalizedDirector = normalizeBySpecification(rawDirector);
 
-      if (normalizedDirector === NOLAN_DIRECTOR) {
-        expectedUniqueWorks.add(`${normalizedTitle}::${normalizedDirector}`);
+      let works = worksByDirector.get(normalizedDirector);
+      if (works === undefined) {
+        works = new Set<string>();
+        worksByDirector.set(normalizedDirector, works);
       }
+      works.add(`${normalizedTitle}::${normalizedDirector}`);
 
       const title = normalizeDisplayText(rawTitle);
       const director = normalizeDisplayText(rawDirector);
@@ -147,13 +150,17 @@ function createActiveWorks(
     }
   }
 
-  return { stars, expectedProgress: expectedUniqueWorks.size };
+  let expectedProgress = 0;
+  for (const works of worksByDirector.values()) {
+    expectedProgress = Math.max(expectedProgress, works.size);
+  }
+  return { stars, expectedProgress };
 }
 
-// Feature: space-movie-archive, Property 25: Achievement 고유 작품 집계
+// Feature: space-movie-archive, Property 25: Achievement 고유 작품 집계 (감독 마스터)
 // **Validates: Requirements 17.1, 17.2, 17.7, 17.8, 17.9, 17.10**
 describe('Property 25: Achievement unique work counting', () => {
-  it('R17.1 R17.2 R17.7 R17.8 R17.9 R17.10 counts only distinct exact-normalized Nolan Unique Work Keys', () => {
+  it('R17.1 R17.2 R17.7 R17.8 R17.9 R17.10 counts the leading director distinct unique-work keys', () => {
     fc.assert(
       fc.property(activeWorkCollectionArbitrary, (groups) => {
         const previous = createDefaultStore(true).persisted;
@@ -167,21 +174,23 @@ describe('Property 25: Achievement unique work counting', () => {
             throw new Error('Collections are constrained below milestone thresholds');
           },
         });
-        const nolanMaster = result.candidate.achievements.find(
-          ({ id }) => id === 'nolan-master',
+        const directorMaster = result.candidate.achievements.find(
+          ({ id }) => id === 'director-master',
         );
 
-        expect(nolanMaster).toMatchObject({
-          id: 'nolan-master',
-          name: '놀란 마스터',
+        // Progress equals the leading director's distinct-work count; the stored
+        // record keeps the generic name (the toast names the actual director).
+        expect(directorMaster).toMatchObject({
+          id: 'director-master',
+          name: '감독 마스터',
           description: expect.any(String),
-          ruleId: 'nolan-unique-work',
+          ruleId: 'director-master',
           progress: expectedProgress,
           target: 10,
           unlocked: expectedProgress >= 10,
           unlockedAt: expectedProgress >= 10 ? NOW : null,
         });
-        expect(nolanMaster?.description.length).toBeGreaterThan(0);
+        expect(directorMaster?.description.length).toBeGreaterThan(0);
       }),
       { numRuns: 200 },
     );
