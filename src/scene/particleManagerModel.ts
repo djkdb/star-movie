@@ -1,7 +1,7 @@
 import type { PlanetRarity, RuntimeEvent, Vec3 } from '../domain/models';
 import { RARITY_COLORS } from '../domain/planetCatalog';
 
-export const FIREWORK_PARTICLE_RANGE = [320, 460] as const;
+export const FIREWORK_PARTICLE_RANGE = [1000, 1500] as const;
 /** Full show: rocket ascent, burst, figure formation, hover, and dissolve. */
 export const FIREWORK_DURATION_SECONDS = 6.5;
 

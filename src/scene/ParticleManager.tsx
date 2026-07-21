@@ -249,10 +249,13 @@ const FIREWORK_FRAGMENT_SHADER = `
 
   void main() {
     float d = distance(gl_PointCoord, vec2(0.5));
-    float core = 1.0 - smoothstep(0.0, 0.5, d);
-    float alpha = pow(core, 1.6) * vAlpha;
+    // A tight, sharp core with only a whisper of halo, like a background star —
+    // not a soft blob lighting up the space around it.
+    float core = 1.0 - smoothstep(0.0, 0.32, d);
+    float halo = 1.0 - smoothstep(0.08, 0.5, d);
+    float alpha = clamp(core * 1.2 + halo * 0.18, 0.0, 1.0) * vAlpha;
     if (alpha <= 0.002) discard;
-    gl_FragColor = vec4(vColor * (0.85 + 0.75 * core), alpha);
+    gl_FragColor = vec4(vColor * (1.0 + core * 0.35), alpha);
   }
 `;
 
@@ -295,6 +298,12 @@ const FIGURE_STAGE: readonly [number, number, number] = [0, 34, -130];
  */
 const FIREWORK_STAGE_DISTANCE = 820;
 const FIREWORK_STAGE_SCALE = 5.5;
+/**
+ * Spark point-size factor for the staged show, kept small and separate from the
+ * figure's spread so a grand burst reads as a dense field of fine star-like
+ * points rather than a few big glowing blobs.
+ */
+const FIREWORK_STAGE_SPARK_SIZE = 1.5;
 
 /** Seconds the launch rocket climbs before the shell bursts open. */
 const LAUNCH_SECONDS = 1.05;
@@ -456,7 +465,9 @@ function buildFireworkGeometries(effect: ParticleEffectDescriptor): FireworkGeom
     positions[index * 3] = ux * radius;
     positions[index * 3 + 1] = uy * radius;
     positions[index * 3 + 2] = (random() - 0.5) * 2.4;
-    sizes[index] = 8 + random() * 10;
+    // Fine, star-sized sparks: many small points read as a dense glittering
+    // field rather than a handful of fat glowing blobs.
+    sizes[index] = 2 + random() * 3.5;
     // Sparks wait for the rocket to arrive; a tight stagger after that keeps
     // the burst reading as one single great blast.
     delays[index] = LAUNCH_SECONDS + random() * 0.35;
@@ -687,7 +698,7 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
     sparkMaterial.uniforms.uTime!.value = elapsed;
     sparkMaterial.uniforms.uPixelRatio!.value = pixelRatio;
     sparkMaterial.uniforms.uStageScale!.value =
-      stagedPosition !== null ? FIREWORK_STAGE_SCALE : 1;
+      stagedPosition !== null ? FIREWORK_STAGE_SPARK_SIZE : 1;
     trailMaterial.uniforms.uTime!.value = elapsed;
 
     // Flash and shockwave ignite the moment the rocket reaches the apex.
