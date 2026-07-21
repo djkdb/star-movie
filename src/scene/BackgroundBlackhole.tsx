@@ -10,12 +10,14 @@ import {
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 
 /** A grand, non-interactive black hole hung deep in the background sky. */
-const BACKGROUND_BLACKHOLE_CENTER = new Vector3(-190, 150, -620);
+const BACKGROUND_BLACKHOLE_CENTER = new Vector3(-140, 230, -640);
 /** How large the hole is in world units (the raymarch physics scale). */
-const BACKGROUND_BLACKHOLE_SCALE = 20;
-/** Local half-size of the raymarch quad; scaled with the hole so it always
- *  covers the lensed footprint. */
-const BACKGROUND_BLACKHOLE_HALF = 12;
+const BACKGROUND_BLACKHOLE_SCALE = 26;
+/** Local half-size of the raymarch quad; generous so the full lensed ring and
+ *  disk never clip at the quad edge. */
+const BACKGROUND_BLACKHOLE_HALF = 17;
+/** Tilt the disk toward a fuller 3/4 presentation instead of a thin edge. */
+const BACKGROUND_BLACKHOLE_DISK_TILT = 0.62;
 
 /** A distant backdrop needs far fewer march steps than the near hero hole. */
 const BACKGROUND_STEPS_BY_QUALITY: Readonly<Record<QualityLevel, number>> = {
@@ -54,6 +56,7 @@ export function BackgroundBlackhole({
       uCenter: { value: BACKGROUND_BLACKHOLE_CENTER.clone() },
       uScale: { value: BACKGROUND_BLACKHOLE_SCALE },
       uSteps: { value: BACKGROUND_STEPS_BY_QUALITY.full },
+      uDiskTilt: { value: BACKGROUND_BLACKHOLE_DISK_TILT },
     }),
     [],
   );
