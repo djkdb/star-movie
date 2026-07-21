@@ -11,6 +11,7 @@ import {
   RingGeometry,
   ShaderMaterial,
   SpriteMaterial,
+  Vector3,
   type Group,
 } from 'three';
 import { useStore } from 'zustand';
@@ -119,6 +120,7 @@ const FIREWORK_VERTEX_SHADER = `
   uniform float uTime;
   uniform float uDuration;
   uniform float uPixelRatio;
+  uniform float uStageScale;
   varying float vAlpha;
   varying vec3 vColor;
   ${FIREWORK_MOTION_GLSL}
@@ -151,8 +153,10 @@ const FIREWORK_VERTEX_SHADER = `
 
     // Cap the screen-space size: nearby sparks otherwise balloon into huge
     // additive quads whose overdraw stalls weaker GPUs into dropped frames.
-    float px = aSize * uPixelRatio * (480.0 / max(1.0, -mvPosition.z));
-    gl_PointSize = min(px, 72.0 * uPixelRatio);
+    // uStageScale keeps far, enormously-staged shows from shrinking to
+    // sub-pixel pinpoints as the whole figure recedes into the deep sky.
+    float px = aSize * uPixelRatio * uStageScale * (480.0 / max(1.0, -mvPosition.z));
+    gl_PointSize = min(px, 80.0 * uPixelRatio);
   }
 `;
 
@@ -282,6 +286,15 @@ const FIGURE_RADIUS = 78;
 
 /** Deep backdrop stage: high in the sky, far behind every star and planet. */
 const FIGURE_STAGE: readonly [number, number, number] = [0, 34, -130];
+
+/**
+ * How far along the viewer's gaze a grand celebration is staged, and how much
+ * the whole figure is scaled up there. Placed among the far background stars
+ * (~700–950) and blown up ~9× so the show erupts enormously in the deep sky
+ * straight ahead, no matter where the camera has orbited.
+ */
+const FIREWORK_STAGE_DISTANCE = 820;
+const FIREWORK_STAGE_SCALE = 5.5;
 
 /** Seconds the launch rocket climbs before the shell bursts open. */
 const LAUNCH_SECONDS = 1.05;
@@ -517,8 +530,21 @@ interface FireworksVisualProps {
 export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
   const elapsedRef = useRef(0);
   const pixelRatio = useThree((state) => state.viewport.dpr);
+  const camera = useThree((state) => state.camera);
+  const groupRef = useRef<Group>(null);
   const isArchiveShow = effect.celebrationScope === 'archive';
   const figureRadius = isArchiveShow ? FIGURE_RADIUS : 8;
+
+  // A grand celebration is anchored the moment it fires: far along the gaze,
+  // deep among the background stars, so it erupts enormously straight ahead.
+  const stagedPosition = useMemo<readonly [number, number, number] | null>(() => {
+    if (!isArchiveShow) return null;
+    const forward = new Vector3();
+    camera.getWorldDirection(forward);
+    if (forward.lengthSq() < 1e-6) forward.set(0, 0, -1);
+    forward.multiplyScalar(FIREWORK_STAGE_DISTANCE);
+    return [forward.x, forward.y, forward.z];
+  }, [camera, isArchiveShow]);
 
   const { sparks, trails } = useMemo(() => buildFireworkGeometries(effect), [effect]);
   const ringGeometry = useMemo(() => new RingGeometry(0.96, 1, 96), []);
@@ -534,6 +560,7 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
           uTime: { value: 0 },
           uDuration: { value: effect.durationSeconds },
           uPixelRatio: { value: pixelRatio },
+          uStageScale: { value: 1 },
         },
       }),
     [effect.durationSeconds, pixelRatio],
@@ -649,11 +676,18 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
   ]);
 
   useFrame((_, delta) => {
+    // Face the viewer so the enormous background figure always reads front-on
+    // and its rain-down falls toward screen-bottom wherever the camera orbits.
+    if (groupRef.current !== null && stagedPosition !== null) {
+      groupRef.current.quaternion.copy(camera.quaternion);
+    }
     elapsedRef.current += delta;
     const elapsed = elapsedRef.current;
     // Sparks and their comet trails wait out the climb via per-spark delays.
     sparkMaterial.uniforms.uTime!.value = elapsed;
     sparkMaterial.uniforms.uPixelRatio!.value = pixelRatio;
+    sparkMaterial.uniforms.uStageScale!.value =
+      stagedPosition !== null ? FIREWORK_STAGE_SCALE : 1;
     trailMaterial.uniforms.uTime!.value = elapsed;
 
     // Flash and shockwave ignite the moment the rocket reaches the apex.
@@ -680,15 +714,19 @@ export function FireworksVisual({ controller, effect }: FireworksVisualProps) {
   });
 
   // The celebration figure is staged on the deep backdrop, not the new work.
-  const origin: readonly [number, number, number] = isArchiveShow
-    ? FIGURE_STAGE
-    : [effect.origin.x, effect.origin.y, effect.origin.z];
+  const origin: readonly [number, number, number] = stagedPosition
+    ?? (isArchiveShow
+      ? FIGURE_STAGE
+      : [effect.origin.x, effect.origin.y, effect.origin.z]);
+  const stageScale = stagedPosition !== null ? FIREWORK_STAGE_SCALE : 1;
   const flashScale = figureRadius * 0.8;
 
   return (
     <group
       name="particle-effect-fireworks"
       position={origin}
+      ref={groupRef}
+      scale={stageScale}
       userData={{
         effectId: effect.id,
         particleCount: effect.particleCount,

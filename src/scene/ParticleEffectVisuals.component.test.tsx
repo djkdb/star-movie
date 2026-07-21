@@ -144,9 +144,15 @@ describe('FireworksVisual', () => {
 
     const group = renderer.scene.findByProps({ name: 'particle-effect-fireworks' })
       .instance as Group;
-    // The figure is staged far behind the star field, never at the work.
-    expect([group.position.x, group.position.y, group.position.z])
-      .toEqual([0, 34, -130]);
+    // The figure is staged far along the gaze — deep in the background sky,
+    // never at the work — and blown up enormously there.
+    const distanceFromOrigin = Math.hypot(
+      group.position.x,
+      group.position.y,
+      group.position.z,
+    );
+    expect(distanceFromOrigin).toBeGreaterThan(500);
+    expect(group.scale.x).toBeGreaterThan(1);
 
     // The figure's slots span a vast, screen-filling region of the backdrop.
     const sparks = renderer.scene.findByProps({ name: 'firework-sparks' })
