@@ -2180,3 +2180,43 @@ progress::-moz-progress-bar {
   font-size: 0.78em;
   font-weight: 400;
 }
+
+/* ---- Poster hero and lightbox ---- */
+.work-card-poster-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  border-radius: 0.5rem;
+  line-height: 0;
+}
+
+.work-card-heading.has-poster .work-card-poster {
+  width: 8.4rem;
+  height: 12.4rem;
+}
+
+.poster-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(1, 3, 10, 0.82);
+  backdrop-filter: blur(6px);
+  cursor: zoom-out;
+}
+
+.poster-lightbox img {
+  max-width: min(86vw, 34rem);
+  max-height: 84vh;
+  border-radius: 0.75rem;
+  box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.7);
+}
+
+.poster-lightbox-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+}

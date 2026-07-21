@@ -16,7 +16,7 @@ const TMDB_API_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
 /** Poster render sizes offered by the TMDB image CDN, smallest first. */
-export type PosterSize = 'w92' | 'w154' | 'w200' | 'w342';
+export type PosterSize = 'w92' | 'w154' | 'w200' | 'w342' | 'w780';
 
 /** A normalized, UI-ready movie suggestion distilled from a TMDB search hit. */
 export interface MovieSuggestion {
