@@ -264,11 +264,34 @@ function cloudFbm(x: number, y: number, seed: number): number {
 }
 
 /**
+ * Ridged fbm: each octave is folded (1 - |2n - 1|) and squared so the noise
+ * grows sharp bright crests instead of soft rolling hills. Layered over the
+ * smooth density this carves the fine, thread-like filaments real emission
+ * nebulae show, giving the cloud interior structure at a second scale.
+ */
+function cloudRidged(x: number, y: number, seed: number): number {
+  let value = 0;
+  let amplitude = 0.5;
+  let frequency = 1;
+  for (let octave = 0; octave < 4; octave += 1) {
+    const n = valueNoise(x * frequency, y * frequency, seed + octave * 1013);
+    const ridge = 1 - Math.abs(2 * n - 1);
+    value += amplitude * ridge * ridge;
+    frequency *= 2.17;
+    amplitude *= 0.5;
+  }
+  return value;
+}
+
+/**
  * A wispy fractal cloud rather than a smooth disc: fbm density carved by a soft
  * elliptical vignette, with domain warping so the silhouette is torn and
- * irregular. Reads as a drifting galactic cloud instead of an obvious circle.
+ * irregular. Ridged filaments add fine thread structure at a second scale, and
+ * the interior is tinted with volume — dense cores glow warm and bright while
+ * thin outer wisps cool toward blue — so each billboard reads as a
+ * three-dimensional cloud lit from within rather than one flat drifting circle.
  */
-function createCloudTexture(seed: number, size = 128): DataTexture {
+function createCloudTexture(seed: number, size = 192): DataTexture {
   const data = new Uint8Array(size * size * 4);
   const scale = 3.2;
   for (let y = 0; y < size; y += 1) {
@@ -280,13 +303,19 @@ function createCloudTexture(seed: number, size = 128): DataTexture {
       const distance = Math.hypot(nx, ny) * 2 + warp * 0.55;
       const vignette = Math.max(0, 1 - distance);
       const density = cloudFbm(nx * scale + 1.3, ny * scale - 4.2, seed);
+      // Sharp threads woven through the soft density for two-scale structure.
+      const filament = cloudRidged(nx * scale * 1.7 + 9.0, ny * scale * 1.7 - 3.0, seed ^ 0x5bd1);
+      const structure = density * (0.68 + 0.5 * filament);
       // Multiply so the cloud only exists where both the vignette and the fbm
       // are strong; the power sharpens filaments into wisps.
-      const alpha = vignette ** 1.4 * density ** 1.8 * 3.6;
+      const alpha = vignette ** 1.4 * structure ** 1.7 * 3.6;
+      // Warmth peaks in the dense, well-lit core and falls off to cool edges,
+      // baking a temperature gradient into the cloud so its tint has depth.
+      const warm = Math.min(1, vignette ** 2.2 * density * 1.7);
       const index = (y * size + x) * 4;
       data[index] = 255;
-      data[index + 1] = 255;
-      data[index + 2] = 255;
+      data[index + 1] = Math.round(230 + warm * 25);
+      data[index + 2] = Math.round(255 - warm * 58);
       data[index + 3] = Math.round(Math.min(1, Math.max(0, alpha)) * 255);
     }
   }
