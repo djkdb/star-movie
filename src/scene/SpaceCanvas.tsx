@@ -1,6 +1,6 @@
 import { PerspectiveCamera, TrackballControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type RootState } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type RefObject } from 'react';
 import { useStore } from 'zustand';
 import {
   AdditiveBlending,
@@ -53,7 +53,12 @@ import { BlackholeRenderer } from './BlackholeRenderer';
 import { ConstellationRenderer } from './ConstellationRenderer';
 import { FpsDegradationMonitor } from './FpsDegradationController';
 import { MilestoneRewardRenderer, selectMilestoneRewardViewModels, type MilestoneRewardViewModel } from './MilestoneRewardRenderer';
-import { ORBIT_TOUCH_GESTURES } from './orbitControlsConfig';
+import {
+  ORBIT_TOUCH_GESTURES,
+  clampTargetLength,
+  getTrackballSpeeds,
+} from './orbitControlsConfig';
+import { useCoarsePointer } from './useCoarsePointer';
 import { ParticleManager } from './ParticleManager';
 import { PlanetCollectionRenderer } from './PlanetCollectionRenderer';
 import {
@@ -421,6 +426,26 @@ function MilkyWayField() {
   );
 }
 
+/**
+ * Keeps the camera's focus point inside the archive: panning past the bound
+ * eases the target back, so no gesture can wander out of the starry universe.
+ */
+function CameraTargetBounds({
+  controlsRef,
+}: {
+  controlsRef: RefObject<ComponentRef<typeof TrackballControls> | null>;
+}) {
+  useFrame(() => {
+    const controls = controlsRef.current;
+    if (controls === null) return;
+    const target = controls.target;
+    const length = Math.hypot(target.x, target.y, target.z);
+    const clamped = clampTargetLength(length);
+    if (clamped < length) target.multiplyScalar(clamped / length);
+  });
+  return null;
+}
+
 interface SpaceSceneProps {
   store: ArchiveStoreApi;
   viewModel: SpaceSceneViewModel;
@@ -453,6 +478,8 @@ function SpaceScene({
   onStarDragEnd,
 }: SpaceSceneProps) {
   const controlsRef = useRef<ComponentRef<typeof TrackballControls>>(null);
+  const coarsePointer = useCoarsePointer();
+  const speeds = getTrackballSpeeds(coarsePointer);
   const selectStar = useCallback((starId: string) => {
     const state = store.getState();
     if (state.runtime.constellationDraft.active) {
@@ -577,12 +604,13 @@ function SpaceScene({
       <TrackballControls
         dynamicDampingFactor={0.12}
         maxDistance={SPACE_CAMERA_MAX_DISTANCE}
-        panSpeed={0.8}
+        panSpeed={speeds.pan}
         ref={controlsRef}
-        rotateSpeed={2.4}
+        rotateSpeed={speeds.rotate}
         staticMoving={reducedMotion}
-        zoomSpeed={1.2}
+        zoomSpeed={speeds.zoom}
       />
+      <CameraTargetBounds controlsRef={controlsRef} />
       {/* Wheel dolly is intercepted and eased toward its target distance so
           zooming glides like a rubber band instead of stepping per tick.
           Touch pinch keeps OrbitControls' native dolly above. */}

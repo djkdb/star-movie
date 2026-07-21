@@ -1,6 +1,8 @@
 export const SPACE_BACKGROUND_COLOR = '#000104';
 export const SPACE_CAMERA_FOV = 60;
-export const SPACE_CAMERA_MAX_DISTANCE = 1_000;
+// Far enough to take in the whole archive at once, but still inside the
+// backdrop sky, so zooming out can never leave the starry universe.
+export const SPACE_CAMERA_MAX_DISTANCE = 320;
 export const TWINKLE_AMPLITUDE = 0.3;
 export const MIN_TWINKLE_PERIOD_SECONDS = 1;
 export const MAX_TWINKLE_PERIOD_SECONDS = 4;
