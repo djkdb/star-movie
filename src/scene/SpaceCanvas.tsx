@@ -52,7 +52,6 @@ import { usePrefersReducedMotion, getSceneFrameLoop } from './usePrefersReducedM
 import { BlackholeRenderer } from './BlackholeRenderer';
 import { ConstellationRenderer } from './ConstellationRenderer';
 import { FpsDegradationMonitor } from './FpsDegradationController';
-import { GalaxyRenderer } from './GalaxyRenderer';
 import { MilestoneRewardRenderer, selectMilestoneRewardViewModels, type MilestoneRewardViewModel } from './MilestoneRewardRenderer';
 import { ORBIT_TOUCH_GESTURES } from './orbitControlsConfig';
 import { ParticleManager } from './ParticleManager';
@@ -464,11 +463,6 @@ function SpaceScene({
         ))}
         <MilkyWayField />
         <NebulaField />
-        <GalaxyRenderer
-          galaxies={viewModel.galaxies}
-          reducedMotion={reducedMotion}
-          selectedGenres={selectedGenres}
-        />
         <MilestoneRewardRenderer rewards={viewModel.milestoneRewards} />
         <ConstellationRenderer
           constellations={viewModel.archiveContent.constellations}
