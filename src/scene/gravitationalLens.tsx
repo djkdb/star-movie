@@ -1,16 +1,17 @@
 import { wrapEffect } from '@react-three/postprocessing';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, type ForwardRefExoticComponent, type RefAttributes, type RefObject } from 'react';
-import { Effect } from 'postprocessing';
+import { Effect, EffectAttribute } from 'postprocessing';
 import { Uniform, Vector2, Vector3 } from 'three';
 
 /**
- * A screen-space gravitational lens. `mainUv` bends the sampling coordinates of
- * the rendered scene inward around the hole's screen position, so the real
- * stars behind it warp and bunch into a bright ring — the Interstellar look —
- * instead of the raymarched disk lensing only itself. The pull is annular:
- * zero inside the shadow, strongest just outside it, fading to nothing by the
- * lens rim, so it grabs the surrounding starfield without smearing the disk.
+ * A depth-aware, screen-space gravitational lens. The black hole hangs in the
+ * deep background, so only the stars *behind* it should bend around it — the
+ * interactive foreground work-stars, which sit in front, must never move (their
+ * click targets don't follow a screen-space warp). So the bend is gated two
+ * ways: an annular band that hugs the disk edge (leaving the raymarched disk
+ * alone) and a depth test that only warps pixels as far as, or farther than,
+ * the hole. Together they confine the effect to the real background stars.
  */
 const LENS_FRAGMENT = /* glsl */ `
   uniform vec2 uLensCenter;
@@ -18,36 +19,43 @@ const LENS_FRAGMENT = /* glsl */ `
   uniform float uLensStrength;
   uniform float uInnerT;
   uniform float uAspect;
+  uniform float uHoleViewZ;
 
-  void mainUv(inout vec2 uv) {
+  void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor) {
+    outputColor = inputColor;
     if (uLensRadius <= 0.0) return;
     vec2 d = uv - uLensCenter;
     d.x *= uAspect;
     float r = length(d);
     if (r >= uLensRadius) return;
-    float t = r / uLensRadius;               // 0 core .. 1 rim
-    // A tight Einstein ring hugging the disk edge: nothing across the disk
-    // (t < uInnerT), a bend that peaks just outside it and falls to zero well
-    // before the rim, so the surrounding starfield warps into a ring near the
-    // hole without reaching — and visually displacing — the interactive stars.
+    float t = r / uLensRadius;                 // 0 core .. 1 rim
+    // Annular band hugging the disk edge — never distorts the disk itself.
     float inner = smoothstep(uInnerT, uInnerT + 0.05, t);
-    float outer = 1.0 - smoothstep(uInnerT + 0.12, 1.0, t);
+    float outer = 1.0 - smoothstep(uInnerT + 0.14, 1.0, t);
     float bend = uLensStrength * inner * outer;
+    if (bend <= 0.0) return;
+    // Depth gate: only bend pixels at least ~80% as far as the hole. viewZ is
+    // negative (farther = more negative), so a nearer foreground star has a
+    // larger (less negative) viewZ and is skipped, at any zoom level.
+    float viewZ = getViewZ(depth);
+    if (viewZ > uHoleViewZ * 0.8) return;
     vec2 dir = d / max(r, 1e-4);
     dir.x /= uAspect;
-    uv -= dir * bend;                         // pull the background toward the hole
+    outputColor = texture(inputBuffer, uv - dir * bend);
   }
 `;
 
 class GravitationalLensEffect extends Effect {
   constructor() {
     super('GravitationalLensEffect', LENS_FRAGMENT, {
+      attributes: EffectAttribute.DEPTH,
       uniforms: new Map<string, Uniform>([
         ['uLensCenter', new Uniform(new Vector2(0.5, 0.5))],
         ['uLensRadius', new Uniform(0)],
         ['uLensStrength', new Uniform(0)],
         ['uInnerT', new Uniform(0.4)],
         ['uAspect', new Uniform(1)],
+        ['uHoleViewZ', new Uniform(-1)],
       ]),
     });
   }
@@ -67,15 +75,16 @@ interface DriverProps {
   worldRadius: number;
   /** World-space radius of the disk; no bending happens inside it. */
   diskRadius: number;
-  /** Peak UV deflection near the ring; small (~0.03) reads as a gentle lens. */
+  /** Peak UV deflection near the ring; small (~0.05) reads as a gentle lens. */
   strength: number;
   enabled: boolean;
 }
 
 /**
  * Projects the hole's world center to screen space each frame and feeds the
- * lens effect its center, apparent radius and aspect. Lives outside the
- * composer (it only needs the shared effect ref), so it can read the camera.
+ * lens effect its center, apparent radius, aspect and view-space depth. Lives
+ * outside the composer (it only needs the shared effect ref) so it can read the
+ * camera.
  */
 export function GravitationalLensDriver({
   lensRef,
@@ -88,7 +97,7 @@ export function GravitationalLensDriver({
   const camera = useThree((state) => state.camera);
   const size = useThree((state) => state.size);
   const scratch = useMemo(
-    () => ({ c: new Vector3(), e: new Vector3(), right: new Vector3() }),
+    () => ({ c: new Vector3(), e: new Vector3(), v: new Vector3(), right: new Vector3() }),
     [],
   );
 
@@ -117,9 +126,12 @@ export function GravitationalLensDriver({
     const outerRadius = Math.hypot((edge.x * 0.5 + 0.5 - cx) * aspect, edge.y * 0.5 + 0.5 - cy);
     const diskEdge = scratch.e.copy(center).addScaledVector(scratch.right, diskRadius).project(camera);
     const diskScreen = Math.hypot((diskEdge.x * 0.5 + 0.5 - cx) * aspect, diskEdge.y * 0.5 + 0.5 - cy);
+    // View-space depth of the hole (negative) for the foreground/background gate.
+    const holeViewZ = scratch.v.copy(center).applyMatrix4(camera.matrixWorldInverse).z;
     (effect.uniforms.get('uLensCenter') as Uniform).value.set(cx, cy);
     radiusUniform.value = outerRadius;
     (effect.uniforms.get('uInnerT') as Uniform).value = outerRadius <= 0 ? 0.5 : Math.min(0.9, diskScreen / outerRadius);
+    (effect.uniforms.get('uHoleViewZ') as Uniform).value = holeViewZ;
     (effect.uniforms.get('uLensStrength') as Uniform).value = strength;
   });
 
