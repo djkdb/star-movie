@@ -2,8 +2,16 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000104" />
+
+    <!-- Installable web app (PWA). The manifest + service worker are injected by
+         vite-plugin-pwa at build time; these tags cover iOS standalone mode. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Asteron" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <!-- Primary meta -->
     <title>Asteron — 내가 본 이야기들이 별이 되어 남는 곳</title>
