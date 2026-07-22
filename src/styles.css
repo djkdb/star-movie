@@ -163,11 +163,63 @@ body {
 }
 
 .form-field label,
-.form-field legend {
+.form-field legend,
+.form-field-label {
   color: var(--text-secondary);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+/* Star-glow rating picker: five native radios (visually hidden for keyboard
+   and form semantics) behind star glyphs that fill with the exact colour the
+   chosen star will glow in the sky. */
+.rating-picker {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.rating-star {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  cursor: pointer;
+}
+
+.rating-star-glyph {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: rgba(158, 196, 255, 0.22);
+  transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.12s ease;
+}
+
+.rating-star.is-filled .rating-star-glyph {
+  color: var(--rating-glow, var(--starlight));
+  text-shadow: 0 0 0.5rem color-mix(in srgb, var(--rating-glow, var(--starlight)) 60%, transparent);
+}
+
+.rating-star:active .rating-star-glyph {
+  transform: scale(0.9);
+}
+
+/* Keyboard focus lands on the hidden radio; ring the visible glyph instead. */
+.rating-star:focus-within {
+  border-radius: 0.5rem;
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.rating-picker[aria-invalid='true'] .rating-star-glyph {
+  color: rgba(251, 113, 133, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rating-star-glyph {
+    transition: none;
+  }
 }
 
 .form-field input,
@@ -599,6 +651,40 @@ body {
   font-size: 0.85rem;
 }
 
+.empty-state-rich {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1.4rem 1rem 1.1rem;
+  text-align: center;
+}
+
+.empty-state-art {
+  width: 5.4rem;
+  height: auto;
+  color: var(--accent);
+  opacity: 0.55;
+}
+
+.empty-state-title {
+  margin: 0;
+  color: var(--text-secondary);
+  font-family: var(--display-font);
+  font-size: 1rem;
+}
+
+.empty-state-hint {
+  margin: 0;
+  max-width: 22rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.empty-state-action {
+  margin-top: 0.35rem;
+}
+
 .panel-heading-row {
   display: flex;
   align-items: center;
@@ -821,6 +907,39 @@ body {
     var(--panel-bg);
   box-shadow: var(--shadow-panel);
   backdrop-filter: blur(26px) saturate(1.35);
+}
+
+/* Cursor spotlight: the glass catches a soft pool of starlight under the
+   pointer (Linear/Vercel "lit by your hand"). Coordinates are fed by a
+   delegated pointer listener; absent them it rests just off the top edge.
+   A low-alpha sheen on top of content — never enough to wash text. */
+.glass-panel::after,
+.work-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    26rem circle at var(--spot-x, 50%) var(--spot-y, -30%),
+    rgba(124, 214, 255, 0.09),
+    transparent 62%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.glass-panel:hover::after,
+.work-card:hover::after {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .glass-panel::after,
+  .work-card::after {
+    display: none;
+  }
 }
 
 /* The elegant serif "identity" voice for section and dialog titles. */
@@ -1184,7 +1303,35 @@ progress::-moz-progress-bar {
   background: var(--void);
 }
 
+/* A dignified static starfield stands in while the raymarched black hole and
+   GPGPU shaders compile — no black void, no assets, no external hosts. It
+   fades out the moment the scene renders its first real frame, then stops
+   compositing entirely. */
+.space-canvas-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(1.4px 1.4px at 22% 31%, rgba(226, 236, 255, 0.9), transparent 60%),
+    radial-gradient(1.2px 1.2px at 68% 18%, rgba(200, 220, 255, 0.75), transparent 60%),
+    radial-gradient(1.6px 1.6px at 82% 62%, rgba(255, 240, 220, 0.8), transparent 60%),
+    radial-gradient(1px 1px at 41% 72%, rgba(210, 226, 255, 0.7), transparent 60%),
+    radial-gradient(1.3px 1.3px at 12% 84%, rgba(226, 236, 255, 0.65), transparent 60%),
+    radial-gradient(1.1px 1.1px at 55% 47%, rgba(200, 220, 255, 0.6), transparent 60%),
+    radial-gradient(circle at 50% 45%, rgba(18, 26, 48, 0.55), #04070f 70%);
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+.space-canvas-shell[data-scene-ready='true']::before {
+  opacity: 0;
+}
+
 .space-canvas-shell canvas {
+  position: relative;
+  z-index: 2;
   display: block;
   touch-action: none !important;
 }

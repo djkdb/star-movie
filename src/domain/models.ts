@@ -228,6 +228,8 @@ export interface RuntimeStore {
   isListDrawerOpen: boolean;
   isAchievementPanelOpen: boolean;
   isPlanetCodexOpen: boolean;
+  /** A one-shot request for the shell to open a dock panel by id, then clear. */
+  requestedPanelId: string | null;
   qualityLevel: QualityLevel;
   pendingCameraRequest: CameraRequest | null;
   /** Camera pose captured just before a star focus, restored on deselection. */

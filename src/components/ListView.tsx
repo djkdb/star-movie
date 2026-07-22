@@ -6,6 +6,7 @@ import {
   selectListViewModel,
   type ListSortOption,
 } from '../store/selectors';
+import { EmptyState } from './EmptyState';
 import { GenreBadge, RatingDisplay } from './WorkMetadata';
 
 export interface ListViewProps {
@@ -87,7 +88,7 @@ export function ListView({ store }: ListViewProps) {
         <section aria-labelledby="active-work-heading">
           <h3 id="active-work-heading">활성 작품 ({viewModel.activeWorkCount})</h3>
           {viewModel.activeWorksEmptyMessage !== null ? (
-            <p className="empty-state" role="status">{viewModel.activeWorksEmptyMessage}</p>
+            <EmptyState role="status" title={viewModel.activeWorksEmptyMessage} variant="archive" />
           ) : (
             <ul className="work-list">
               {viewModel.activeWorks.map((work, index) => (
@@ -113,7 +114,7 @@ export function ListView({ store }: ListViewProps) {
         <section aria-labelledby="constellation-list-heading">
           <h3 id="constellation-list-heading">활성 별자리</h3>
           {viewModel.activeConstellations.length === 0 ? (
-            <p className="empty-state">활성 별자리가 없습니다</p>
+            <EmptyState title="활성 별자리가 없습니다" variant="constellation" />
           ) : (
             <ul className="constellation-list">
               {viewModel.activeConstellations.map((constellation, index) => (
@@ -141,7 +142,7 @@ export function ListView({ store }: ListViewProps) {
         <section aria-labelledby="archive-list-heading">
           <h3 id="archive-list-heading">블랙홀 보관함</h3>
           {viewModel.archiveEmptyMessage !== null ? (
-            <p className="empty-state" role="status">{viewModel.archiveEmptyMessage}</p>
+            <EmptyState role="status" title={viewModel.archiveEmptyMessage} variant="blackhole" />
           ) : (
             <ul className="compact-archive-list">
               {viewModel.archivedWorks.map((work, index) => (

@@ -17,6 +17,9 @@ export interface ShellPanelDefinition {
 export interface ArchiveShellProps {
   canvas: ReactNode;
   panels: readonly ShellPanelDefinition[];
+  /** A one-shot request to open a panel by id (e.g. an empty-state CTA). */
+  openRequestId?: string | null;
+  onOpenRequestHandled?: () => void;
 }
 
 /**
@@ -25,10 +28,25 @@ export interface ArchiveShellProps {
  * behind a minimal icon dock. Panels scale in next to the dock, close on
  * Escape or an outside click, and are CSS-hidden — never unmounted.
  */
-export function ArchiveShell({ canvas, panels }: ArchiveShellProps) {
+export function ArchiveShell({
+  canvas,
+  panels,
+  openRequestId,
+  onOpenRequestHandled,
+}: ArchiveShellProps) {
   const [openPanelId, setOpenPanelId] = useState<string | null>(null);
   const shellRef = useRef<HTMLElement>(null);
   const dockButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  // Honor a programmatic open request (e.g. an empty-state "add your first
+  // star" button), then let the store clear it so it fires only once.
+  useEffect(() => {
+    if (openRequestId === null || openRequestId === undefined) return;
+    if (panels.some((panel) => panel.id === openRequestId)) {
+      setOpenPanelId(openRequestId);
+    }
+    onOpenRequestHandled?.();
+  }, [openRequestId, onOpenRequestHandled, panels]);
 
   const closePanel = useCallback((options?: { restoreFocus?: boolean }) => {
     setOpenPanelId((current) => {

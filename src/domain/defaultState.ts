@@ -171,6 +171,7 @@ export function createDefaultRuntimeStore(hasPersistedRegistration = false): Run
     isListDrawerOpen: false,
     isAchievementPanelOpen: false,
     isPlanetCodexOpen: false,
+    requestedPanelId: null,
     qualityLevel: 'full',
     pendingCameraRequest: null,
     preFocusPose: null,
