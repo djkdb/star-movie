@@ -68,8 +68,7 @@ import {
   type SceneBenchmarkSource,
 } from './performanceBenchmark';
 import { SmoothWheelZoom } from './SmoothWheelZoom';
-import { BackgroundBlackhole, BACKGROUND_BLACKHOLE_CENTER } from './BackgroundBlackhole';
-import { GravitationalLensDriver, type GravitationalLensRef } from './gravitationalLens';
+import { BackgroundBlackhole } from './BackgroundBlackhole';
 import { SpiralGalaxyField } from './SpiralGalaxyField';
 import { sceneResourceRegistry } from './threeResourceRegistry';
 import {
@@ -602,7 +601,6 @@ function SpaceScene({
   const speeds = getTrackballSpeeds(coarsePointer);
   const pointerParallaxEnabled = !reducedMotion && !coarsePointer;
   const pointerOffsetRef = useRef({ x: 0, y: 0 });
-  const lensRef = useRef<GravitationalLensRef | null>(null);
   const selectStar = useCallback((starId: string) => {
     const state = store.getState();
     if (state.runtime.constellationDraft.active) {
@@ -706,17 +704,8 @@ function SpaceScene({
         />
         <SelectiveBloomPass
           enabled={bloom.enabled}
-          lensRef={lensRef}
           reducedMotion={reducedMotion}
           reducedQuality={quality.reducedBloom}
-        />
-        <GravitationalLensDriver
-          center={BACKGROUND_BLACKHOLE_CENTER}
-          diskRadius={300}
-          enabled={!quality.reducedBloom}
-          lensRef={lensRef}
-          strength={0.05}
-          worldRadius={520}
         />
         <PlanetCollectionRenderer
           planets={viewModel.planets}

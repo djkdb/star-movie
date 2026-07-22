@@ -14,7 +14,7 @@ import type { StarDragPayload } from './starVisualModel';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 
 /** A grand black hole hung deep in the background — now the sky's one archive. */
-export const BACKGROUND_BLACKHOLE_CENTER = new Vector3(-140, 230, -640);
+const BACKGROUND_BLACKHOLE_CENTER = new Vector3(-140, 230, -640);
 /** How large the hole is in world units (the raymarch physics scale). */
 const BACKGROUND_BLACKHOLE_SCALE = 26;
 /** Local half-size of the raymarch quad; generous so the full lensed ring and

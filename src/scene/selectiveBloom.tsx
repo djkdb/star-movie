@@ -5,11 +5,9 @@ import {
   Vignette,
 } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import type { RefObject } from 'react';
 
 import type { Constellation, Star } from '../domain/models';
 import { createConstellationLineViewModels } from './constellationRendererModel';
-import { GravitationalLens, type GravitationalLensRef } from './gravitationalLens';
 
 export const BLOOM_TARGET_USER_DATA_KEY = 'selectiveBloomTarget';
 
@@ -56,21 +54,15 @@ export function SelectiveBloomPass({
   enabled,
   reducedQuality = false,
   reducedMotion = false,
-  lensRef,
 }: {
   enabled: boolean;
   reducedQuality?: boolean;
   reducedMotion?: boolean;
-  /** When provided, a gravitational lens bends the starfield around the hole. */
-  lensRef?: RefObject<GravitationalLensRef | null>;
 }) {
   if (!enabled) return null;
 
   return (
     <EffectComposer multisampling={reducedQuality ? 0 : 4}>
-      {/* Lens first: it bends the sampled scene so Bloom then glows the warped
-          stars. Its center/radius are driven from the hole's screen position. */}
-      {lensRef !== undefined ? <GravitationalLens ref={lensRef} /> : <></>}
       <Bloom
         intensity={0.9}
         luminanceThreshold={0.35}
