@@ -410,6 +410,144 @@ body {
   color: #f5f3ff;
 }
 
+/* An unlock is a payoff, so it arrives celebrating: a badge, a light that
+   sweeps the border once, and a short spark burst. Additive over the base
+   unlock toast; the aria-live text is unchanged. */
+.toast.toast-unlock {
+  position: relative;
+  overflow: hidden;
+  padding-left: 2.6rem;
+}
+
+.toast-badge {
+  position: absolute;
+  top: 0.95rem;
+  left: 0.95rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #ede9fe;
+  text-shadow: 0 0 0.6rem rgba(167, 139, 250, 0.8);
+  animation: toast-badge-pop 0.5s var(--ease-out-soft) both;
+}
+
+@keyframes toast-badge-pop {
+  from { opacity: 0; transform: scale(0.4) rotate(-25deg); }
+}
+
+.toast.toast-unlock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    rgba(196, 181, 253, 0.85) 50%,
+    transparent 65%
+  );
+  background-size: 220% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: toast-border-sweep 1s ease 0.1s 1;
+  pointer-events: none;
+}
+
+@keyframes toast-border-sweep {
+  from { background-position: 200% 0; }
+  to { background-position: -120% 0; }
+}
+
+.toast-sparkles {
+  position: absolute;
+  top: 1.4rem;
+  left: 1.5rem;
+  width: 0;
+  height: 0;
+}
+
+.toast-spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: #ede9fe;
+  box-shadow: 0 0 4px rgba(196, 181, 253, 0.9);
+  opacity: 0;
+  animation: toast-spark-fly 0.7s ease-out var(--d, 0ms) 1;
+}
+
+@keyframes toast-spark-fly {
+  0% { opacity: 0; transform: translate(0, 0) scale(1); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-badge,
+  .toast.toast-unlock::before,
+  .toast-spark {
+    animation: none;
+  }
+  .toast-spark {
+    display: none;
+  }
+}
+
+/* Focus pull: when any overlay opens — a dock panel, the work card, a modal —
+   the universe racks back behind a soft vignette so the content isn't pasted
+   over a busy screensaver. Pure CSS via :has(); no scene or camera coupling.
+   The panels themselves sit above the veil and stay fully lit. */
+.scene-focus-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(2, 4, 10, 0.28),
+    rgba(2, 4, 10, 0.52) 100%
+  );
+  transition: opacity 0.35s var(--ease-out-soft);
+}
+
+.scene-focus-veil.is-active {
+  opacity: 1;
+}
+
+/* Observatory arrival: once the scene reports its first frame, the chrome
+   rises into place in sequence. Entrance-only and gated on data-app-ready, so
+   without the signal (tests, a scene error) the chrome is simply visible. */
+@keyframes chrome-rise {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+.app-shell[data-app-ready='true'] .sky-brand {
+  animation: chrome-rise 0.6s var(--ease-out-soft) both;
+  animation-delay: 0.05s;
+}
+
+.app-shell[data-app-ready='true'] .shell-dock {
+  animation: chrome-rise 0.6s var(--ease-out-soft) both;
+  animation-delay: 0.18s;
+}
+
+.app-shell[data-app-ready='true'] .sky-utilities {
+  animation: chrome-rise 0.6s var(--ease-out-soft) both;
+  animation-delay: 0.3s;
+}
+
+.app-shell[data-app-ready='true'] .gesture-guide {
+  animation: chrome-rise 0.6s var(--ease-out-soft) both;
+  animation-delay: 0.42s;
+}
+
 /* ============================================================
    Shared surface motion
    Every overlay surface arrives the same way: a soft rise out of

@@ -733,6 +733,7 @@ export interface SpaceCanvasProps {
   sceneContentMounted?: boolean;
   onBenchmarkSource?: (source: SceneBenchmarkSource) => void;
   onFpsWindowMeasured?: (measurement: FpsWindowMeasurement) => void;
+  onSceneReady?: () => void;
   onStarDragStart?: (payload: StarDragPayload) => void;
   onStarDragEnd?: (payload: StarDragPayload) => void;
 }
@@ -748,6 +749,7 @@ export function SpaceCanvas({
   sceneContentMounted = true,
   onBenchmarkSource,
   onFpsWindowMeasured,
+  onSceneReady,
   onStarDragStart,
   onStarDragEnd,
 }: SpaceCanvasProps) {
@@ -878,7 +880,12 @@ export function SpaceCanvas({
           >
             {sceneContentMounted ? (
               <>
-                <FirstFrameSignal onReady={() => setSceneReady(true)} />
+                <FirstFrameSignal
+                  onReady={() => {
+                    setSceneReady(true);
+                    onSceneReady?.();
+                  }}
+                />
                 <FpsDegradationMonitor
                   onWindowMeasured={onFpsWindowMeasured}
                   store={store}
