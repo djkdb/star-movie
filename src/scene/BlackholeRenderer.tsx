@@ -237,6 +237,8 @@ interface ArchivedEmberRingProps {
   archivedWorks: readonly ArchivedStar[];
   reducedMotion: boolean;
   onOpenArchive(): void;
+  /** Multiplies orbit radius and ember size — the grand hole needs a wider ring. */
+  scale?: number;
 }
 
 /**
@@ -244,10 +246,11 @@ interface ArchivedEmberRingProps {
  * accretion disk — the black hole holds your discarded works rather than
  * deleting them. Hovering names the work; clicking opens the archive.
  */
-function ArchivedEmberRing({
+export function ArchivedEmberRing({
   archivedWorks,
   reducedMotion,
   onOpenArchive,
+  scale = 1,
 }: ArchivedEmberRingProps) {
   const ringRef = useRef<Group>(null);
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
@@ -270,8 +273,8 @@ function ArchivedEmberRing({
       const angle = ember.orbit.phaseRadians
         + (reducedMotion ? 0 : elapsedVisibleSeconds.current * ember.orbit.angularSpeedRadiansPerSecond);
       child.position.set(
-        Math.cos(angle) * ember.orbit.radius,
-        Math.sin(angle) * ember.orbit.radius * 0.36,
+        Math.cos(angle) * ember.orbit.radius * scale,
+        Math.sin(angle) * ember.orbit.radius * 0.36 * scale,
         0.2,
       );
     });
@@ -285,7 +288,7 @@ function ArchivedEmberRing({
         <sprite
           key={ember.work.id}
           name="blackhole-ember"
-          scale={[ember.orbit.size, ember.orbit.size, 1]}
+          scale={[ember.orbit.size * scale, ember.orbit.size * scale, 1]}
           onClick={(event) => {
             event.stopPropagation();
             onOpenArchive();
@@ -315,7 +318,7 @@ function ArchivedEmberRing({
       {hovered !== undefined && (
         <Html
           center
-          position={[0, EMBER_ORBIT_MAX_RADIUS * 0.55 + 1.6, 0.4]}
+          position={[0, (EMBER_ORBIT_MAX_RADIUS * 0.55 + 1.6) * scale, 0.4]}
           style={{ pointerEvents: 'none' }}
           wrapperClass="star-title-label-anchor"
         >

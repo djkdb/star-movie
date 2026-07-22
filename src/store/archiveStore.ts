@@ -880,10 +880,15 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
       return { ok: true, value: request, completionEvents: [] };
     },
     requestCameraHome: (pose) => {
+      // Going home is authoritative: also drop any captured pre-focus pose and
+      // selection so the deselection-triggered "return" can't fire right after
+      // and yank the camera back to where it was (the home button bounce).
       store.setState((current) => ({
         runtime: {
           ...current.runtime,
           pendingCameraRequest: { type: 'free', pose },
+          preFocusPose: null,
+          selectedStarId: null,
         },
       }));
     },

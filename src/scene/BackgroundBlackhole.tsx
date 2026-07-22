@@ -1,16 +1,20 @@
+import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { DoubleSide, Vector3, type Group, type ShaderMaterial } from 'three';
 
-import type { QualityLevel } from '../domain/models';
+import type { ArchivedStar, QualityLevel } from '../domain/models';
 import {
+  ArchivedEmberRing,
   BLACKHOLE_RAYMARCH_FRAGMENT_SHADER,
   BLACKHOLE_VERTEX_SHADER,
 } from './BlackholeRenderer';
+import { isValidBlackholeDragPayload } from './blackholeModel';
+import type { StarDragPayload } from './starVisualModel';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 
-/** A grand, non-interactive black hole hung deep in the background sky. */
-const BACKGROUND_BLACKHOLE_CENTER = new Vector3(-140, 230, -640);
+/** A grand black hole hung deep in the background — now the sky's one archive. */
+export const BACKGROUND_BLACKHOLE_CENTER = new Vector3(-140, 230, -640);
 /** How large the hole is in world units (the raymarch physics scale). */
 const BACKGROUND_BLACKHOLE_SCALE = 26;
 /** Local half-size of the raymarch quad; generous so the full lensed ring and
@@ -18,8 +22,12 @@ const BACKGROUND_BLACKHOLE_SCALE = 26;
 const BACKGROUND_BLACKHOLE_HALF = 20;
 /** Tilt the disk toward a fuller 3/4 presentation instead of a thin edge. */
 const BACKGROUND_BLACKHOLE_DISK_TILT = 0.13;
+/** The archived-ember ring orbits well outside this hole's larger disk. */
+const BACKGROUND_EMBER_SCALE = 1.85;
+/** A pointer-up counts as a drop only near the hole's core, not the quad edge. */
+const BACKGROUND_DROP_UV_RADIUS = 0.42;
 
-/** A distant backdrop needs far fewer march steps than the near hero hole. */
+/** A distant backdrop needs far fewer march steps than a near hero hole. */
 const BACKGROUND_STEPS_BY_QUALITY: Readonly<Record<QualityLevel, number>> = {
   full: 100,
   reducedBackground: 68,
@@ -30,22 +38,31 @@ const BACKGROUND_STEPS_BY_QUALITY: Readonly<Record<QualityLevel, number>> = {
 export interface BackgroundBlackholeProps {
   reducedMotion?: boolean;
   qualityLevel?: QualityLevel;
+  activeDragPayload?: StarDragPayload | null;
+  archivedWorks?: readonly ArchivedStar[];
+  onDropStar(payload: StarDragPayload): void;
+  onOpenArchive(): void;
 }
 
 /**
- * The same raymarched Gargantua as the archive hole, but staged as a vast,
- * silent centerpiece far in the deep background — no interaction, a slow
- * majestic drift, and a low step budget since it is only a backdrop. It faces
- * the camera so its lensed disk always reads front-on as the sky's grand
- * anchor, and stays transparent everywhere else so it composites into the
- * star field.
+ * The one Gargantua in the sky: a vast raymarched centerpiece far in the deep
+ * background that now also holds the archive. Drag a star onto it to send the
+ * work into the black hole; every discarded work orbits as a dim ember; a click
+ * opens the archive. It faces the camera so its lensed disk always reads
+ * front-on as the sky's grand anchor, and it brightens as a star approaches.
  */
 export function BackgroundBlackhole({
   reducedMotion = false,
   qualityLevel = 'full',
+  activeDragPayload = null,
+  archivedWorks = [],
+  onDropStar,
+  onOpenArchive,
 }: BackgroundBlackholeProps) {
   const billboardRef = useRef<Group>(null);
   const materialRef = useRef<ShaderMaterial>(null);
+  const arousalRef = useRef(0);
+  const didDropRef = useRef(false);
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
 
   const uniforms = useMemo(
@@ -70,13 +87,21 @@ export function BackgroundBlackhole({
   );
 
   const steps = BACKGROUND_STEPS_BY_QUALITY[qualityLevel];
+  const dragActive = isValidBlackholeDragPayload(activeDragPayload);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const billboard = billboardRef.current;
     if (billboard !== null) billboard.quaternion.copy(state.camera.quaternion);
     const material = materialRef.current;
     if (material === null) return;
+
+    // Wake up — brighten — while a star is being brought over.
+    const target = dragActive ? 1 : 0;
+    arousalRef.current += (target - arousalRef.current) * Math.min(1, delta * 3.5);
+    const breathe = reducedMotion ? 0 : 0.04 * Math.sin(elapsedVisibleSeconds.current * 1.3);
+
     material.uniforms.uTime!.value = reducedMotion ? 0 : elapsedVisibleSeconds.current;
+    material.uniforms.uArousal!.value = arousalRef.current + breathe;
     material.uniforms.uSteps!.value = steps;
     (material.uniforms.uCameraPos!.value as Vector3).copy(state.camera.position);
 
@@ -90,7 +115,6 @@ export function BackgroundBlackhole({
     right.normalize();
     up.crossVectors(view, right).normalize();
     const tilt = BACKGROUND_BLACKHOLE_DISK_TILT;
-    // In-plane forward: the view direction pitched up toward the camera side.
     const diskZ = material.uniforms.uDiskZ!.value as Vector3;
     diskZ.copy(view).multiplyScalar(Math.cos(tilt)).addScaledVector(up, Math.sin(tilt)).normalize();
     const diskX = material.uniforms.uDiskX!.value as Vector3;
@@ -98,6 +122,24 @@ export function BackgroundBlackhole({
     const diskN = material.uniforms.uDiskN!.value as Vector3;
     diskN.crossVectors(diskX, diskZ).normalize();
   });
+
+  const handleDrop = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    if (!isValidBlackholeDragPayload(activeDragPayload)) return;
+    const uv = event.uv;
+    if (uv !== undefined && Math.hypot(uv.x - 0.5, uv.y - 0.5) <= BACKGROUND_DROP_UV_RADIUS) {
+      didDropRef.current = true;
+      onDropStar(activeDragPayload);
+    }
+  };
+  const handleOpenArchive = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
+    if (didDropRef.current) {
+      didDropRef.current = false;
+      return;
+    }
+    onOpenArchive();
+  };
 
   return (
     <group
@@ -109,8 +151,13 @@ export function BackgroundBlackhole({
       ]}
       ref={billboardRef}
       scale={BACKGROUND_BLACKHOLE_SCALE}
+      userData={{ archiveObjectType: 'blackhole' }}
     >
-      <mesh name="background-blackhole-disk">
+      <mesh
+        name="background-blackhole-disk"
+        onClick={handleOpenArchive}
+        onPointerUp={handleDrop}
+      >
         <planeGeometry args={[BACKGROUND_BLACKHOLE_HALF * 2, BACKGROUND_BLACKHOLE_HALF * 2]} />
         <shaderMaterial
           depthWrite={false}
@@ -123,6 +170,12 @@ export function BackgroundBlackhole({
           vertexShader={BLACKHOLE_VERTEX_SHADER}
         />
       </mesh>
+      <ArchivedEmberRing
+        archivedWorks={archivedWorks}
+        onOpenArchive={onOpenArchive}
+        reducedMotion={reducedMotion}
+        scale={BACKGROUND_EMBER_SCALE}
+      />
     </group>
   );
 }
