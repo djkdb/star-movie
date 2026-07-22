@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 
 import { AchievementPanel } from './components/AchievementPanel';
 import { CursorSpotlight } from './components/CursorSpotlight';
+import { SceneFocusVeil } from './components/SceneFocusVeil';
 import { AddWorkForm } from './components/AddWorkForm';
 import { ArchiveDomNavigation } from './components/ArchiveDomNavigation';
 import { ArchiveShell, type ShellPanelDefinition } from './components/ArchiveShell';
@@ -120,6 +121,21 @@ export interface AppProps {
 export function App({ store }: AppProps) {
   const archiveStore = store ?? getBrowserStore();
   const requestedPanelId = useStore(archiveStore, (state) => state.runtime.requestedPanelId);
+  const [appReady, setAppReady] = useState(false);
+
+  // The 3D scene reporting its first real frame is the cue to retire the boot
+  // overlay (declared in index.html so it paints before any bundle) and let the
+  // chrome — brand, dock, utilities, guide — stagger into place.
+  const handleSceneReady = useCallback(() => {
+    setAppReady(true);
+    const loader = typeof document === 'undefined' ? null : document.getElementById('boot-loader');
+    if (loader === null) return;
+    loader.classList.add('is-done');
+    const remove = () => loader.remove();
+    loader.addEventListener('transitionend', remove, { once: true });
+    // Fallback in case the transition never fires (reduced motion / hidden tab).
+    window.setTimeout(remove, 900);
+  }, []);
 
   // One gentle note per day: works watched exactly a month ago resurface as a
   // soft memory toast instead of a demanding streak.
@@ -244,7 +260,7 @@ export function App({ store }: AppProps) {
   ];
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" data-app-ready={appReady ? 'true' : 'false'}>
       <header className="sky-brand">
         <p className="eyebrow">ASTERON</p>
         {/* Kept for the document outline and tests, but no longer painted on
@@ -256,6 +272,7 @@ export function App({ store }: AppProps) {
           <SpaceCanvas
             onBenchmarkSource={benchmarkEnabled ? setBenchmarkSource : undefined}
             onFpsWindowMeasured={benchmarkEnabled ? recordFpsWindow : undefined}
+            onSceneReady={handleSceneReady}
             sceneContentMounted={sceneContentMounted}
             store={archiveStore}
           />
@@ -264,6 +281,7 @@ export function App({ store }: AppProps) {
         openRequestId={requestedPanelId}
         panels={panels}
       />
+      <SceneFocusVeil />
       <CursorSpotlight />
       <WorkCard store={archiveStore} />
       <GestureGuide store={archiveStore} />

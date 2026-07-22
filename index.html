@@ -52,6 +52,64 @@
     />
   </head>
   <body style="margin: 0; background-color: #04070f">
+    <!-- Boot overlay: shown before the JS bundle (and its CSS) even loads, so
+         the very first paint is the wordmark on a starfield, never a flash. It
+         is faded and removed once the 3D scene renders its first real frame. -->
+    <style>
+      #boot-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.1rem;
+        background:
+          radial-gradient(1.4px 1.4px at 22% 31%, rgba(226, 236, 255, 0.9), transparent 60%),
+          radial-gradient(1.2px 1.2px at 68% 18%, rgba(200, 220, 255, 0.7), transparent 60%),
+          radial-gradient(1.6px 1.6px at 82% 62%, rgba(255, 240, 220, 0.8), transparent 60%),
+          radial-gradient(1px 1px at 41% 72%, rgba(210, 226, 255, 0.65), transparent 60%),
+          radial-gradient(circle at 50% 45%, rgba(18, 26, 48, 0.55), #04070f 70%);
+        transition: opacity 0.6s ease;
+        pointer-events: none;
+        font-family: 'Nanum Myeongjo', serif;
+      }
+      #boot-loader.is-done {
+        opacity: 0;
+      }
+      #boot-loader .boot-wordmark {
+        color: rgba(244, 247, 255, 0.95);
+        font-size: clamp(1.4rem, 4vw, 2.1rem);
+        font-weight: 700;
+        letter-spacing: 0.42em;
+        text-indent: 0.42em;
+        text-shadow: 0 0 1.8rem rgba(124, 214, 255, 0.35);
+        animation: boot-wordmark-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      #boot-loader .boot-rule {
+        width: min(11rem, 42vw);
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(124, 214, 255, 0.7), transparent);
+        background-size: 200% 100%;
+        animation: boot-rule-shimmer 1.3s ease-in-out infinite;
+      }
+      @keyframes boot-wordmark-in {
+        from { opacity: 0; letter-spacing: 0.62em; text-indent: 0.62em; }
+      }
+      @keyframes boot-rule-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-loader .boot-wordmark,
+        #boot-loader .boot-rule { animation: none; }
+      }
+    </style>
+    <div id="boot-loader" aria-hidden="true">
+      <div class="boot-wordmark">ASTERON</div>
+      <div class="boot-rule"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
