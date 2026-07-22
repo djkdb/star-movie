@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react';
 import { useStore } from 'zustand';
 
-import { EMOTION_TAGS, GENRES } from '../domain/models';
+import { EMOTION_TAGS, GENRES, type Rating } from '../domain/models';
+import { RATING_GLOW_COLORS } from '../domain/ratingGlow';
 import {
   validateWorkInput,
   type WorkInput,
@@ -118,6 +119,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [sheenActive, setSheenActive] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
   const directorFetchToken = useRef(0);
   const { suggestions, loading, enabled: autocompleteEnabled } =
     useMovieSuggestions(suggestOpen ? draft.title : '');
@@ -411,19 +413,39 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
         </div>
 
         <div className="form-field">
-          <label htmlFor="work-rating">별점</label>
-          <select
-            {...errorProps('rating')}
-            id="work-rating"
-            ref={(node) => { fieldRefs.current.rating = node; }}
-            value={draft.rating}
-            onChange={(event) => updateDraft('rating', event.target.value)}
+          <span className="form-field-label" id="work-rating-label">별점</span>
+          <div
+            aria-describedby={errors.rating === undefined ? undefined : 'rating-error'}
+            aria-invalid={errors.rating === undefined ? undefined : true}
+            aria-labelledby="work-rating-label"
+            className="rating-picker"
+            role="radiogroup"
           >
-            <option value="">별점 선택</option>
-            {[1, 2, 3, 4, 5].map((rating) => (
-              <option key={rating} value={rating}>{rating}점</option>
-            ))}
-          </select>
+            {[1, 2, 3, 4, 5].map((rating) => {
+              const filled = rating <= (hoverRating || Number(draft.rating || 0));
+              return (
+                <label
+                  className={`rating-star${filled ? ' is-filled' : ''}`}
+                  key={rating}
+                  onMouseEnter={() => setHoverRating(rating)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  style={{ '--rating-glow': RATING_GLOW_COLORS[rating as Rating] } as CSSProperties}
+                >
+                  <input
+                    checked={draft.rating === String(rating)}
+                    className="visually-hidden"
+                    name="rating"
+                    onChange={() => updateDraft('rating', String(rating))}
+                    ref={rating === 1 ? (node) => { fieldRefs.current.rating = node; } : undefined}
+                    type="radio"
+                    value={rating}
+                  />
+                  <span aria-hidden="true" className="rating-star-glyph">★</span>
+                  <span className="visually-hidden">{rating}점</span>
+                </label>
+              );
+            })}
+          </div>
           {errors.rating !== undefined && <p id="rating-error" className="field-error">{errors.rating}</p>}
         </div>
 

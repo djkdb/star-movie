@@ -47,9 +47,16 @@ export function GestureGuide({ store }: { store: ArchiveStoreApi }) {
           : '드래그로 회전 · 휠로 확대 · 별을 클릭해 이야기 보기'}
       </p>
       {(!hasRegistration || starCount === 0) && (
-        <p className="gesture-guide-cta">
-          오른쪽 독의 <strong>+</strong> 버튼에서 첫 별을 띄워 보세요.
-        </p>
+        <>
+          <p className="gesture-guide-cta">첫 작품을 기록하면 하늘에 별 하나가 떠올라요.</p>
+          <button
+            className="primary-action gesture-guide-primary"
+            onClick={() => store.getState().commands.requestPanelOpen('add')}
+            type="button"
+          >
+            첫 작품 기록하기
+          </button>
+        </>
       )}
       <button className="secondary-action" onClick={dismiss} type="button">
         알겠어요

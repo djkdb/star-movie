@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 
 import { GENRES } from '../domain/models';
 import type { ArchiveStoreApi } from '../store/archiveStore';
+import { EmptyState } from './EmptyState';
 import { GenreBadge } from './WorkMetadata';
 
 export interface WatchlistPanelProps {
@@ -78,7 +79,11 @@ export function WatchlistPanel({ store }: WatchlistPanelProps) {
 
       <h3 className="watchlist-count">담아 둔 작품 ({entries.length})</h3>
       {entries.length === 0 ? (
-        <p className="empty-state">아직 담아 둔 작품이 없어요.</p>
+        <EmptyState
+          hint="보고 싶은 작품을 담아 두면 흐릿한 성운으로 밤하늘에 떠올라요."
+          title="아직 담아 둔 작품이 없어요."
+          variant="watchlist"
+        />
       ) : (
         <ul className="watchlist-list">
           {entries.map((entry, index) => (

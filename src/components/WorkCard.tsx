@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { useStore } from 'zustand';
 
-import type { Rating } from '../domain/models';
+import { RATING_GLOW_COLORS } from '../domain/ratingGlow';
 import { posterUrl } from '../services/tmdbClient';
 import { exportStarCard } from '../share/starCardExporter';
 import type { ArchiveStoreApi } from '../store/archiveStore';
@@ -18,14 +18,6 @@ import {
 } from './cardViewportLayout';
 import { useModalFocusTrap } from './useModalFocusTrap';
 import { GenreBadge, RatingDisplay } from './WorkMetadata';
-
-const RATING_GLOW_COLORS: Record<Rating, string> = {
-  1: '#6a7290',
-  2: '#9aa8d0',
-  3: '#cfe0ff',
-  4: '#ffe9b8',
-  5: '#fff8e0',
-};
 
 type DeleteMode = 'hard' | 'soft';
 

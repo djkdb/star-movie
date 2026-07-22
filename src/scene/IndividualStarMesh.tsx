@@ -1,8 +1,8 @@
 import { Html } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
-import { AdditiveBlending, type Group, type Mesh } from 'three';
+import { AdditiveBlending, type Group, type Mesh, type SpriteMaterial } from 'three';
 
 import type { Star } from '../domain/models';
 import { getStarInstancePhase } from './starRendererModel';
@@ -42,8 +42,11 @@ export function IndividualStarMesh({
   onDragEnd,
 }: IndividualStarMeshProps) {
   const groupRef = useRef<Group>(null);
+  const haloMaterialRef = useRef<SpriteMaterial>(null);
+  const hoverBlendRef = useRef(0);
   const trackMeshResources = useThreeResourceTracking<Mesh>();
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
+  const gl = useThree((state) => state.gl);
   const [hovered, setHovered] = useState(false);
   const visual = useMemo(
     () => getStarAppearance(star.id, star.rating, star.genre, star.rewatchCount ?? 0),
@@ -63,7 +66,7 @@ export function IndividualStarMesh({
     [star.id, star.position],
   );
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const group = groupRef.current;
     if (group === null) return;
     const transform = sampleStarRenderTransform(
@@ -79,6 +82,17 @@ export function IndividualStarMesh({
       transform.position.z,
     );
     group.rotation.y = transform.rotationY;
+
+    // Ease toward the hover state instead of snapping scale 1→1.5, and lift
+    // the halo so the star swells like a long exposure catching the light.
+    const target = hovered ? 1 : 0;
+    hoverBlendRef.current = reducedMotion
+      ? target
+      : hoverBlendRef.current + (target - hoverBlendRef.current) * (1 - Math.exp(-9 * delta));
+    const blend = hoverBlendRef.current;
+    group.scale.setScalar(STAR_IDLE_SCALE + (STAR_HOVER_SCALE - STAR_IDLE_SCALE) * blend);
+    const halo = haloMaterialRef.current;
+    if (halo !== null) halo.opacity = visual.haloOpacity * opacity * (1 + 0.6 * blend);
   });
 
   const stop = (event: ThreeEvent<PointerEvent>) => event.stopPropagation();
@@ -95,7 +109,7 @@ export function IndividualStarMesh({
     <group
       ref={groupRef}
       position={[star.position.x, star.position.y, star.position.z]}
-      scale={hovered ? STAR_HOVER_SCALE : STAR_IDLE_SCALE}
+      scale={STAR_IDLE_SCALE}
       // A filtered-out star (dimmed by the genre spotlight) is removed from the
       // sky entirely so only the chosen genre remains — spotlit stars stay lit.
       visible={opacity > 0.5}
@@ -134,10 +148,12 @@ export function IndividualStarMesh({
         onPointerOut={(event) => {
           stop(event);
           setHovered(false);
+          gl.domElement.style.cursor = '';
         }}
         onPointerOver={(event) => {
           stop(event);
           setHovered(true);
+          gl.domElement.style.cursor = 'pointer';
         }}
         onPointerUp={handlePointerUp}
         userData={{
@@ -175,6 +191,7 @@ export function IndividualStarMesh({
           depthWrite={false}
           map={getStarHaloTexture()}
           opacity={visual.haloOpacity * opacity}
+          ref={haloMaterialRef}
           transparent
           toneMapped={false}
         />

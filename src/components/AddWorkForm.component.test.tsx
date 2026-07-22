@@ -41,7 +41,7 @@ async function fillValidCustomWork() {
   const user = userEvent.setup();
   await user.type(screen.getByLabelText('제목'), '  Arrival  ');
   await user.selectOptions(screen.getByLabelText('장르'), 'SF');
-  await user.selectOptions(screen.getByLabelText('별점'), '4');
+  await user.click(screen.getByRole('radio', { name: '4점' }));
   await user.type(screen.getByLabelText('감상평'), '언어와 시간에 관한 영화');
   await user.type(screen.getByLabelText('감상일'), '2025-04-02');
   await user.type(screen.getByLabelText('직접 입력 감독'), '  Denis Villeneuve  ');
@@ -115,7 +115,7 @@ describe('AddWorkForm', () => {
     });
     expect(screen.getByLabelText('제목')).toHaveValue('');
     expect(screen.getByLabelText('장르')).toHaveValue('');
-    expect(screen.getByLabelText('별점')).toHaveValue('');
+    expect(screen.getByRole('radio', { name: '4점' })).not.toBeChecked();
     expect(screen.getByLabelText('감상평')).toHaveValue('');
     expect(screen.getByLabelText('감상일')).toHaveValue('');
     expect(screen.getByLabelText('직접 입력 감독')).toHaveValue('');
@@ -140,7 +140,7 @@ describe('AddWorkForm', () => {
     expect(store.getState().runtime.completionEvents).toEqual([]);
     expect(screen.getByLabelText('제목')).toHaveValue('  Arrival  ');
     expect(screen.getByLabelText('장르')).toHaveValue('SF');
-    expect(screen.getByLabelText('별점')).toHaveValue('4');
+    expect(screen.getByRole('radio', { name: '4점' })).toBeChecked();
     expect(screen.getByLabelText('감상평')).toHaveValue('언어와 시간에 관한 영화');
     expect(screen.getByLabelText('감상일')).toHaveValue('2025-04-02');
     expect(screen.getByLabelText('직접 입력 감독')).toHaveValue('  Denis Villeneuve  ');
