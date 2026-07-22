@@ -51,7 +51,6 @@ import { CameraRig } from './CameraRig';
 import { registerGalaxyCanvas } from './galaxyCapture';
 import { SceneErrorBoundary } from './SceneErrorBoundary';
 import { usePrefersReducedMotion, getSceneFrameLoop } from './usePrefersReducedMotion';
-import { BlackholeRenderer } from './BlackholeRenderer';
 import { ConstellationRenderer } from './ConstellationRenderer';
 import { FpsDegradationMonitor } from './FpsDegradationController';
 import { MilestoneRewardRenderer, selectMilestoneRewardViewModels, type MilestoneRewardViewModel } from './MilestoneRewardRenderer';
@@ -664,24 +663,27 @@ function SpaceScene({
         {backgroundLayers.map((definition) => (
           <BackgroundLayer definition={definition} key={definition.kind} />
         ))}
-        {showBackgroundBlackhole && (
-          <>
-            <BackgroundBlackhole
-              qualityLevel={qualityLevel}
-              reducedMotion={reducedMotion}
-            />
-            {BACKGROUND_GALAXIES.map((galaxy, index) => (
-              <SpiralGalaxyField
-                key={`bg-galaxy-${index}`}
-                origin={galaxy.origin}
-                reducedMotion={reducedMotion}
-                scale={galaxy.scale}
-                textureSize={BACKGROUND_GALAXY_TEXTURE_SIZE}
-                tilt={galaxy.tilt}
-              />
-            ))}
-          </>
-        )}
+        {/* The grand background hole is now the sky's one archive, so it hangs
+            at every quality tier (its step budget still drops with the tier).
+            The decorative galaxies remain gated to the top two tiers. */}
+        <BackgroundBlackhole
+          activeDragPayload={activeDragPayload}
+          archivedWorks={viewModel.archiveContent.archivedWorks}
+          onDropStar={onBlackholeDrop}
+          onOpenArchive={onBlackholeOpen}
+          qualityLevel={qualityLevel}
+          reducedMotion={reducedMotion}
+        />
+        {showBackgroundBlackhole && BACKGROUND_GALAXIES.map((galaxy, index) => (
+          <SpiralGalaxyField
+            key={`bg-galaxy-${index}`}
+            origin={galaxy.origin}
+            reducedMotion={reducedMotion}
+            scale={galaxy.scale}
+            textureSize={BACKGROUND_GALAXY_TEXTURE_SIZE}
+            tilt={galaxy.tilt}
+          />
+        ))}
         <MilkyWayField />
         <NebulaField />
         <MilestoneRewardRenderer rewards={viewModel.milestoneRewards} />
@@ -704,14 +706,6 @@ function SpaceScene({
           enabled={bloom.enabled}
           reducedMotion={reducedMotion}
           reducedQuality={quality.reducedBloom}
-        />
-        <BlackholeRenderer
-          activeDragPayload={activeDragPayload}
-          archivedWorks={viewModel.archiveContent.archivedWorks}
-          onDropStar={onBlackholeDrop}
-          onOpenArchive={onBlackholeOpen}
-          qualityLevel={qualityLevel}
-          reducedMotion={reducedMotion}
         />
         <PlanetCollectionRenderer
           planets={viewModel.planets}
