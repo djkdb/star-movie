@@ -1,7 +1,18 @@
-import { useRef } from 'react';
+import { useRef, type CSSProperties } from 'react';
 import { useStore } from 'zustand';
 
 import type { ArchiveStoreApi } from '../store/archiveStore';
+
+// A small, deterministic burst — an unlock earns a spark of celebration
+// without a confetti dependency. Eight radial motes, staggered.
+const UNLOCK_SPARKS = Array.from({ length: 8 }, (_, index) => {
+  const angle = (index / 8) * Math.PI * 2;
+  return {
+    dx: Math.round(Math.cos(angle) * 34),
+    dy: Math.round(Math.sin(angle) * 34),
+    delay: (index % 4) * 45,
+  };
+});
 
 export interface ToastRegionProps {
   store: ArchiveStoreApi;
@@ -126,6 +137,20 @@ function ToastItem({ event, onDismiss }: ToastItemProps) {
 
   return (
     <div className={VARIANT_CLASS[content.variant]} ref={surfaceRef}>
+      {content.variant === 'unlock' && (
+        <>
+          <span aria-hidden="true" className="toast-badge">✦</span>
+          <span aria-hidden="true" className="toast-sparkles">
+            {UNLOCK_SPARKS.map((spark, index) => (
+              <span
+                className="toast-spark"
+                key={index}
+                style={{ '--dx': `${spark.dx}px`, '--dy': `${spark.dy}px`, '--d': `${spark.delay}ms` } as CSSProperties}
+              />
+            ))}
+          </span>
+        </>
+      )}
       <div>
         <strong>{content.title}</strong>
         <p>{content.message}</p>
