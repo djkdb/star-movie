@@ -715,8 +715,8 @@ function SpaceScene({
           diskRadius={300}
           enabled={!quality.reducedBloom}
           lensRef={lensRef}
-          strength={0.022}
-          worldRadius={360}
+          strength={0.012}
+          worldRadius={340}
         />
         <PlanetCollectionRenderer
           planets={viewModel.planets}
