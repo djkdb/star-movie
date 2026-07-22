@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useStore } from 'zustand';
 
 import {
@@ -133,11 +133,14 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
       </section>
 
       <ul className="planet-dex-grid">
-        {viewModel.entries.map((entry) => (
+        {viewModel.entries.map((entry, index) => (
           <li
             key={entry.species.id}
-            className={`planet-dex-cell${entry.owned ? ' is-owned' : ' is-locked'}`}
-            style={entry.owned ? { borderColor: RARITY_COLORS[entry.species.rarity] } : undefined}
+            className={`stagger-in planet-dex-cell${entry.owned ? ' is-owned' : ' is-locked'}`}
+            style={{
+              ...(entry.owned ? { borderColor: RARITY_COLORS[entry.species.rarity] } : {}),
+              '--stagger-i': Math.min(index, 12),
+            } as CSSProperties}
           >
             {entry.owned ? (
               <>

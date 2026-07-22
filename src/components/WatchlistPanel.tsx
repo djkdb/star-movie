@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useStore } from 'zustand';
 
 import { GENRES } from '../domain/models';
@@ -81,8 +81,8 @@ export function WatchlistPanel({ store }: WatchlistPanelProps) {
         <p className="empty-state">아직 담아 둔 작품이 없어요.</p>
       ) : (
         <ul className="watchlist-list">
-          {entries.map((entry) => (
-            <li key={entry.id}>
+          {entries.map((entry, index) => (
+            <li className="stagger-in" key={entry.id} style={{ '--stagger-i': Math.min(index, 12) } as CSSProperties}>
               <span className="work-title">{entry.title}</span>
               <GenreBadge genre={entry.genre} />
               <div className="watchlist-entry-actions">

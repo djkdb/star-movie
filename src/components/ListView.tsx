@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useStore } from 'zustand';
 
 import type { ArchiveStoreApi } from '../store/archiveStore';
@@ -90,8 +90,8 @@ export function ListView({ store }: ListViewProps) {
             <p className="empty-state" role="status">{viewModel.activeWorksEmptyMessage}</p>
           ) : (
             <ul className="work-list">
-              {viewModel.activeWorks.map((work) => (
-                <li key={work.id}>
+              {viewModel.activeWorks.map((work, index) => (
+                <li className="stagger-in" key={work.id} style={{ '--stagger-i': Math.min(index, 12) } as CSSProperties}>
                   <button
                     type="button"
                     onClick={() => store.getState().commands.requestCameraFocus({
@@ -116,8 +116,8 @@ export function ListView({ store }: ListViewProps) {
             <p className="empty-state">활성 별자리가 없습니다</p>
           ) : (
             <ul className="constellation-list">
-              {viewModel.activeConstellations.map((constellation) => (
-                <li key={constellation.id}>
+              {viewModel.activeConstellations.map((constellation, index) => (
+                <li className="stagger-in" key={constellation.id} style={{ '--stagger-i': Math.min(index, 12) } as CSSProperties}>
                   <button
                     type="button"
                     onClick={() => store.getState().commands.requestCameraFocus({
@@ -144,8 +144,8 @@ export function ListView({ store }: ListViewProps) {
             <p className="empty-state" role="status">{viewModel.archiveEmptyMessage}</p>
           ) : (
             <ul className="compact-archive-list">
-              {viewModel.archivedWorks.map((work) => (
-                <li key={work.id}>
+              {viewModel.archivedWorks.map((work, index) => (
+                <li className="stagger-in" key={work.id} style={{ '--stagger-i': Math.min(index, 12) } as CSSProperties}>
                   <strong>{work.title}</strong>
                   <span>{work.director}</span>
                   <p>{work.review || '감상평 없음'}</p>

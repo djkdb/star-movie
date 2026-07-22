@@ -117,6 +117,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
   const [selectedMovie, setSelectedMovie] = useState<SelectedMovie | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [sheenActive, setSheenActive] = useState(false);
   const directorFetchToken = useRef(0);
   const { suggestions, loading, enabled: autocompleteEnabled } =
     useMovieSuggestions(suggestOpen ? draft.title : '');
@@ -281,7 +282,14 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
         '첫 별이 떠올랐습니다',
         '당신의 우주가 시작됐어요. 이야기가 쌓일수록 하늘이 넓어집니다.',
       );
+    } else {
+      // Every star birth deserves a nod, not just the first.
+      store.getState().commands.pushGentleToast(
+        '별이 하나 늘었어요',
+        `『${draft.title.trim()}』이(가) 하늘에 자리를 잡았습니다.`,
+      );
     }
+    setSheenActive(true);
     setDraft(EMPTY_DRAFT);
     setDirectorMode('custom');
     setErrors({});
@@ -513,7 +521,15 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
           {errors.director !== undefined && <p id="director-error" className="field-error">{errors.director}</p>}
         </fieldset>
 
-        <button className="primary-action form-field-wide" type="submit">별로 등록하기</button>
+        <button
+          className={`primary-action form-field-wide${sheenActive ? ' sheen-run' : ''}`}
+          onAnimationEnd={(event) => {
+            if (event.animationName === 'sheen-sweep') setSheenActive(false);
+          }}
+          type="submit"
+        >
+          별로 등록하기
+        </button>
       </form>
     </section>
   );

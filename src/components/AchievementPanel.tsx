@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type CSSProperties } from 'react';
 import { useStore } from 'zustand';
 
 import type { ArchiveStoreApi } from '../store/archiveStore';
@@ -51,8 +51,12 @@ export function AchievementPanel({ store }: AchievementPanelProps) {
           </button>
         </header>
         <ul className="achievement-list">
-          {viewModel.achievements.map((achievement) => (
-            <li key={achievement.id} className={achievement.unlocked ? 'is-unlocked' : 'is-locked'}>
+          {viewModel.achievements.map((achievement, index) => (
+            <li
+              className={`stagger-in ${achievement.unlocked ? 'is-unlocked' : 'is-locked'}`}
+              key={achievement.id}
+              style={{ '--stagger-i': Math.min(index, 12) } as CSSProperties}
+            >
               <div>
                 <strong>{achievement.name}</strong>
                 <span className="status-badge">{achievement.unlocked ? '해금' : '잠금'}</span>
