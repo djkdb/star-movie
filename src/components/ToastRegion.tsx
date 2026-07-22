@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useStore } from 'zustand';
 
 import type { ArchiveStoreApi } from '../store/archiveStore';
@@ -5,6 +6,14 @@ import type { ArchiveStoreApi } from '../store/archiveStore';
 export interface ToastRegionProps {
   store: ArchiveStoreApi;
 }
+
+type ToastVariant = 'neutral' | 'unlock' | 'danger';
+
+const VARIANT_CLASS: Record<ToastVariant, string> = {
+  neutral: 'toast',
+  unlock: 'toast toast-unlock',
+  danger: 'toast toast-danger',
+};
 
 function stringPayload(
   payload: Readonly<Record<string, unknown>>,
@@ -17,14 +26,14 @@ function stringPayload(
 function toastContent(event: Readonly<{ type: string; payload: Readonly<Record<string, unknown>> }>): {
   title: string;
   message: string;
-  isUnlock: boolean;
+  variant: ToastVariant;
 } {
   if (event.type === 'achievement-unlocked') {
     const name = stringPayload(event.payload, 'name') ?? '업적';
     return {
       title: `업적 해금: ${name}`,
       message: stringPayload(event.payload, 'description') ?? '새 업적을 달성했습니다.',
-      isUnlock: true,
+      variant: 'unlock',
     };
   }
 
@@ -35,7 +44,7 @@ function toastContent(event: Readonly<{ type: string; payload: Readonly<Record<s
     return {
       title: `${targetLabel} 마일스톤 해금`,
       message: `${rewardType} 보상이 우주에 나타났습니다.`,
-      isUnlock: true,
+      variant: 'unlock',
     };
   }
 
@@ -43,16 +52,77 @@ function toastContent(event: Readonly<{ type: string; payload: Readonly<Record<s
     return {
       title: stringPayload(event.payload, 'title') ?? '알림',
       message: stringPayload(event.payload, 'message') ?? '',
-      isUnlock: true,
+      variant: 'neutral',
     };
   }
 
+  if (event.type === 'user-save-failed' || event.type === 'command-failed') {
+    return {
+      title: event.type === 'user-save-failed' ? '저장 실패' : '작업 실패',
+      message: stringPayload(event.payload, 'message')
+        ?? '작업을 저장하지 못했습니다. 다시 시도해 주세요.',
+      variant: 'danger',
+    };
+  }
+
+  // Unknown event types render as calm notes — a future event flow must
+  // not silently ship dressed as a red failure toast.
   return {
-    title: event.type === 'user-save-failed' ? '저장 실패' : '작업 실패',
-    message: stringPayload(event.payload, 'message')
-      ?? '작업을 저장하지 못했습니다. 다시 시도해 주세요.',
-    isUnlock: false,
+    title: '알림',
+    message: stringPayload(event.payload, 'message') ?? '',
+    variant: 'neutral',
   };
+}
+
+interface ToastItemProps {
+  event: Readonly<{ id: string; type: string; payload: Readonly<Record<string, unknown>> }>;
+  onDismiss(eventId: string): void;
+}
+
+function ToastItem({ event, onDismiss }: ToastItemProps) {
+  const content = toastContent(event);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const leavingRef = useRef(false);
+
+  const dismiss = () => {
+    if (leavingRef.current) return;
+    const surface = surfaceRef.current;
+    const reducedMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Slide out before consuming; fall back to an instant dismiss when the
+    // Web Animations API is unavailable (jsdom) or motion is reduced.
+    if (surface === null || reducedMotion || typeof surface.animate !== 'function') {
+      onDismiss(event.id);
+      return;
+    }
+    leavingRef.current = true;
+    const exit = surface.animate(
+      [
+        { opacity: 1, translate: '0 0' },
+        { opacity: 0, translate: '0 -8px' },
+      ],
+      { duration: 160, easing: 'ease-in', fill: 'forwards' },
+    );
+    const finish = () => onDismiss(event.id);
+    exit.addEventListener('finish', finish);
+    exit.addEventListener('cancel', finish);
+  };
+
+  return (
+    <div className={VARIANT_CLASS[content.variant]} ref={surfaceRef}>
+      <div>
+        <strong>{content.title}</strong>
+        <p>{content.message}</p>
+      </div>
+      <button
+        type="button"
+        aria-label="알림 닫기"
+        onClick={dismiss}
+      >
+        닫기
+      </button>
+    </div>
+  );
 }
 
 export function ToastRegion({ store }: ToastRegionProps) {
@@ -60,24 +130,13 @@ export function ToastRegion({ store }: ToastRegionProps) {
 
   return (
     <section className="toast-region" aria-label="저장 알림" aria-live="polite" aria-relevant="additions">
-      {toastEvents.map((event) => {
-        const content = toastContent(event);
-        return (
-          <div className={content.isUnlock ? 'toast toast-unlock' : 'toast'} key={event.id}>
-            <div>
-              <strong>{content.title}</strong>
-              <p>{content.message}</p>
-            </div>
-            <button
-              type="button"
-              aria-label="알림 닫기"
-              onClick={() => store.getState().commands.consumeToastEvent(event.id)}
-            >
-              닫기
-            </button>
-          </div>
-        );
-      })}
+      {toastEvents.map((event) => (
+        <ToastItem
+          event={event}
+          key={event.id}
+          onDismiss={(eventId) => store.getState().commands.consumeToastEvent(eventId)}
+        />
+      ))}
     </section>
   );
 }

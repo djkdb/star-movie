@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { selectHudViewModel } from '../store/selectors';
+import { formatCount, useCountUp } from './useCountUp';
 
 export interface HUDProps {
   store: ArchiveStoreApi;
@@ -15,6 +16,7 @@ export function HUD({ store }: HUDProps) {
     () => selectHudViewModel({ persisted, runtime }),
     [persisted, runtime],
   );
+  const workCountRef = useCountUp<HTMLElement>(viewModel.activeWorkCount);
 
   return (
     <section className="hud glass-panel" aria-labelledby="hud-heading">
@@ -22,7 +24,7 @@ export function HUD({ store }: HUDProps) {
       <dl className="hud-statistics">
         <div>
           <dt>작품 수</dt>
-          <dd>{viewModel.activeWorkCount}</dd>
+          <dd ref={workCountRef}>{formatCount(viewModel.activeWorkCount)}</dd>
         </div>
         <div>
           <dt>평균 별점</dt>

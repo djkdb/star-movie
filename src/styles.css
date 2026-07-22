@@ -35,7 +35,6 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: 'tnum' 0;
 }
 
 * {
@@ -300,30 +299,47 @@ body {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(251, 113, 133, 0.55);
+  border: 1px solid var(--panel-border-strong);
   border-radius: 0.8rem;
-  color: #fff1f2;
+  color: var(--text-primary);
   background:
-    linear-gradient(168deg, rgba(251, 113, 133, 0.12), transparent 45%),
-    rgba(38, 8, 18, 0.92);
+    linear-gradient(168deg, rgba(158, 196, 255, 0.08), transparent 45%),
+    rgba(10, 15, 28, 0.92);
   box-shadow:
     0 0.8rem 2.4rem rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(18px);
+  animation: surface-in 0.3s var(--ease-out-soft);
 }
 
 .toast p {
   margin-top: 0.25rem;
-  color: #fecdd3;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
 .toast button {
   align-self: start;
   border: 0;
-  color: #fff1f2;
+  color: var(--text-primary);
   background: transparent;
   cursor: pointer;
+}
+
+.toast.toast-danger {
+  border-color: rgba(251, 113, 133, 0.55);
+  color: #fff1f2;
+  background:
+    linear-gradient(168deg, rgba(251, 113, 133, 0.12), transparent 45%),
+    rgba(38, 8, 18, 0.92);
+}
+
+.toast.toast-danger p {
+  color: #fecdd3;
+}
+
+.toast.toast-danger button {
+  color: #fff1f2;
 }
 
 .toast.toast-unlock {
@@ -340,6 +356,108 @@ body {
 
 .toast.toast-unlock button {
   color: #f5f3ff;
+}
+
+/* ============================================================
+   Shared surface motion
+   Every overlay surface arrives the same way: a soft rise out of
+   the dark, echoing how the dock panels already move. Exits are
+   handled per-surface (WAAPI) where they matter most.
+   ============================================================ */
+@keyframes surface-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    scale: 0.985;
+    filter: blur(4px);
+  }
+}
+
+/* Scale-free variant for surfaces whose layout is measured on mount
+   (the work card reads its own bounding box to position itself). */
+@keyframes surface-in-soft {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    filter: blur(4px);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes list-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.985;
+  }
+}
+
+.dialog-backdrop,
+.poster-lightbox {
+  animation: backdrop-in 0.22s ease;
+}
+
+.confirm-dialog,
+.achievement-panel {
+  animation: surface-in 0.3s var(--ease-out-soft);
+}
+
+.work-card,
+.gesture-guide {
+  animation: surface-in-soft 0.32s var(--ease-out-soft);
+}
+
+.poster-lightbox img {
+  animation: surface-in 0.3s var(--ease-out-soft);
+}
+
+/* Rows drift in one after another when their panel opens. Shell panels
+   stay mounted while closed, so the animation is scoped to the open
+   state — flipping data-open restarts it. Modal surfaces mount fresh
+   and just need the class. */
+.shell-panel[data-open='true'] .stagger-in,
+.achievement-panel .stagger-in {
+  animation: list-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+  animation-delay: calc(var(--stagger-i, 0) * 45ms);
+}
+
+/* Half the premium feel for one rule: every press physically lands.
+   translate/scale compose with existing transforms, so positioned
+   and transform-styled buttons are unaffected. */
+:where(button:not(:disabled)):active {
+  translate: 0 1px;
+  scale: 0.99;
+}
+
+/* One-shot sheen across the submit button after a star is born. */
+.primary-action.sheen-run {
+  overflow: hidden;
+}
+
+.primary-action.sheen-run::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(124, 214, 255, 0.32) 50%,
+    transparent 70%
+  );
+  animation: sheen-sweep 0.55s ease;
+  pointer-events: none;
+}
+
+@keyframes sheen-sweep {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 @media (max-width: 600px) {
@@ -1012,6 +1130,10 @@ progress::-moz-progress-bar {
   background: var(--field-bg);
 }
 
+.achievement-list li > span {
+  font-variant-numeric: tabular-nums;
+}
+
 .achievement-list li > div {
   display: flex;
   align-items: center;
@@ -1555,6 +1677,7 @@ progress::-moz-progress-bar {
   *,
   *::before,
   *::after {
+    animation-delay: 0s !important;
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
