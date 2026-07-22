@@ -78,6 +78,31 @@ describe('camera return commands', () => {
     }
   });
 
+  it('requestCameraHome issues a free request and drops any captured pose and selection', () => {
+    const store = createStore();
+    try {
+      // Simulate the state just after focusing a star: a selection plus a
+      // captured pre-focus pose that the deselection "return" would restore.
+      store.setState((state) => ({
+        runtime: { ...state.runtime, selectedStarId: 'focused-star' },
+      }));
+      store.getState().commands.capturePreFocusPose(POSE);
+
+      store.getState().commands.requestCameraHome(POSE);
+      const afterHome = store.getState().runtime;
+      expect(afterHome.pendingCameraRequest).toEqual({ type: 'free', pose: POSE });
+      // Cleared so the deselection-triggered return can't yank the camera back.
+      expect(afterHome.preFocusPose).toBeNull();
+      expect(afterHome.selectedStarId).toBeNull();
+
+      // A return fired right after home must now be a no-op, leaving home intact.
+      store.getState().commands.requestCameraReturn();
+      expect(store.getState().runtime.pendingCameraRequest).toEqual({ type: 'free', pose: POSE });
+    } finally {
+      store.dispose();
+    }
+  });
+
   it('R3.5 requestCameraFocus rejects a direct free request', () => {
     const store = createStore();
     try {

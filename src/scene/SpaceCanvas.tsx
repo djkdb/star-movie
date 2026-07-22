@@ -1,10 +1,11 @@
 import { PerspectiveCamera, TrackballControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type RootState } from '@react-three/fiber';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ComponentRef, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode, type RefObject } from 'react';
 import { useStore } from 'zustand';
 import {
   AdditiveBlending,
   BufferGeometry,
+  type Group,
   DataTexture,
   Float32BufferAttribute,
   LinearFilter,
@@ -231,18 +232,14 @@ function FirstFrameSignal({ onReady }: { onReady: () => void }) {
 }
 
 /**
- * A small idle-liveliness move borrowed from Spline: the backdrop drifts a
- * little toward the pointer and eases back when it leaves. The damped, shared
- * offset is summed into each layer's camera-derived parallax (never a second
- * writer that would clobber it). Disabled under reduced motion — where the
- * frameloop is 'demand' and pointer motion must not invalidate frames — and on
- * coarse pointers, where it would fight one-finger trackball rotation.
+ * A small idle-liveliness move borrowed from Spline: the whole sky drifts a
+ * little as the pointer moves and eases back when it leaves. The damped pointer
+ * offset is written to a shared ref that ParallaxGroup reads to nudge the scene.
+ * Disabled under reduced motion — where the frameloop is 'demand' and pointer
+ * motion must not invalidate frames — and on coarse pointers, where it would
+ * fight one-finger trackball rotation.
  */
-const POINTER_PARALLAX_SCALE = 0.12;
-const ZERO_POINTER_OFFSET: { x: number; y: number } = { x: 0, y: 0 };
-const PointerParallaxContext = createContext<{ current: { x: number; y: number } }>({
-  current: ZERO_POINTER_OFFSET,
-});
+const POINTER_PARALLAX_WORLD = 1.3;
 
 function PointerParallaxDriver({
   enabled,
@@ -289,11 +286,55 @@ function PointerParallaxDriver({
   return null;
 }
 
+/**
+ * Wraps the whole scene and shifts it in camera space by the damped pointer
+ * offset, so the black hole, stars, nebula and background all parallax together
+ * instead of only the far starfield drifting. Because everything shifts by the
+ * same world vector, near elements move more on screen than the distant
+ * backdrop — the natural look-around feel. Star positions and raycasting are
+ * unaffected: only the group's render transform moves.
+ */
+function ParallaxGroup({
+  enabled,
+  offsetRef,
+  children,
+}: {
+  enabled: boolean;
+  offsetRef: { current: { x: number; y: number } };
+  children: ReactNode;
+}) {
+  const groupRef = useRef<Group>(null);
+  const camera = useThree((state) => state.camera);
+  const right = useRef(new Vector3());
+  const up = useRef(new Vector3());
+  const forward = useRef(new Vector3());
+
+  useFrame(() => {
+    const group = groupRef.current;
+    if (group === null) return;
+    if (!enabled) {
+      if (group.position.lengthSq() !== 0) group.position.set(0, 0, 0);
+      return;
+    }
+    const offset = offsetRef.current;
+    camera.matrixWorld.extractBasis(right.current, up.current, forward.current);
+    const s = POINTER_PARALLAX_WORLD;
+    // Shift opposite the pointer, in the camera's own right/up plane, so the
+    // drift reads the same whichever way the sky has been rotated.
+    group.position.set(
+      (right.current.x * -offset.x + up.current.x * offset.y) * s,
+      (right.current.y * -offset.x + up.current.y * offset.y) * s,
+      (right.current.z * -offset.x + up.current.z * offset.y) * s,
+    );
+  });
+
+  return <group ref={groupRef}>{children}</group>;
+}
+
 function BackgroundLayer({ definition }: { definition: BackgroundLayerDefinition }) {
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
   const camera = useThree((state) => state.camera);
   const pixelRatio = useThree((state) => state.viewport.dpr);
-  const pointerOffset = useContext(PointerParallaxContext);
   const geometry = useMemo(() => createBackgroundGeometry(definition), [definition]);
   const material = useMemo(createBackgroundMaterial, []);
   const cameraDirection = useRef(new Vector3());
@@ -309,14 +350,9 @@ function BackgroundLayer({ definition }: { definition: BackgroundLayerDefinition
       cameraDirection.current,
       definition.parallaxFactor,
     );
-    const pointerX = pointerOffset.current.x * definition.parallaxFactor * POINTER_PARALLAX_SCALE;
-    const pointerY = pointerOffset.current.y * definition.parallaxFactor * POINTER_PARALLAX_SCALE;
     material.uniforms.uTime!.value = elapsedVisibleSeconds.current;
     material.uniforms.uPixelRatio!.value = pixelRatio;
-    (material.uniforms.uParallax!.value as Vector2).set(
-      offset[0] + pointerX,
-      offset[1] - pointerY,
-    );
+    (material.uniforms.uParallax!.value as Vector2).set(offset[0], offset[1]);
   });
 
   return (
@@ -623,8 +659,8 @@ function SpaceScene({
       />
       <ambientLight intensity={0.35} />
       <PointerParallaxDriver enabled={pointerParallaxEnabled} offsetRef={pointerOffsetRef} />
-      <PointerParallaxContext.Provider value={pointerOffsetRef}>
       <VisibilityClock paused={reducedMotion}>
+        <ParallaxGroup enabled={pointerParallaxEnabled} offsetRef={pointerOffsetRef}>
         {backgroundLayers.map((definition) => (
           <BackgroundLayer definition={definition} key={definition.kind} />
         ))}
@@ -689,8 +725,8 @@ function SpaceScene({
           minimumParticleCounts={quality.minimumParticleCounts}
           store={store}
         />
+        </ParallaxGroup>
       </VisibilityClock>
-      </PointerParallaxContext.Provider>
       {/* Trackball (arcball) instead of Orbit: the camera tumbles freely in
           every axis with no pole gimbal-lock, so the sky spins a full 360°
           in any direction. staticMoving under reduced motion drops inertia. */}
