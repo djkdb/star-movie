@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useStore } from 'zustand';
 
 import { AchievementPanel } from './components/AchievementPanel';
+import { CursorSpotlight } from './components/CursorSpotlight';
 import { AddWorkForm } from './components/AddWorkForm';
 import { ArchiveDomNavigation } from './components/ArchiveDomNavigation';
 import { ArchiveShell, type ShellPanelDefinition } from './components/ArchiveShell';
@@ -117,6 +119,7 @@ export interface AppProps {
 
 export function App({ store }: AppProps) {
   const archiveStore = store ?? getBrowserStore();
+  const requestedPanelId = useStore(archiveStore, (state) => state.runtime.requestedPanelId);
 
   // One gentle note per day: works watched exactly a month ago resurface as a
   // soft memory toast instead of a demanding streak.
@@ -257,8 +260,11 @@ export function App({ store }: AppProps) {
             store={archiveStore}
           />
         )}
+        onOpenRequestHandled={() => archiveStore.getState().commands.consumePanelRequest()}
+        openRequestId={requestedPanelId}
         panels={panels}
       />
+      <CursorSpotlight />
       <WorkCard store={archiveStore} />
       <GestureGuide store={archiveStore} />
       <SkyUtilities store={archiveStore} />

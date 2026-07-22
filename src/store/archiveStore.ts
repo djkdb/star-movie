@@ -141,6 +141,8 @@ export interface ArchiveCommands {
   toggleSelectedGenre(genre: Genre): void;
   setAchievementPanelOpen(isOpen: boolean): void;
   setPlanetCodexOpen(isOpen: boolean): void;
+  requestPanelOpen(panelId: string): void;
+  consumePanelRequest(): void;
   setListDrawerOpen(isOpen: boolean): void;
   toggleListDrawer(): void;
   degradeQuality(): QualityLevel;
@@ -798,6 +800,18 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
       store.setState((state) => ({
         runtime: { ...state.runtime, isAchievementPanelOpen: isOpen },
       }));
+    },
+    requestPanelOpen: (panelId) => {
+      store.setState((state) => ({
+        runtime: { ...state.runtime, requestedPanelId: panelId },
+      }));
+    },
+    consumePanelRequest: () => {
+      store.setState((state) => (
+        state.runtime.requestedPanelId === null
+          ? state
+          : { runtime: { ...state.runtime, requestedPanelId: null } }
+      ));
     },
     setPlanetCodexOpen: (isOpen) => {
       store.setState((state) => ({

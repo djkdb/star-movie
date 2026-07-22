@@ -1,6 +1,6 @@
 import { PerspectiveCamera, TrackballControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type RootState } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ComponentRef, type RefObject } from 'react';
 import { useStore } from 'zustand';
 import {
   AdditiveBlending,
@@ -215,10 +215,85 @@ function createBackgroundMaterial(): ShaderMaterial {
   });
 }
 
+/**
+ * Fires once when the scene renders its first real frame — the honest signal
+ * that the raymarched black hole and GPGPU shaders have compiled — so the CSS
+ * starfield placeholder can crossfade out instead of a black flash.
+ */
+function FirstFrameSignal({ onReady }: { onReady: () => void }) {
+  const firedRef = useRef(false);
+  useFrame(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    onReady();
+  });
+  return null;
+}
+
+/**
+ * A small idle-liveliness move borrowed from Spline: the backdrop drifts a
+ * little toward the pointer and eases back when it leaves. The damped, shared
+ * offset is summed into each layer's camera-derived parallax (never a second
+ * writer that would clobber it). Disabled under reduced motion — where the
+ * frameloop is 'demand' and pointer motion must not invalidate frames — and on
+ * coarse pointers, where it would fight one-finger trackball rotation.
+ */
+const POINTER_PARALLAX_SCALE = 0.12;
+const ZERO_POINTER_OFFSET: { x: number; y: number } = { x: 0, y: 0 };
+const PointerParallaxContext = createContext<{ current: { x: number; y: number } }>({
+  current: ZERO_POINTER_OFFSET,
+});
+
+function PointerParallaxDriver({
+  enabled,
+  offsetRef,
+}: {
+  enabled: boolean;
+  offsetRef: { current: { x: number; y: number } };
+}) {
+  const gl = useThree((state) => state.gl);
+  const targetRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!enabled) {
+      offsetRef.current = { x: 0, y: 0 };
+      targetRef.current = { x: 0, y: 0 };
+      return undefined;
+    }
+    const element = gl.domElement;
+    const handleMove = (event: PointerEvent) => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      targetRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      targetRef.current.y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+    };
+    const reset = () => {
+      targetRef.current.x = 0;
+      targetRef.current.y = 0;
+    };
+    element.addEventListener('pointermove', handleMove);
+    element.addEventListener('pointerleave', reset);
+    return () => {
+      element.removeEventListener('pointermove', handleMove);
+      element.removeEventListener('pointerleave', reset);
+    };
+  }, [enabled, gl, offsetRef]);
+
+  useFrame((_, delta) => {
+    if (!enabled) return;
+    const k = 1 - Math.exp(-4 * delta);
+    offsetRef.current.x += (targetRef.current.x - offsetRef.current.x) * k;
+    offsetRef.current.y += (targetRef.current.y - offsetRef.current.y) * k;
+  });
+
+  return null;
+}
+
 function BackgroundLayer({ definition }: { definition: BackgroundLayerDefinition }) {
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
   const camera = useThree((state) => state.camera);
   const pixelRatio = useThree((state) => state.viewport.dpr);
+  const pointerOffset = useContext(PointerParallaxContext);
   const geometry = useMemo(() => createBackgroundGeometry(definition), [definition]);
   const material = useMemo(createBackgroundMaterial, []);
   const cameraDirection = useRef(new Vector3());
@@ -234,9 +309,14 @@ function BackgroundLayer({ definition }: { definition: BackgroundLayerDefinition
       cameraDirection.current,
       definition.parallaxFactor,
     );
+    const pointerX = pointerOffset.current.x * definition.parallaxFactor * POINTER_PARALLAX_SCALE;
+    const pointerY = pointerOffset.current.y * definition.parallaxFactor * POINTER_PARALLAX_SCALE;
     material.uniforms.uTime!.value = elapsedVisibleSeconds.current;
     material.uniforms.uPixelRatio!.value = pixelRatio;
-    (material.uniforms.uParallax!.value as Vector2).set(offset[0], offset[1]);
+    (material.uniforms.uParallax!.value as Vector2).set(
+      offset[0] + pointerX,
+      offset[1] - pointerY,
+    );
   });
 
   return (
@@ -484,6 +564,8 @@ function SpaceScene({
   const controlsRef = useRef<ComponentRef<typeof TrackballControls>>(null);
   const coarsePointer = useCoarsePointer();
   const speeds = getTrackballSpeeds(coarsePointer);
+  const pointerParallaxEnabled = !reducedMotion && !coarsePointer;
+  const pointerOffsetRef = useRef({ x: 0, y: 0 });
   const selectStar = useCallback((starId: string) => {
     const state = store.getState();
     if (state.runtime.constellationDraft.active) {
@@ -540,6 +622,8 @@ function SpaceScene({
         position={[0, 0, 80]}
       />
       <ambientLight intensity={0.35} />
+      <PointerParallaxDriver enabled={pointerParallaxEnabled} offsetRef={pointerOffsetRef} />
+      <PointerParallaxContext.Provider value={pointerOffsetRef}>
       <VisibilityClock paused={reducedMotion}>
         {backgroundLayers.map((definition) => (
           <BackgroundLayer definition={definition} key={definition.kind} />
@@ -606,6 +690,7 @@ function SpaceScene({
           store={store}
         />
       </VisibilityClock>
+      </PointerParallaxContext.Provider>
       {/* Trackball (arcball) instead of Orbit: the camera tumbles freely in
           every axis with no pole gimbal-lock, so the sky spins a full 360°
           in any direction. staticMoving under reduced motion drops inertia. */}
@@ -688,6 +773,7 @@ export function SpaceCanvas({
   const [activeDragPayload, setActiveDragPayload] = useState<StarDragPayload | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingBlackholeMove | null>(null);
   const [isArchiveOpen, setArchiveOpen] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
   const closeArchive = () => setArchiveOpen(false);
   const archiveFocusTrap = useModalFocusTrap<HTMLDivElement>(
     isArchiveOpen,
@@ -765,6 +851,7 @@ export function SpaceCanvas({
         data-motion={reducedMotion ? 'reduced' : 'full'}
         data-orbit-one-touch={ORBIT_TOUCH_GESTURES.ONE}
         data-orbit-two-touch={ORBIT_TOUCH_GESTURES.TWO}
+        data-scene-ready={sceneReady ? 'true' : 'false'}
         ref={canvasRegionRef}
         tabIndex={-1}
       >
@@ -791,6 +878,7 @@ export function SpaceCanvas({
           >
             {sceneContentMounted ? (
               <>
+                <FirstFrameSignal onReady={() => setSceneReady(true)} />
                 <FpsDegradationMonitor
                   onWindowMeasured={onFpsWindowMeasured}
                   store={store}
