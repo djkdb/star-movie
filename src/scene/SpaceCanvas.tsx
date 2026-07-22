@@ -51,7 +51,6 @@ import { CameraRig } from './CameraRig';
 import { registerGalaxyCanvas } from './galaxyCapture';
 import { SceneErrorBoundary } from './SceneErrorBoundary';
 import { usePrefersReducedMotion, getSceneFrameLoop } from './usePrefersReducedMotion';
-import { BlackholeRenderer } from './BlackholeRenderer';
 import { ConstellationRenderer } from './ConstellationRenderer';
 import { FpsDegradationMonitor } from './FpsDegradationController';
 import { MilestoneRewardRenderer, selectMilestoneRewardViewModels, type MilestoneRewardViewModel } from './MilestoneRewardRenderer';
@@ -69,7 +68,8 @@ import {
   type SceneBenchmarkSource,
 } from './performanceBenchmark';
 import { SmoothWheelZoom } from './SmoothWheelZoom';
-import { BackgroundBlackhole } from './BackgroundBlackhole';
+import { BackgroundBlackhole, BACKGROUND_BLACKHOLE_CENTER } from './BackgroundBlackhole';
+import { GravitationalLensDriver, type GravitationalLensRef } from './gravitationalLens';
 import { SpiralGalaxyField } from './SpiralGalaxyField';
 import { sceneResourceRegistry } from './threeResourceRegistry';
 import {
@@ -602,6 +602,7 @@ function SpaceScene({
   const speeds = getTrackballSpeeds(coarsePointer);
   const pointerParallaxEnabled = !reducedMotion && !coarsePointer;
   const pointerOffsetRef = useRef({ x: 0, y: 0 });
+  const lensRef = useRef<GravitationalLensRef | null>(null);
   const selectStar = useCallback((starId: string) => {
     const state = store.getState();
     if (state.runtime.constellationDraft.active) {
@@ -664,24 +665,27 @@ function SpaceScene({
         {backgroundLayers.map((definition) => (
           <BackgroundLayer definition={definition} key={definition.kind} />
         ))}
-        {showBackgroundBlackhole && (
-          <>
-            <BackgroundBlackhole
-              qualityLevel={qualityLevel}
-              reducedMotion={reducedMotion}
-            />
-            {BACKGROUND_GALAXIES.map((galaxy, index) => (
-              <SpiralGalaxyField
-                key={`bg-galaxy-${index}`}
-                origin={galaxy.origin}
-                reducedMotion={reducedMotion}
-                scale={galaxy.scale}
-                textureSize={BACKGROUND_GALAXY_TEXTURE_SIZE}
-                tilt={galaxy.tilt}
-              />
-            ))}
-          </>
-        )}
+        {/* The grand background hole is now the sky's one archive, so it hangs
+            at every quality tier (its step budget still drops with the tier).
+            The decorative galaxies remain gated to the top two tiers. */}
+        <BackgroundBlackhole
+          activeDragPayload={activeDragPayload}
+          archivedWorks={viewModel.archiveContent.archivedWorks}
+          onDropStar={onBlackholeDrop}
+          onOpenArchive={onBlackholeOpen}
+          qualityLevel={qualityLevel}
+          reducedMotion={reducedMotion}
+        />
+        {showBackgroundBlackhole && BACKGROUND_GALAXIES.map((galaxy, index) => (
+          <SpiralGalaxyField
+            key={`bg-galaxy-${index}`}
+            origin={galaxy.origin}
+            reducedMotion={reducedMotion}
+            scale={galaxy.scale}
+            textureSize={BACKGROUND_GALAXY_TEXTURE_SIZE}
+            tilt={galaxy.tilt}
+          />
+        ))}
         <MilkyWayField />
         <NebulaField />
         <MilestoneRewardRenderer rewards={viewModel.milestoneRewards} />
@@ -702,16 +706,17 @@ function SpaceScene({
         />
         <SelectiveBloomPass
           enabled={bloom.enabled}
+          lensRef={lensRef}
           reducedMotion={reducedMotion}
           reducedQuality={quality.reducedBloom}
         />
-        <BlackholeRenderer
-          activeDragPayload={activeDragPayload}
-          archivedWorks={viewModel.archiveContent.archivedWorks}
-          onDropStar={onBlackholeDrop}
-          onOpenArchive={onBlackholeOpen}
-          qualityLevel={qualityLevel}
-          reducedMotion={reducedMotion}
+        <GravitationalLensDriver
+          center={BACKGROUND_BLACKHOLE_CENTER}
+          diskRadius={300}
+          enabled={!quality.reducedBloom}
+          lensRef={lensRef}
+          strength={0.05}
+          worldRadius={520}
         />
         <PlanetCollectionRenderer
           planets={viewModel.planets}
