@@ -33,6 +33,7 @@ export function useCountUp<T extends HTMLElement>(value: number): RefObject<T> {
   const ref = useRef<T>(null);
   const displayedRef = useRef(value);
   const frameRef = useRef(0);
+  const revealPlayedRef = useRef(false);
 
   useLayoutEffect(() => {
     const element = ref.current;
@@ -74,12 +75,24 @@ export function useCountUp<T extends HTMLElement>(value: number): RefObject<T> {
     // Shrinking values (deleting a work) snap — celebration is for growth.
     animateTo(value, Math.min(displayedRef.current, value));
 
-    // Shell panels stay mounted while closed; replay the count when the
-    // surrounding panel opens so the tick is actually seen.
+    // Shell panels stay mounted while closed, so a count-up on first render
+    // would play unseen. Play the 0→value reveal once, the first time the
+    // surrounding panel actually opens — not on every open (which would
+    // re-expose intermediate values to assistive tech reading the stat).
     const panel = element.closest('.shell-panel');
-    if (panel === null) return () => window.cancelAnimationFrame(frameRef.current);
+    if (panel === null || revealPlayedRef.current) {
+      return () => window.cancelAnimationFrame(frameRef.current);
+    }
+    if (panel.getAttribute('data-open') === 'true') {
+      revealPlayedRef.current = true;
+      animateTo(value, 0);
+      return () => window.cancelAnimationFrame(frameRef.current);
+    }
     const observer = new MutationObserver(() => {
-      if (panel.getAttribute('data-open') === 'true') animateTo(value, 0);
+      if (panel.getAttribute('data-open') !== 'true' || revealPlayedRef.current) return;
+      revealPlayedRef.current = true;
+      animateTo(value, 0);
+      observer.disconnect();
     });
     observer.observe(panel, { attributes: true, attributeFilter: ['data-open'] });
 

@@ -403,7 +403,8 @@ body {
 }
 
 .confirm-dialog,
-.achievement-panel {
+.achievement-panel,
+.blackhole-archive-dialog {
   animation: surface-in 0.3s var(--ease-out-soft);
 }
 
@@ -424,6 +425,14 @@ body {
 .achievement-panel .stagger-in {
   animation: list-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
   animation-delay: calc(var(--stagger-i, 0) * 45ms);
+}
+
+/* A row is focusable the instant its panel opens, but the backwards-filled
+   stagger holds it at opacity 0 during its delay. If keyboard focus reaches
+   a row still waiting its turn, reveal it immediately — a focused control
+   must never be invisible. */
+.stagger-in:focus-within {
+  animation: none;
 }
 
 /* Half the premium feel for one rule: every press physically lands.

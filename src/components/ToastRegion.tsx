@@ -87,6 +87,22 @@ function ToastItem({ event, onDismiss }: ToastItemProps) {
   const dismiss = () => {
     if (leavingRef.current) return;
     const surface = surfaceRef.current;
+
+    // Keyboard focus was on this toast's close button, which is about to
+    // vanish. Move focus to a stable anchor now — the next (or previous)
+    // toast's close button — so it never rests on an invisible control and
+    // never resets to the top of the document mid-exit.
+    const button = surface?.querySelector('button') ?? null;
+    if (button !== null && document.activeElement === button) {
+      const buttons = Array.from(
+        surface?.parentElement?.querySelectorAll<HTMLButtonElement>('.toast button') ?? [],
+      );
+      const index = buttons.indexOf(button);
+      const next = buttons[index + 1] ?? buttons[index - 1] ?? null;
+      if (next !== null) next.focus();
+      else button.blur();
+    }
+
     const reducedMotion = typeof window.matchMedia === 'function'
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // Slide out before consuming; fall back to an instant dismiss when the
