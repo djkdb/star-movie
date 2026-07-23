@@ -26,6 +26,10 @@ const BACKGROUND_BLACKHOLE_DISK_TILT = 0.13;
 const BACKGROUND_EMBER_SCALE = 1.85;
 /** A pointer-up counts as a drop only near the hole's core, not the quad edge. */
 const BACKGROUND_DROP_UV_RADIUS = 0.42;
+/** A tap opens the archive only right on the hole — the raymarch quad is a vast
+ *  mostly-transparent billboard, so a wider target popped the archive open while
+ *  just looking around the sky. */
+const BACKGROUND_OPEN_UV_RADIUS = 0.17;
 
 /** A distant backdrop needs far fewer march steps than a near hero hole. */
 const BACKGROUND_STEPS_BY_QUALITY: Readonly<Record<QualityLevel, number>> = {
@@ -133,11 +137,16 @@ export function BackgroundBlackhole({
     }
   };
   const handleOpenArchive = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
     if (didDropRef.current) {
       didDropRef.current = false;
       return;
     }
+    // Only a tap on the hole itself counts — taps on the transparent quad around
+    // it are ignored so panning the sky doesn't keep opening the archive. Also
+    // stop propagation only when we actually handle it.
+    const uv = event.uv;
+    if (uv === undefined || Math.hypot(uv.x - 0.5, uv.y - 0.5) > BACKGROUND_OPEN_UV_RADIUS) return;
+    event.stopPropagation();
     onOpenArchive();
   };
 
