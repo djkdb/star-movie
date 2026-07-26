@@ -15,8 +15,14 @@ import { getPlanetSpecies, type PlanetSpecies } from '../domain/planetCatalog';
  * until they eclipsed the background black hole. Budgeted this way the hole
  * (~36deg across) stays the sky's dominant landmark:
  *
- *   worst-case full angular size — legendary ~10deg (ringed ~19deg) ·
- *   epic ~4.6deg · rare ~2.1deg · common ~0.9deg
+ *   closest-approach full angular size — legendary ~10deg (ringed ~20deg) ·
+ *   epic ~5deg · rare ~3.4deg · common ~2.6deg
+ *
+ * The common tier is deliberately much larger than a first pass made it:
+ * a 3.6-unit rock at 585 out was under ten pixels wide, so the commonest
+ * worlds simply read as background stars. Every tier now has to be legible
+ * as a world at a glance; rarity separates them by how much sky they own
+ * (a legendary still spans ~3x a common, so ~9x the area), not by presence.
  */
 export interface PlanetRarityPlacement {
   /** Inclusive distance-from-origin band this rarity occupies. */
@@ -29,10 +35,10 @@ export interface PlanetRarityPlacement {
 export const PLANET_RARITY_PLACEMENT: Readonly<
   Record<PlanetRarity, PlanetRarityPlacement>
 > = {
-  legendary: { minRadius: 300, maxRadius: 360, size: 20 },
-  epic: { minRadius: 380, maxRadius: 440, size: 12 },
-  rare: { minRadius: 460, maxRadius: 530, size: 7 },
-  common: { minRadius: 550, maxRadius: 620, size: 3.6 },
+  legendary: { minRadius: 260, maxRadius: 310, size: 16 },
+  epic: { minRadius: 330, maxRadius: 380, size: 11 },
+  rare: { minRadius: 400, maxRadius: 450, size: 9.5 },
+  common: { minRadius: 470, maxRadius: 520, size: 9 },
 };
 
 /** Nearest and farthest any planet may sit, across every rarity. */

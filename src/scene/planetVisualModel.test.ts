@@ -86,7 +86,23 @@ describe('planet orbit model', () => {
     expect(epic).toBeGreaterThan(rare);
     expect(rare).toBeGreaterThan(common);
     // The spread is dramatic enough to read at a glance, not a subtle nudge.
-    expect(legendary / common).toBeGreaterThan(8);
+    // A legendary owns roughly ten times the sky area of a common.
+    expect(legendary / common).toBeGreaterThan(3);
+  });
+
+  it('keeps even the commonest world large enough to notice', () => {
+    // Worst case is a world at the far edge of its shell on the opposite side
+    // of the sky, so the home camera's 80 units add rather than subtract.
+    // Below roughly a degree a planet reads as one more star, not a world.
+    const HOME_CAMERA_DISTANCE = 80;
+    const MIN_VISIBLE_DEGREES = 1.2;
+
+    for (const rarity of RARITIES) {
+      const { maxRadius, size } = PLANET_RARITY_PLACEMENT[rarity];
+      const farthest = maxRadius + HOME_CAMERA_DISTANCE;
+      const degrees = (2 * Math.atan(size / farthest) * 180) / Math.PI;
+      expect(degrees).toBeGreaterThan(MIN_VISIBLE_DEGREES);
+    }
   });
 
   it('preserves the orbit radius as distance from the origin at any time', () => {
