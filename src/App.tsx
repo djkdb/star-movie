@@ -54,12 +54,6 @@ function DockGlyph({ children }: { children: ReactNode }) {
 }
 
 const DOCK_ICONS = {
-  watchlist: (
-    <DockGlyph>
-      <circle cx="12" cy="12" r="6.5" strokeDasharray="2.6 2.2" />
-      <circle cx="12" cy="12" fill="currentColor" r="1.6" stroke="none" opacity="0.75" />
-    </DockGlyph>
-  ),
   overview: (
     <DockGlyph>
       <path d="M3 20 L8 11 L12 15 L17 6 L21 12" />
@@ -79,25 +73,10 @@ const DOCK_ICONS = {
       <path d="M12 5 V19 M5 12 H19" />
     </DockGlyph>
   ),
-  constellation: (
-    <DockGlyph>
-      <path d="M5 17 L10.5 12.5 L15 14.5 L19 6" opacity="0.7" />
-      <circle cx="5" cy="17" fill="currentColor" r="1.4" stroke="none" />
-      <circle cx="10.5" cy="12.5" fill="currentColor" r="1.4" stroke="none" />
-      <circle cx="15" cy="14.5" fill="currentColor" r="1.4" stroke="none" />
-      <circle cx="19" cy="6" fill="currentColor" r="1.4" stroke="none" />
-    </DockGlyph>
-  ),
   navigation: (
     <DockGlyph>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M15.5 8.5 L13.5 13.5 L8.5 15.5 L10.5 10.5 Z" />
-    </DockGlyph>
-  ),
-  codex: (
-    <DockGlyph>
-      <circle cx="12" cy="12" r="5.5" />
-      <ellipse cx="12" cy="12" rx="9.5" ry="3.4" transform="rotate(-24 12 12)" />
     </DockGlyph>
   ),
 } as const;
@@ -205,6 +184,9 @@ export function App({ store }: AppProps) {
     };
   }, [archiveStore, benchmarkEnabled, benchmarkSource, sceneContentMounted]);
 
+  // Four dock buttons only. Secondary surfaces (별자리 만들기, 보고 싶은 작품,
+  // 행성 도감) live as sections inside the panel they belong to rather than
+  // each claiming its own icon, so the sky stays uncluttered.
   const panels: readonly ShellPanelDefinition[] = [
     {
       id: 'overview',
@@ -214,40 +196,29 @@ export function App({ store }: AppProps) {
         <>
           <HUD store={archiveStore} />
           <GenreFilter store={archiveStore} />
+          <PlanetCodexPanel store={archiveStore} />
           <TmdbAttribution variant="block" />
         </>
       ),
+      wide: true,
     },
     {
       id: 'list',
       label: '작품 목록 패널',
       icon: DOCK_ICONS.list,
-      content: <ListView store={archiveStore} />,
+      content: (
+        <>
+          <ListView store={archiveStore} />
+          <ConstellationControls store={archiveStore} />
+          <WatchlistPanel store={archiveStore} />
+        </>
+      ),
     },
     {
       id: 'add',
       label: '작품 추가',
       icon: DOCK_ICONS.add,
       content: <AddWorkForm store={archiveStore} />,
-      wide: true,
-    },
-    {
-      id: 'watchlist',
-      label: '보고 싶은 작품',
-      icon: DOCK_ICONS.watchlist,
-      content: <WatchlistPanel store={archiveStore} />,
-    },
-    {
-      id: 'constellation',
-      label: '별자리 관리',
-      icon: DOCK_ICONS.constellation,
-      content: <ConstellationControls store={archiveStore} />,
-    },
-    {
-      id: 'codex',
-      label: '행성 도감',
-      icon: DOCK_ICONS.codex,
-      content: <PlanetCodexPanel store={archiveStore} />,
       wide: true,
     },
     {
