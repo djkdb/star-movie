@@ -5,6 +5,14 @@ export const SPACE_CAMERA_FOV = 60;
 // farthest stars are right in front of you, and the sky still surrounds the
 // camera — it can never exit into empty black space.
 export const SPACE_CAMERA_MAX_DISTANCE = 900;
+/**
+ * The default free-view framing. Shared so the recenter button, the opening
+ * arrival flight, and the camera's initial placement can never drift apart.
+ */
+export const SPACE_CAMERA_HOME_POSE = Object.freeze({
+  position: Object.freeze({ x: 0, y: 0, z: 80 }),
+  target: Object.freeze({ x: 0, y: 0, z: 0 }),
+});
 export const TWINKLE_AMPLITUDE = 0.3;
 export const MIN_TWINKLE_PERIOD_SECONDS = 1;
 export const MAX_TWINKLE_PERIOD_SECONDS = 4;

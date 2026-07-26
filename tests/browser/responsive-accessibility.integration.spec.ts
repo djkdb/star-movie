@@ -19,13 +19,15 @@ const VIEWPORT_MATRIX: readonly ViewportCase[] = [
 ];
 
 /**
- * The dock is intentionally down to four buttons; secondary surfaces
- * (별자리 만들기, 보고 싶은 작품, 행성 도감) are sections inside these panels.
+ * The dock stays short: the daily loop, the 행성 도감 headline feature, and the
+ * DOM fallback. Supporting surfaces (별자리 만들기, 보고 싶은 작품) are sections
+ * inside the panel they act on rather than separate dock buttons.
  */
 const PANEL_LABELS = [
   '아카이브 현황',
   '작품 목록 패널',
   '작품 추가',
+  '행성 도감',
   '작품 DOM 탐색 패널',
 ] as const;
 

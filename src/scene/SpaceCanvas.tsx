@@ -43,10 +43,12 @@ import {
   createNebulaConfigs,
   SPACE_BACKGROUND_COLOR,
   SPACE_CAMERA_FOV,
+  SPACE_CAMERA_HOME_POSE,
   SPACE_CAMERA_MAX_DISTANCE,
   TWINKLE_AMPLITUDE,
   type BackgroundLayerDefinition,
 } from './backgroundModel';
+import { ArrivalFlight } from './ArrivalFlight';
 import { CameraRig } from './CameraRig';
 import { registerGalaxyCanvas } from './galaxyCapture';
 import { SceneErrorBoundary } from './SceneErrorBoundary';
@@ -752,6 +754,13 @@ function SpaceScene({
         request={pendingCameraRequest}
         selectedStarId={selectedStarId}
         stars={viewModel.archiveContent.stars}
+      />
+      {/* The opening ride in from deep space. Skipped entirely under reduced
+          motion, and any input drops the viewer straight into the home view. */}
+      <ArrivalFlight
+        controlsRef={controlsRef}
+        enabled={!reducedMotion}
+        homePose={SPACE_CAMERA_HOME_POSE}
       />
     </>
   );
