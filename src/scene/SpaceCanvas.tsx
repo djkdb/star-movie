@@ -709,6 +709,7 @@ function SpaceScene({
         />
         <PlanetCollectionRenderer
           planets={viewModel.planets}
+          qualityLevel={qualityLevel}
           reducedMotion={reducedMotion}
         />
         <WatchlistNebulaRenderer

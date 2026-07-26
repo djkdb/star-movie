@@ -1,9 +1,51 @@
 import type { OwnedPlanet, PlanetRarity } from '../domain/models';
 import { getPlanetSpecies, type PlanetSpecies } from '../domain/planetCatalog';
 
-/** Inner/outer bounds of the belt the collected planets orbit within. */
-export const PLANET_BELT_MIN_RADIUS = 22;
-export const PLANET_BELT_MAX_RADIUS = 42;
+/**
+ * Rarity decides where a planet hangs and how large it is, so how rare a pull
+ * was is felt spatially instead of only being read off a chip.
+ *
+ * Every shell sits well beyond the work star field (radius <= 42) and inside
+ * the camera's reach (SPACE_CAMERA_MAX_DISTANCE 900).
+ *
+ * Sizes are calibrated against the *closest* approach, not the shell radius:
+ * the home camera sits 80 units out, so a world directly ahead is only
+ * `minRadius - 80` away, and a ringed species covers roughly twice its body
+ * radius. Calibrating from the shell centre instead made legendaries balloon
+ * until they eclipsed the background black hole. Budgeted this way the hole
+ * (~36deg across) stays the sky's dominant landmark:
+ *
+ *   worst-case full angular size — legendary ~10deg (ringed ~19deg) ·
+ *   epic ~4.6deg · rare ~2.1deg · common ~0.9deg
+ */
+export interface PlanetRarityPlacement {
+  /** Inclusive distance-from-origin band this rarity occupies. */
+  minRadius: number;
+  maxRadius: number;
+  /** Body radius in world units, before per-planet jitter. */
+  size: number;
+}
+
+export const PLANET_RARITY_PLACEMENT: Readonly<
+  Record<PlanetRarity, PlanetRarityPlacement>
+> = {
+  legendary: { minRadius: 300, maxRadius: 360, size: 20 },
+  epic: { minRadius: 380, maxRadius: 440, size: 12 },
+  rare: { minRadius: 460, maxRadius: 530, size: 7 },
+  common: { minRadius: 550, maxRadius: 620, size: 3.6 },
+};
+
+/** Nearest and farthest any planet may sit, across every rarity. */
+export const PLANET_MIN_RADIUS = PLANET_RARITY_PLACEMENT.legendary.minRadius;
+export const PLANET_MAX_RADIUS = PLANET_RARITY_PLACEMENT.common.maxRadius;
+
+/**
+ * Angular speed of the innermost shell. Distant worlds are scaled down from
+ * this so they read as fixed landmarks of your sky that drift over minutes;
+ * their visible life comes from axial spin, not from racing across the view.
+ */
+const PLANET_BASE_ANGULAR_SPEED = 0.003;
+const PLANET_ANGULAR_SPEED_JITTER = 0.005;
 
 export interface PlanetOrbit {
   radius: number;
@@ -23,15 +65,6 @@ export interface PlanetOrbit {
 
 const TWO_PI = Math.PI * 2;
 
-/** Bigger, statelier bodies for higher rarities — collected planets read as
- *  prominent hero worlds rather than distant specks. */
-const RARITY_SIZE: Readonly<Record<PlanetRarity, number>> = {
-  common: 2.8,
-  rare: 3.7,
-  epic: 4.8,
-  legendary: 6.2,
-};
-
 function seededRandom(seed: number): () => number {
   let state = seed >>> 0;
   if (state === 0) state = 0x9e3779b9;
@@ -49,16 +82,24 @@ export function planetOrbitFromSeed(
   rarity: PlanetRarity = 'common',
 ): PlanetOrbit {
   const random = seededRandom(orbitSeed);
+  const placement = PLANET_RARITY_PLACEMENT[rarity];
   const radius =
-    PLANET_BELT_MIN_RADIUS +
-    random() * (PLANET_BELT_MAX_RADIUS - PLANET_BELT_MIN_RADIUS);
-  const inclination = (random() - 0.5) * 0.9;
+    placement.minRadius +
+    random() * (placement.maxRadius - placement.minRadius);
+  // Full tilt range: the shells are spheres of possibility, not one flat belt,
+  // so worlds are found above and below as well as around.
+  const inclination = (random() - 0.5) * Math.PI;
   const ascendingNode = random() * TWO_PI;
   const phase = random() * TWO_PI;
   const direction = random() < 0.5 ? -1 : 1;
-  const angularSpeed = direction * (0.04 + random() * 0.1);
+  // Farther shells sweep proportionally slower, so every world drifts at a
+  // similar gentle pace across the sky rather than the distant ones racing.
+  const angularSpeed =
+    direction *
+    (PLANET_BASE_ANGULAR_SPEED + random() * PLANET_ANGULAR_SPEED_JITTER) *
+    (PLANET_MIN_RADIUS / radius);
   const spinSpeed = 0.15 + random() * 0.4;
-  const size = RARITY_SIZE[rarity] * (0.85 + random() * 0.3);
+  const size = placement.size * (0.85 + random() * 0.3);
   return {
     radius,
     inclination,

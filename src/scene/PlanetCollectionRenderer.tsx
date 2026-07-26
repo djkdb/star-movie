@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
 import { AdditiveBlending, BackSide, DoubleSide, type Group } from 'three';
 
-import type { OwnedPlanet } from '../domain/models';
+import type { OwnedPlanet, QualityLevel } from '../domain/models';
 import { RARITY_COLORS, RARITY_LABELS, type PlanetSpecies } from '../domain/planetCatalog';
 import { getPlanetSurfaceTexture } from './planetSurfaceTextures';
 import {
@@ -13,13 +13,25 @@ import {
 } from './planetVisualModel';
 import { useVisibleElapsedSeconds } from './VisibilityClock';
 
+/**
+ * Rarity placement makes these worlds large on screen, so their translucent
+ * extras — the additive atmosphere shell and the emissive point light — are
+ * real fill-rate and lighting cost. Both are dropped once the FPS controller
+ * has stepped past the top two tiers; the body, ring, and moons remain, so no
+ * planet ever disappears.
+ */
+function hasRichPlanetShading(qualityLevel: QualityLevel): boolean {
+  return qualityLevel === 'full' || qualityLevel === 'reducedBackground';
+}
+
 interface PlanetBodyProps {
   species: PlanetSpecies;
   size: number;
+  richShading: boolean;
 }
 
 /** The planet mesh itself: geometry + procedural surface, ring, aura, moons. */
-function PlanetBody({ species, size }: PlanetBodyProps) {
+function PlanetBody({ species, size, richShading }: PlanetBodyProps) {
   const texture = useMemo(() => getPlanetSurfaceTexture(species), [species]);
   const isCrystal = species.geometry === 'crystal';
   const isTwin = species.geometry === 'twin';
@@ -55,7 +67,7 @@ function PlanetBody({ species, size }: PlanetBodyProps) {
         surface(size)
       )}
 
-      {species.atmosphere !== undefined && (
+      {species.atmosphere !== undefined && richShading && (
         <mesh scale={[1.18, 1.18, 1.18]}>
           <sphereGeometry args={[size, 24, 18]} />
           <meshBasicMaterial
@@ -98,7 +110,7 @@ function PlanetBody({ species, size }: PlanetBodyProps) {
         );
       })}
 
-      {species.emissiveIntensity >= 0.7 && (
+      {species.emissiveIntensity >= 0.7 && richShading && (
         <pointLight color={species.emissiveColor} distance={size * 12} intensity={1.4} />
       )}
     </group>
@@ -110,9 +122,16 @@ interface PlanetInstanceProps {
   species: PlanetSpecies;
   orbit: PlanetOrbit;
   reducedMotion: boolean;
+  richShading: boolean;
 }
 
-function PlanetInstance({ planet, species, orbit, reducedMotion }: PlanetInstanceProps) {
+function PlanetInstance({
+  planet,
+  species,
+  orbit,
+  reducedMotion,
+  richShading,
+}: PlanetInstanceProps) {
   const orbitRef = useRef<Group>(null);
   const spinRef = useRef<Group>(null);
   const elapsedVisibleSeconds = useVisibleElapsedSeconds();
@@ -148,7 +167,7 @@ function PlanetInstance({ planet, species, orbit, reducedMotion }: PlanetInstanc
           setHovered(false);
         }}
       >
-        <PlanetBody species={species} size={orbit.size} />
+        <PlanetBody richShading={richShading} species={species} size={orbit.size} />
       </group>
       {hovered && (
         <Html center position={[0, orbit.size + 1.4, 0]} style={{ pointerEvents: 'none' }}>
@@ -165,13 +184,20 @@ function PlanetInstance({ planet, species, orbit, reducedMotion }: PlanetInstanc
 export interface PlanetCollectionRendererProps {
   planets: readonly OwnedPlanet[];
   reducedMotion?: boolean;
+  qualityLevel?: QualityLevel;
 }
 
-/** Renders every owned planet drifting on its own inclined orbit in the sky. */
+/**
+ * Renders every owned planet on its rarity's shell. Rarer worlds hang nearer
+ * and larger, so the collection reads as landmarks scattered through the deep
+ * sky rather than a uniform belt of specks.
+ */
 export function PlanetCollectionRenderer({
   planets,
   reducedMotion = false,
+  qualityLevel = 'full',
 }: PlanetCollectionRendererProps) {
+  const richShading = hasRichPlanetShading(qualityLevel);
   const visuals = useMemo(
     () =>
       planets.flatMap((planet) => {
@@ -193,6 +219,7 @@ export function PlanetCollectionRenderer({
           orbit={orbit}
           planet={planet}
           reducedMotion={reducedMotion}
+          richShading={richShading}
           species={species}
         />
       ))}
