@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { SPACE_CAMERA_HOME_POSE } from '../scene/backgroundModel';
 import type { ArchiveStoreApi } from '../store/archiveStore';
 
-/** The default free-view pose the recenter button eases the camera back to. */
-const HOME_POSE = {
-  position: { x: 0, y: 0, z: 80 },
-  target: { x: 0, y: 0, z: 0 },
-} as const;
+/**
+ * The default free-view pose the recenter button eases the camera back to —
+ * the same framing the opening arrival flight lands on.
+ */
+const HOME_POSE = SPACE_CAMERA_HOME_POSE;
 
 interface AmbientAudio {
   context: AudioContext;
