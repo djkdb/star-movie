@@ -18,11 +18,14 @@ const VIEWPORT_MATRIX: readonly ViewportCase[] = [
   { name: 'desktop', width: 1440, height: 900, mobile: false },
 ];
 
+/**
+ * The dock is intentionally down to four buttons; secondary surfaces
+ * (별자리 만들기, 보고 싶은 작품, 행성 도감) are sections inside these panels.
+ */
 const PANEL_LABELS = [
   '아카이브 현황',
   '작품 목록 패널',
   '작품 추가',
-  '별자리 관리',
   '작품 DOM 탐색 패널',
 ] as const;
 
@@ -169,7 +172,7 @@ test.describe('responsive browser acceptance', () => {
 
     await openPanel(page, '아카이브 현황');
     await expect(page.getByRole('button', { name: 'SF', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await openPanel(page, '별자리 관리');
+    await openPanel(page, '작품 목록 패널');
     await expect(page.getByText('1/200개 작품 선택')).toBeVisible();
     await openPanel(page, '작품 DOM 탐색 패널');
     await expect(page.getByRole('button', { name: 'Second Signal 별자리 노드로 선택됨' })).toBeDisabled();
@@ -180,7 +183,7 @@ test.describe('responsive browser acceptance', () => {
       await expect(card).toBeVisible();
       await openPanel(page, '아카이브 현황');
       await expect(page.getByRole('button', { name: 'SF', exact: true })).toHaveAttribute('aria-pressed', 'true');
-      await openPanel(page, '별자리 관리');
+      await openPanel(page, '작품 목록 패널');
       await expect(page.getByText('1/200개 작품 선택')).toBeVisible();
       await openPanel(page, '작품 DOM 탐색 패널');
       await expect(page.getByRole('button', { name: 'Second Signal 별자리 노드로 선택됨' })).toBeDisabled();
@@ -248,12 +251,12 @@ test.describe('accessible browser acceptance', () => {
     await openPanel(page, '작품 목록 패널');
     await expect(page.getByRole('heading', { name: '활성 작품 (2)' })).toBeVisible();
 
-    await openPanel(page, '별자리 관리');
+    await openPanel(page, '작품 목록 패널');
     await activateWithKeyboard(page, page.getByRole('button', { name: '수동으로 만들기' }));
     await openPanel(page, '작품 DOM 탐색 패널');
     await activateWithKeyboard(page, page.getByRole('button', { name: 'Seed Voyage 별자리 노드로 선택' }));
     await activateWithKeyboard(page, page.getByRole('button', { name: 'Keyboard Odyssey 별자리 노드로 선택' }));
-    await openPanel(page, '별자리 관리');
+    await openPanel(page, '작품 목록 패널');
     await activateWithKeyboard(page, page.getByRole('button', { name: '선택 완료' }));
 
     const constellationName = page.getByLabel('이름 (최대 30자)');
