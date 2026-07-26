@@ -73,6 +73,12 @@ const DOCK_ICONS = {
       <path d="M12 5 V19 M5 12 H19" />
     </DockGlyph>
   ),
+  codex: (
+    <DockGlyph>
+      <circle cx="12" cy="12" r="5.5" />
+      <ellipse cx="12" cy="12" rx="9.5" ry="3.4" transform="rotate(-24 12 12)" />
+    </DockGlyph>
+  ),
   navigation: (
     <DockGlyph>
       <circle cx="12" cy="12" r="8.5" />
@@ -184,9 +190,10 @@ export function App({ store }: AppProps) {
     };
   }, [archiveStore, benchmarkEnabled, benchmarkSource, sceneContentMounted]);
 
-  // Four dock buttons only. Secondary surfaces (별자리 만들기, 보고 싶은 작품,
-  // 행성 도감) live as sections inside the panel they belong to rather than
-  // each claiming its own icon, so the sky stays uncluttered.
+  // A short dock: the daily loop (현황·목록·추가), the 행성 도감 as its own
+  // headline feature, and the DOM navigation fallback. Supporting surfaces
+  // (별자리 만들기, 보고 싶은 작품) are sections inside the panel they act on
+  // rather than each claiming an icon.
   const panels: readonly ShellPanelDefinition[] = [
     {
       id: 'overview',
@@ -196,11 +203,9 @@ export function App({ store }: AppProps) {
         <>
           <HUD store={archiveStore} />
           <GenreFilter store={archiveStore} />
-          <PlanetCodexPanel store={archiveStore} />
           <TmdbAttribution variant="block" />
         </>
       ),
-      wide: true,
     },
     {
       id: 'list',
@@ -219,6 +224,13 @@ export function App({ store }: AppProps) {
       label: '작품 추가',
       icon: DOCK_ICONS.add,
       content: <AddWorkForm store={archiveStore} />,
+      wide: true,
+    },
+    {
+      id: 'codex',
+      label: '행성 도감',
+      icon: DOCK_ICONS.codex,
+      content: <PlanetCodexPanel store={archiveStore} />,
       wide: true,
     },
     {
