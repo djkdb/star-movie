@@ -1,40 +1,100 @@
+/* ============================================================
+   Asteron — 관측 기록부
+
+   The chrome is a printed catalogue, not a dashboard: ruled lines
+   instead of stacked cards, near-square corners, and warm light
+   borrowed from the accretion disk the sky is built around. The
+   old cyan-on-navy fought that gold; this palette answers it.
+   ============================================================ */
 :root {
   --void: #010208;
-  --panel-bg: rgba(8, 12, 22, 0.72);
-  --panel-bg-solid: #070b14;
-  --panel-border: rgba(158, 196, 255, 0.13);
-  --panel-border-strong: rgba(158, 196, 255, 0.28);
-  --panel-highlight: rgba(220, 236, 255, 0.055);
-  --field-bg: rgba(2, 4, 10, 0.62);
-  --text-primary: #eef2ff;
-  --text-secondary: #b6c0dd;
-  --text-muted: #8b95ba;
-  --text-faint: #67719a;
-  --accent: #7cd6ff;
-  --accent-strong: #38bdf8;
-  --accent-dim: #1c4258;
-  --accent-soft: rgba(124, 214, 255, 0.13);
+  /* Ink: the paper this record is printed on. */
+  --panel-bg: rgba(9, 11, 16, 0.88);
+  --panel-bg-solid: #0a0c11;
+  --rule: rgba(196, 178, 148, 0.16);
+  --rule-strong: rgba(214, 196, 164, 0.34);
+  --panel-border: var(--rule);
+  --panel-border-strong: var(--rule-strong);
+  --panel-highlight: rgba(255, 244, 224, 0.045);
+  --field-bg: rgba(0, 0, 0, 0.28);
+
+  /* Warm greys, so text sits on the page rather than glowing at you. */
+  --text-primary: #f2ece1;
+  --text-secondary: #cbc2b2;
+  --text-muted: #9a9182;
+  /* Faint still has to clear 4.5:1 on the panel ink — it carries real labels
+     (list sub-heads, record keys), not just decoration. */
+  --text-faint: #8a8272;
+
+  /* The accretion disk: white-hot core, gold, ember. */
+  --accent: #e8b565;
+  --accent-strong: #ffd591;
+  --accent-dim: #4a3a22;
+  --accent-soft: rgba(232, 181, 101, 0.12);
   --starlight: #ffe9b3;
-  --danger: #fb7185;
-  --danger-soft: rgba(136, 19, 55, 0.55);
-  --mono-font: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo,
-    Consolas, monospace;
-  /* Elegant serif for display headings — the "luxury/grand" voice. */
-  --display-font: 'Nanum Myeongjo', 'Pretendard Variable', 'Apple SD Gothic Neo',
-    serif;
+  --danger: #e0685f;
+  --danger-soft: rgba(96, 30, 26, 0.5);
+
+  --mono-font: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Titles and figures: a serif with a printed-catalogue weight. */
+  --display-font: 'Hahmlet', 'Nanum Myeongjo', 'Apple SD Gothic Neo', serif;
+
+  /* Corners stay near-square — rounded boxes are what made this read
+     as a template. Only pills that must read as pills keep 999px. */
+  --r-sm: 2px;
+  --r-md: 3px;
+  --r-lg: 4px;
+
   --shadow-panel:
-    0 0 0 1px rgba(0, 0, 0, 0.35),
-    0 1.2rem 3.4rem rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 var(--panel-highlight);
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 1.6rem 4rem rgba(0, 0, 0, 0.62);
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
   color: var(--text-primary);
   background: var(--void);
-  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
-    'Apple SD Gothic Neo', 'Noto Sans KR', 'Segoe UI', Roboto, system-ui, sans-serif;
+  font-family: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont,
+    'Apple SD Gothic Neo', 'Segoe UI', system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Type roles ---------------------------------------------
+   Small caps mono for labels, serif for titles and figures.     */
+.eyebrow,
+.form-field label,
+.form-field legend,
+.form-field-label,
+.hud-statistics dt,
+.transfer-summary dt,
+.status-badge,
+.character-count {
+  font-family: var(--mono-font);
+  font-weight: 400;
+  /* Hangul has no case and wide tracking pulls syllables apart, so labels
+     stay only just loose enough to read as labels. */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shell-panel-body h2,
+.shell-panel-body h3,
+.work-card h2,
+.confirm-dialog h2,
+.achievement-panel h2 {
+  font-family: var(--display-font);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* Figures read as catalogue numbers, never as dashboard KPIs. */
+.hud-statistics dd,
+.transfer-summary dd,
+.archive-count,
+.rating-text,
+.planet-ticket-count {
+  font-family: var(--display-font);
+  font-variant-numeric: tabular-nums;
 }
 
 * {
@@ -58,12 +118,12 @@
 ::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
-  background-color: rgba(158, 196, 255, 0.18);
+  background-color: rgba(198, 180, 150, 0.18);
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(158, 196, 255, 0.36);
+  background-color: rgba(198, 180, 150, 0.36);
 }
 
 html,
@@ -107,7 +167,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  text-shadow: 0 0 1.8rem rgba(124, 214, 255, 0.28);
+  text-shadow: 0 0 1.8rem rgba(232, 181, 101, 0.28);
 }
 
 .eyebrow {
@@ -130,7 +190,7 @@ body {
   width: min(46rem, 100%);
   padding: 1.4rem;
   border: 1px solid var(--panel-border);
-  border-radius: 0.75rem;
+  border-radius: var(--r-lg);
   background: var(--panel-bg);
   box-shadow: 0 1rem 4rem rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
@@ -141,20 +201,24 @@ body {
   font-size: 1.1rem;
 }
 
+/* The entry form is a filled-in record: fields sit in ruled rows rather than
+   free-floating boxes, one hairline closing each. */
 .add-work-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  column-gap: 1.6rem;
+  row-gap: 0;
 }
 
 .form-field {
   display: grid;
   align-content: start;
-  gap: 0.4rem;
+  gap: 0.3rem;
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: 0.85rem 0;
   border: 0;
+  border-bottom: 1px solid var(--rule);
 }
 
 .form-field-wide,
@@ -165,10 +229,13 @@ body {
 .form-field label,
 .form-field legend,
 .form-field-label {
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  font-size: 0.63rem;
+  font-weight: 500;
+}
+
+.form-field legend {
+  padding: 0;
 }
 
 /* Star-glow rating picker: five native radios (visually hidden for keyboard
@@ -192,7 +259,7 @@ body {
 .rating-star-glyph {
   font-size: 1.6rem;
   line-height: 1;
-  color: rgba(158, 196, 255, 0.22);
+  color: rgba(198, 180, 150, 0.22);
   transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.12s ease;
 }
 
@@ -213,7 +280,7 @@ body {
 }
 
 .rating-picker[aria-invalid='true'] .rating-star-glyph {
-  color: rgba(251, 113, 133, 0.5);
+  color: rgba(224, 104, 95, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -222,118 +289,214 @@ body {
   }
 }
 
+/* Controls are written *on* the ruled line, not boxed inside a pill: no side
+   borders, a single baseline rule, and the ink brightens as you fill it in. */
 .form-field input,
 .form-field select,
 .form-field textarea {
   width: 100%;
-  border: 1px solid rgba(158, 196, 255, 0.18);
-  border-radius: 0.55rem;
-  padding: 0.68rem 0.78rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  padding: 0.32rem 0 0.4rem;
   color: var(--text-primary);
-  background: var(--field-bg);
+  background: transparent;
   font: inherit;
-  font-size: 0.92rem;
-  transition: border-color 0.15s ease, background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+  color: var(--text-faint);
+}
+
+/* Native selects hand out an OS chevron that never matches anything around
+   it. Draw our own — a small hairline caret in the accent. */
+.form-field select,
+.list-controls select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.4rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+  background-position: right 0.55rem center, right 0.25rem center;
+  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+}
+
+.form-field select option {
+  color: var(--text-primary);
+  background: var(--panel-bg-solid);
+}
+
+/* The date field ships a US-format skeleton (mm/dd/yyyy) that reads like a
+   stock template in a Korean archive. We cannot change the browser's format,
+   but we can fade the unfilled skeleton back and let the calendar button
+   carry the accent so it looks like part of this record. */
 .form-field input[type='date'] {
   color-scheme: dark;
+  font-family: var(--mono-font);
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+}
+
+.form-field input[type='date']::-webkit-datetime-edit-text {
+  color: var(--text-faint);
+  padding: 0 0.08rem;
+}
+
+.form-field input[type='date']::-webkit-datetime-edit-month-field,
+.form-field input[type='date']::-webkit-datetime-edit-day-field,
+.form-field input[type='date']::-webkit-datetime-edit-year-field {
+  color: var(--text-primary);
+}
+
+.form-field input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(74%) sepia(38%) saturate(560%) hue-rotate(343deg) brightness(96%);
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
+
+.form-field input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .form-field input:hover,
 .form-field select:hover,
 .form-field textarea:hover {
-  border-color: rgba(158, 196, 255, 0.32);
+  border-bottom-color: var(--accent-dim);
 }
 
+/* The review is the one field you actually write into, so it gets a page of
+   its own rather than a single rule floating under empty space. */
 .form-field textarea {
+  min-height: 4.6rem;
+  border: 1px solid var(--rule);
+  padding: 0.55rem 0.65rem;
+  background: var(--field-bg);
+  line-height: 1.65;
   resize: vertical;
+}
+
+.form-field textarea:hover {
+  border-color: var(--accent-dim);
+}
+
+.form-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: none;
 }
 
 .form-field input:focus,
 .form-field select:focus,
-.form-field textarea:focus,
+.form-field textarea:focus {
+  outline: 0;
+  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 0 0 var(--accent);
+}
+
 .primary-action:focus-visible,
 .toast button:focus-visible {
   outline: 0;
-  border-color: rgba(124, 214, 255, 0.65);
-  background: rgba(3, 6, 14, 0.85);
+  border-color: var(--accent-strong);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .form-field [aria-invalid='true'] {
-  border-color: #fb7185;
+  border-bottom-color: var(--danger);
 }
 
 .field-error {
-  margin: 0;
-  color: #fda4af;
-  font-size: 0.78rem;
+  margin: 0.35rem 0 0;
+  color: #e79b93;
+  font-size: 0.74rem;
 }
 
 .character-count {
   justify-self: end;
-  color: #8f9abc;
-  font-size: 0.75rem;
+  color: var(--text-faint);
+  font-size: 0.62rem;
 }
 
+/* 감독 is two paired controls. Placing labels on one row and controls on the
+   next keeps each label above its own field instead of beside its
+   neighbour's — the misalignment that made this row look broken. */
 .director-field {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.1rem;
+  row-gap: 0.3rem;
 }
 
-.director-field legend,
-.director-field .field-error {
+.director-field > legend {
   grid-column: 1 / -1;
+  grid-row: 1;
 }
 
-.director-field label {
+.director-field > label:nth-of-type(1) {
+  grid-area: 2 / 1;
+}
+
+.director-field > label:nth-of-type(2) {
+  grid-area: 2 / 2;
+}
+
+.director-field > select:nth-of-type(1) {
+  grid-area: 3 / 1;
+}
+
+.director-field > select:nth-of-type(2),
+.director-field > input {
+  grid-area: 3 / 2;
+}
+
+.director-field > .field-error {
+  grid-column: 1 / -1;
+  grid-row: 4;
+}
+
+.director-field > label {
   align-self: end;
+  color: var(--text-faint);
 }
 
+/* One solid gold stamp per panel. Everything else is an outline, so the
+   commit action is the only filled thing on the page. */
 .primary-action {
   position: relative;
-  border: 1px solid rgba(150, 214, 255, 0.42);
-  border-radius: 0.6rem;
-  padding: 0.76rem 1.15rem;
-  color: #eaf6ff;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 45%),
-    linear-gradient(180deg, rgba(124, 214, 255, 0.24), rgba(40, 96, 150, 0.2));
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  padding: 0.7rem 1.15rem;
+  color: #171104;
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent));
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  text-shadow: 0 0 0.8rem rgba(124, 214, 255, 0.35);
-  box-shadow:
-    0 0.5rem 1.7rem rgba(20, 70, 120, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  transition: border-color 0.18s ease, background-color 0.18s ease,
+  box-shadow: 0 0.4rem 1.6rem rgba(232, 181, 101, 0.16);
+  transition: border-color 0.18s ease, background 0.18s ease,
     box-shadow 0.2s ease, transform 0.15s var(--ease-out-soft);
 }
 
 .primary-action:hover {
-  border-color: rgba(160, 224, 255, 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 45%),
-    linear-gradient(180deg, rgba(140, 224, 255, 0.32), rgba(48, 110, 168, 0.26));
-  box-shadow:
-    0 0.6rem 2.2rem rgba(124, 214, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  border-color: var(--accent-strong);
+  background: linear-gradient(180deg, #ffe3ae, var(--accent-strong));
+  box-shadow: 0 0.5rem 2rem rgba(232, 181, 101, 0.3);
 }
 
 .primary-action:active {
   transform: translateY(1px);
-  box-shadow:
-    0 0.3rem 1rem rgba(20, 70, 120, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0.2rem 0.8rem rgba(232, 181, 101, 0.22);
 }
 
 .primary-action:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: var(--rule-strong);
+  color: var(--text-faint);
+  background: transparent;
+  box-shadow: none;
 }
 
 .toast-region {
@@ -351,15 +514,12 @@ body {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 0.8rem;
+  border: 1px solid var(--rule-strong);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--r-md);
   color: var(--text-primary);
-  background:
-    linear-gradient(168deg, rgba(158, 196, 255, 0.08), transparent 45%),
-    rgba(10, 15, 28, 0.92);
-  box-shadow:
-    0 0.8rem 2.4rem rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: rgba(10, 12, 18, 0.94);
+  box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(18px);
   animation: surface-in 0.3s var(--ease-out-soft);
 }
@@ -372,22 +532,30 @@ body {
 
 .toast button {
   align-self: start;
+  flex: 0 0 auto;
   border: 0;
-  color: var(--text-primary);
+  color: var(--text-muted);
   background: transparent;
+  font-family: var(--mono-font);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
   cursor: pointer;
 }
 
+.toast button:hover {
+  color: var(--accent-strong);
+}
+
 .toast.toast-danger {
-  border-color: rgba(251, 113, 133, 0.55);
+  border-color: var(--rule-strong);
+  border-left-color: var(--danger);
   color: #fff1f2;
-  background:
-    linear-gradient(168deg, rgba(251, 113, 133, 0.12), transparent 45%),
-    rgba(38, 8, 18, 0.92);
+  background: rgba(22, 10, 10, 0.94);
 }
 
 .toast.toast-danger p {
-  color: #fecdd3;
+  color: #f0b5b0;
 }
 
 .toast.toast-danger button {
@@ -395,19 +563,18 @@ body {
 }
 
 .toast.toast-unlock {
-  border-color: rgba(167, 139, 250, 0.55);
-  color: #f5f3ff;
-  background:
-    linear-gradient(168deg, rgba(167, 139, 250, 0.14), transparent 45%),
-    rgba(28, 14, 58, 0.92);
+  border-color: var(--rule-strong);
+  border-left-color: var(--accent-strong);
+  color: var(--text-primary);
+  background: rgba(18, 14, 8, 0.94);
 }
 
 .toast.toast-unlock p {
-  color: #ddd6fe;
+  color: var(--text-secondary);
 }
 
 .toast.toast-unlock button {
-  color: #f5f3ff;
+  color: var(--accent);
 }
 
 /* An unlock is a payoff, so it arrives celebrating: a badge, a light that
@@ -425,8 +592,8 @@ body {
   left: 0.95rem;
   font-size: 1.1rem;
   line-height: 1;
-  color: #ede9fe;
-  text-shadow: 0 0 0.6rem rgba(167, 139, 250, 0.8);
+  color: var(--accent-strong);
+  text-shadow: 0 0 0.6rem rgba(232, 181, 101, 0.8);
   animation: toast-badge-pop 0.5s var(--ease-out-soft) both;
 }
 
@@ -443,7 +610,7 @@ body {
   background: linear-gradient(
     110deg,
     transparent 35%,
-    rgba(196, 181, 253, 0.85) 50%,
+    rgba(255, 213, 145, 0.85) 50%,
     transparent 65%
   );
   background-size: 220% 100%;
@@ -473,8 +640,8 @@ body {
   width: 3px;
   height: 3px;
   border-radius: 999px;
-  background: #ede9fe;
-  box-shadow: 0 0 4px rgba(196, 181, 253, 0.9);
+  background: var(--accent-strong);
+  box-shadow: 0 0 4px rgba(255, 213, 145, 0.9);
   opacity: 0;
   animation: toast-spark-fly 0.7s ease-out var(--d, 0ms) 1;
 }
@@ -646,7 +813,7 @@ body {
   background: linear-gradient(
     110deg,
     transparent 30%,
-    rgba(124, 214, 255, 0.32) 50%,
+    rgba(232, 181, 101, 0.32) 50%,
     transparent 70%
   );
   animation: sheen-sweep 0.55s ease;
@@ -690,7 +857,7 @@ body {
   min-width: 0;
   padding: 1.2rem;
   border: 1px solid var(--panel-border);
-  border-radius: 0.75rem;
+  border-radius: var(--r-lg);
   background: var(--panel-bg);
   backdrop-filter: blur(20px);
 }
@@ -708,18 +875,42 @@ body {
   margin: 0;
 }
 
+/* Section titles are set like a chapter head in a printed catalogue: the
+   serif at a readable size, ruled underneath, no shouty tracked-out caps.
+   Korean does not survive uppercase letter-spacing, and that treatment is
+   exactly what made every section look interchangeable. */
+.add-work-panel > h2,
 .navigation-panel h2,
 .archive-panel h2,
 .hud h2,
 .genre-filter h2,
 .list-view h2,
 .achievement-panel h2,
-.constellation-controls h2 {
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 650;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+.constellation-controls h2,
+.planet-codex-header h2,
+.watchlist-panel > h2,
+.data-transfer > h3 {
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rule-strong);
+  color: var(--text-primary);
+  font-family: var(--display-font);
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+/* When a title shares its line with an action or a tally, the rule belongs to
+   the whole row — otherwise it underlines the words and stops mid-air. */
+.panel-heading-row {
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.panel-heading-row h2,
+.panel-heading-row h3 {
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .navigation-list,
@@ -749,23 +940,24 @@ body {
 .secondary-action,
 .danger-action,
 .card-close-button {
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 0.55rem;
-  padding: 0.6rem 0.78rem;
-  color: var(--text-primary);
-  background: rgba(158, 196, 255, 0.055);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  padding: 0.52rem 0.8rem;
+  color: var(--text-secondary);
+  background: transparent;
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.84rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .navigation-list button:not(:disabled):hover,
 .secondary-action:hover,
 .card-close-button:hover {
   border-color: var(--accent);
+  color: var(--accent-strong);
   background: var(--accent-soft);
 }
 
@@ -830,52 +1022,54 @@ body {
   gap: 1rem;
 }
 
+/* A catalogue tally, not a notification pill. */
 .archive-count {
-  display: inline-grid;
-  min-width: 2rem;
-  min-height: 2rem;
-  place-items: center;
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 999px;
+  display: inline-block;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   color: var(--accent);
-  background: var(--accent-soft);
-  font-family: var(--mono-font);
-  font-weight: 700;
+  background: transparent;
+  font-size: 1.05rem;
+  font-weight: 500;
 }
 
 .archive-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
-  gap: 0.8rem;
+  gap: 0;
 }
 
 .archive-list-item {
-  padding: 1rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.7rem;
-  background: var(--field-bg);
+  padding: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
 }
 
 .archive-list-item dl,
 .work-card-details {
   display: grid;
-  gap: 0.65rem;
-  margin: 1rem 0;
+  gap: 0.5rem;
+  margin: 0.85rem 0;
 }
 
 .archive-list-item dl > div,
 .work-card-details > div {
   display: grid;
-  grid-template-columns: 5rem minmax(0, 1fr);
+  grid-template-columns: 4.6rem minmax(0, 1fr);
   gap: 0.75rem;
+  align-items: baseline;
 }
 
 .archive-list-item dt,
 .work-card-details dt {
   color: var(--text-faint);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-family: var(--mono-font);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -895,13 +1089,15 @@ body {
 }
 
 .danger-action {
-  border-color: var(--danger);
-  color: #fff1f2;
-  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  color: #f0b5b0;
+  background: transparent;
 }
 
 .danger-action:hover {
-  background: rgba(136, 19, 55, 0.85);
+  border-color: var(--danger);
+  color: #fff1f2;
+  background: rgba(120, 34, 30, 0.55);
 }
 
 .work-card {
@@ -917,22 +1113,23 @@ body {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   padding: 1.35rem;
-  border: 1px solid color-mix(in srgb, var(--work-glow-color) 55%, transparent);
-  border-radius: 1rem;
+  border: 1px solid var(--rule-strong);
+  border-top: 2px solid color-mix(in srgb, var(--work-glow-color) 70%, transparent);
+  border-radius: var(--r-lg);
   background:
-    linear-gradient(168deg, color-mix(in srgb, var(--work-glow-color) 9%, transparent), transparent 42%),
-    rgba(5, 8, 16, 0.86);
+    linear-gradient(180deg, color-mix(in srgb, var(--work-glow-color) 7%, transparent), transparent 34%),
+    rgba(6, 8, 13, 0.9);
   box-shadow:
-    0 0 2rem color-mix(in srgb, var(--work-glow-color) 26%, transparent),
-    0 1.2rem 3rem rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(24px) saturate(1.3);
+    0 0 2rem color-mix(in srgb, var(--work-glow-color) 16%, transparent),
+    0 1.2rem 3rem rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(24px) saturate(1.15);
 }
 
 .work-card h2 {
-  font-size: 1.15rem;
-  font-weight: 650;
-  letter-spacing: 0.01em;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
 .card-close-button {
@@ -951,15 +1148,27 @@ body {
   margin-top: 0.75rem;
 }
 
+/* Genre reads as a catalogue classmark: bracketed, mono, no pill. */
 .genre-badge {
-  border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
-  border-radius: 999px;
-  padding: 0.18rem 0.6rem;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   color: var(--accent);
-  background: color-mix(in srgb, currentColor 9%, transparent);
-  font-size: 0.78rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
+  background: transparent;
+  font-family: var(--mono-font);
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.genre-badge::before {
+  content: '[';
+  opacity: 0.55;
+}
+
+.genre-badge::after {
+  content: ']';
+  opacity: 0.55;
 }
 
 .rating-icons {
@@ -986,15 +1195,12 @@ body {
   width: min(31rem, 100%);
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  padding: 1.4rem;
-  border: 1px solid rgba(251, 113, 133, 0.5);
-  border-radius: 1rem;
-  background:
-    linear-gradient(168deg, rgba(251, 113, 133, 0.07), transparent 40%),
-    var(--panel-bg-solid);
-  box-shadow:
-    0 1.5rem 5rem rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border: 1px solid var(--rule-strong);
+  border-top: 2px solid var(--danger);
+  border-radius: var(--r-lg);
+  background: var(--panel-bg-solid);
+  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.72);
 }
 
 .confirm-dialog > p {
@@ -1009,7 +1215,7 @@ body {
 .affected-constellation-list {
   display: grid;
   gap: 0.35rem;
-  color: #fecdd3;
+  color: #f0b5b0;
 }
 
 .dialog-actions {
@@ -1039,12 +1245,10 @@ body {
 .glass-panel {
   position: relative;
   border: 1px solid var(--panel-border);
-  border-radius: 1rem;
-  background:
-    linear-gradient(180deg, rgba(158, 196, 255, 0.05), transparent 38%),
-    var(--panel-bg);
+  border-radius: var(--r-lg);
+  background: var(--panel-bg);
   box-shadow: var(--shadow-panel);
-  backdrop-filter: blur(26px) saturate(1.35);
+  backdrop-filter: blur(26px) saturate(1.1);
 }
 
 /* Cursor spotlight: the glass catches a soft pool of starlight under the
@@ -1060,7 +1264,7 @@ body {
   border-radius: inherit;
   background: radial-gradient(
     26rem circle at var(--spot-x, 50%) var(--spot-y, -30%),
-    rgba(124, 214, 255, 0.09),
+    rgba(232, 181, 101, 0.09),
     transparent 62%
   );
   opacity: 0;
@@ -1080,14 +1284,13 @@ body {
   }
 }
 
-/* The elegant serif "identity" voice for section and dialog titles. */
-.shell-panel-body h2,
+/* The serif "identity" voice for dialog titles. */
 .work-card h2,
 .confirm-dialog h2,
 .blackhole-archive-dialog h2 {
   font-family: var(--display-font);
-  font-weight: 700;
-  letter-spacing: 0.012em;
+  font-weight: 600;
+  letter-spacing: -0.012em;
 }
 
 .hud,
@@ -1106,40 +1309,55 @@ body {
   margin: 0;
 }
 
+/* Three boxed KPI cards were the single most template-looking thing here.
+   The same numbers now read as ledger entries: label left, figure right,
+   ruled between — the way a record sheet actually lists its totals. */
 .hud-statistics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
-  margin: 1rem 0;
+  gap: 0;
+  margin: 0.9rem 0 1.2rem;
 }
 
 .hud-statistics > div {
   display: grid;
-  gap: 0.35rem;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 1rem;
   min-width: 0;
-  padding: 0.75rem 0.8rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.7rem;
-  background:
-    linear-gradient(180deg, rgba(158, 196, 255, 0.045), transparent 60%),
-    var(--field-bg);
+  padding: 0.62rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+}
+
+.hud-statistics > div:last-child {
+  border-bottom: 0;
 }
 
 .hud-statistics dt {
-  color: var(--text-faint);
-  font-size: 0.64rem;
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
 }
 
 .hud-statistics dd {
   margin: 0;
+  justify-self: end;
   color: var(--text-primary);
-  font-size: 1.25rem;
-  font-weight: 650;
+  font-size: 1.35rem;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  text-align: right;
+}
+
+/* The 최다 장르 cell holds classmarks, not a figure — keep it at label scale. */
+.hud-statistics dd.badge-list {
+  justify-content: flex-end;
+  font-size: 0.7rem;
 }
 
 .badge-list,
@@ -1164,29 +1382,30 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Progress reads as ink filling a measured rule, not a candy bar. */
 progress {
   max-width: 100%;
-  height: 0.34rem;
+  height: 2px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   accent-color: var(--accent);
-  background: rgba(158, 196, 255, 0.12);
+  background: var(--rule);
   overflow: hidden;
 }
 
 progress::-webkit-progress-bar {
-  border-radius: 999px;
-  background: rgba(158, 196, 255, 0.12);
+  border-radius: 0;
+  background: var(--rule);
 }
 
 progress::-webkit-progress-value {
-  border-radius: 999px;
-  background: linear-gradient(90deg, #4db9ef, #9be2ff);
+  border-radius: 0;
+  background: var(--accent);
 }
 
 progress::-moz-progress-bar {
-  border-radius: 999px;
-  background: #7cd6ff;
+  border-radius: 0;
+  background: var(--accent);
 }
 
 .panel-action,
@@ -1194,16 +1413,16 @@ progress::-moz-progress-bar {
 .drawer-toggle,
 .list-view button,
 .panel-heading-row button {
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 0.55rem;
-  padding: 0.56rem 0.72rem;
-  color: var(--text-primary);
-  background: rgba(158, 196, 255, 0.055);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  padding: 0.5rem 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .panel-action:hover,
@@ -1211,45 +1430,74 @@ progress::-moz-progress-bar {
 .list-view button:hover,
 .panel-heading-row button:hover {
   border-color: var(--accent);
+  color: var(--accent-strong);
   background: var(--accent-soft);
 }
 
 .panel-action {
   width: 100%;
   margin-top: 1rem;
+  font-family: var(--mono-font);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
 }
 
 .filter-options {
   margin-top: 0.8rem;
+  gap: 0;
 }
 
+/* Genre filters are index tabs down the margin of the page: each one a ruled
+   row you tick, not a floating pill in a bag of pills. */
 .filter-chip {
-  border-color: rgba(158, 196, 255, 0.16);
-  border-radius: 999px;
-  padding: 0.42rem 0.8rem;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 0.5rem 0.1rem 0.5rem 0;
   color: var(--text-muted);
-  background: var(--field-bg);
-  font-size: 0.85rem;
-  font-weight: 600;
+  background: transparent;
+  font-size: 0.86rem;
+  font-weight: 400;
+  text-align: left;
+}
+
+.filter-chip::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.42rem;
+  height: 0.42rem;
+  border: 1px solid var(--rule-strong);
+  background: transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .filter-chip:hover {
   color: var(--text-primary);
+  background: transparent;
+}
+
+.filter-chip:hover::before {
+  border-color: var(--accent);
 }
 
 .filter-chip.is-selected {
-  border-color: rgba(124, 214, 255, 0.55);
-  color: #bfeaff;
-  background: var(--accent-soft);
-  box-shadow:
-    0 0 0.9rem rgba(124, 214, 255, 0.18),
-    inset 0 0 0.7rem rgba(124, 214, 255, 0.09);
+  color: var(--accent-strong);
+  background: transparent;
+  box-shadow: none;
+}
+
+.filter-chip.is-selected::before {
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .filter-status {
-  margin: 0.75rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
+  margin: 0.85rem 0 0;
+  color: var(--text-faint);
+  font-size: 0.72rem;
 }
 
 /* The list drawer toggle is superseded by the shell dock. */
@@ -1271,41 +1519,52 @@ progress::-moz-progress-bar {
 
 .list-controls label {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-family: var(--mono-font);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .list-controls input,
 .list-controls select {
   min-width: 0;
-  border: 1px solid rgba(158, 196, 255, 0.18);
-  border-radius: 0.55rem;
-  padding: 0.55rem 0.68rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  padding: 0.3rem 0 0.35rem;
   color: var(--text-primary);
-  background: var(--field-bg);
+  background: transparent;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .list-controls input:focus,
 .list-controls select:focus {
   outline: 0;
-  border-color: rgba(124, 214, 255, 0.65);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 0 0 var(--accent);
+}
+
+.list-controls select option {
+  color: var(--text-primary);
+  background: var(--panel-bg-solid);
 }
 
 .list-view > section + section {
-  margin-top: 1.2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--panel-border);
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule);
 }
 
+/* Sub-section heads sit a step below the serif title: mono, small, quiet. */
 .list-view h3 {
   color: var(--text-faint);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-family: var(--mono-font);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
@@ -1314,62 +1573,78 @@ progress::-moz-progress-bar {
 .compact-archive-list,
 .achievement-list {
   display: grid;
-  gap: 0.55rem;
-  margin: 0.75rem 0 0;
+  gap: 0;
+  margin: 0.7rem 0 0;
   padding: 0;
   list-style: none;
 }
 
+/* Entries are lines in a register: no card, no fill, one hairline between. */
 .work-list button {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) auto auto;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
   width: 100%;
-  border-radius: 0.7rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 0.62rem 0.15rem 0.62rem 0;
+  background: transparent;
   text-align: left;
-  transition: border-color 0.15s ease, background-color 0.15s ease,
-    transform 0.15s var(--ease-out-soft);
+  transition: color 0.15s ease, background-color 0.15s ease,
+    padding-left 0.18s var(--ease-out-soft);
 }
 
-.work-list button:hover {
-  transform: translateX(2px);
+.work-list button:hover,
+.constellation-list button:hover,
+.list-view .work-list button:hover {
+  padding-left: 0.4rem;
+  border-color: var(--accent-dim);
+  color: var(--text-primary);
+  background: linear-gradient(90deg, var(--accent-soft), transparent 70%);
 }
 
 .work-list button > :last-child {
   grid-column: 1 / -1;
-  color: #aeb8d8;
-  font-size: 0.8rem;
+  color: var(--text-faint);
+  font-size: 0.72rem;
 }
 
 .work-title {
   overflow: hidden;
-  font-weight: 750;
+  font-size: 0.94rem;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .constellation-list button {
   width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 0.6rem 0.15rem 0.6rem 0;
   text-align: left;
 }
 
 .constellation-swatch {
   display: inline-block;
-  width: 0.65rem;
-  height: 0.65rem;
-  margin-right: 0.5rem;
-  border-radius: 999px;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-right: 0.6rem;
+  border-radius: 0;
 }
 
 .compact-archive-list li {
   display: grid;
-  gap: 0.3rem;
-  padding: 0.7rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.7rem;
-  color: var(--text-muted);
-  background: var(--field-bg);
+  gap: 0.25rem;
+  padding: 0.65rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  color: var(--text-secondary);
+  background: transparent;
 }
 
 .compact-archive-list p {
@@ -1379,7 +1654,9 @@ progress::-moz-progress-bar {
 .compact-archive-list time,
 .compact-archive-list span {
   color: var(--text-faint);
-  font-size: 0.78rem;
+  font-family: var(--mono-font);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
 }
 
 .achievement-panel {
@@ -1389,43 +1666,83 @@ progress::-moz-progress-bar {
   background: var(--panel-bg-solid);
 }
 
+/* Name row, description, then the progress rule and its tally sharing one
+   line — the bar measures the row, the figure closes it. */
 .achievement-list li {
-  padding: 0.9rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.7rem;
-  background: var(--field-bg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem 0.85rem;
+  padding: 0.85rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
 }
 
 .achievement-list li > span {
+  color: var(--text-muted);
+  font-family: var(--mono-font);
+  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.achievement-list li > div,
+.achievement-list p {
+  grid-column: 1 / -1;
 }
 
 .achievement-list li > div {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.achievement-list p {
-  margin-top: 0.45rem;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+.achievement-list li > div strong {
+  font-weight: 500;
 }
 
+.achievement-list p {
+  margin-top: 0;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+.achievement-list progress {
+  width: 100%;
+}
+
+.achievement-list li.is-unlocked > span {
+  color: var(--accent);
+}
+
+/* A ruled list ends on its last entry, not on a line hanging in the margin. */
+.achievement-list li:last-child,
+.compact-archive-list li:last-child,
+.watchlist-list li:last-child,
+.filter-options > .filter-chip:last-child,
+.work-list li:last-child button,
+.constellation-list li:last-child button {
+  border-bottom: 0;
+}
+
+/* 잠김 / 해금 is a margin stamp, not a coloured chip. */
 .status-badge {
-  border-radius: 999px;
-  padding: 0.2rem 0.5rem;
-  color: var(--text-muted);
-  background: rgba(148, 197, 255, 0.1);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: var(--text-faint);
+  background: transparent;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
 }
 
 .is-unlocked .status-badge {
-  color: #b7f7d8;
-  background: rgba(16, 185, 129, 0.24);
+  color: var(--accent);
+  background: transparent;
 }
 
 
@@ -1482,7 +1799,7 @@ progress::-moz-progress-bar {
   border: 1px solid var(--panel-border-strong);
   border-radius: 999px;
   color: var(--text-primary);
-  background: rgba(5, 8, 16, 0.82);
+  background: rgba(7, 8, 12, 0.85);
   box-shadow:
     0 0 1rem var(--accent-soft),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -1516,10 +1833,12 @@ progress::-moz-progress-bar {
   align-items: center;
   gap: 0.6rem 1rem;
   margin-top: 1rem;
-  padding: 0.9rem;
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 0.7rem;
-  background: var(--field-bg);
+  padding: 0.85rem 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
 }
 
 .constellation-draft-status > p,
@@ -1557,19 +1876,20 @@ progress::-moz-progress-bar {
 }
 
 .constellation-name-dialog input {
-  border: 1px solid rgba(158, 196, 255, 0.18);
-  border-radius: 0.55rem;
-  padding: 0.68rem 0.78rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  padding: 0.35rem 0 0.4rem;
   color: var(--text-primary);
-  background: var(--field-bg);
+  background: transparent;
   font: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .constellation-name-dialog input:focus {
   outline: 0;
-  border-color: rgba(124, 214, 255, 0.65);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 0 0 var(--accent);
 }
 
 .constellation-name-label {
@@ -1608,11 +1928,11 @@ progress::-moz-progress-bar {
   width: min(56rem, 100%);
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 1rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-lg);
   background: var(--panel-bg-solid);
   box-shadow:
-    0 0 4rem rgba(124, 214, 255, 0.14),
+    0 0 4rem rgba(232, 181, 101, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -1647,7 +1967,7 @@ progress::-moz-progress-bar {
   padding: 0.42rem;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(14, 20, 34, 0.62), rgba(5, 8, 16, 0.62));
+  background: linear-gradient(180deg, rgba(17, 17, 21, 0.62), rgba(7, 8, 12, 0.62));
   box-shadow:
     0 0.7rem 2.6rem rgba(0, 0, 0, 0.5),
     inset 0 1px 0 var(--panel-highlight);
@@ -1673,7 +1993,7 @@ progress::-moz-progress-bar {
 
 .dock-button:hover {
   color: var(--text-primary);
-  background: rgba(158, 196, 255, 0.09);
+  background: rgba(198, 180, 150, 0.09);
   transform: scale(1.06);
 }
 
@@ -1682,12 +2002,12 @@ progress::-moz-progress-bar {
 }
 
 .dock-button.is-active {
-  border-color: rgba(124, 214, 255, 0.42);
+  border-color: rgba(232, 181, 101, 0.42);
   color: var(--accent);
   background: var(--accent-soft);
   box-shadow:
-    0 0 1.1rem rgba(124, 214, 255, 0.25),
-    inset 0 0 0.6rem rgba(124, 214, 255, 0.08);
+    0 0 1.1rem rgba(232, 181, 101, 0.25),
+    inset 0 0 0.6rem rgba(232, 181, 101, 0.08);
 }
 
 /* Hover tooltip driven by the button's data-label. */
@@ -1697,10 +2017,10 @@ progress::-moz-progress-bar {
   top: 50%;
   right: calc(100% + 0.9rem);
   padding: 0.32rem 0.62rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.45rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
   color: var(--text-secondary);
-  background: rgba(5, 8, 16, 0.92);
+  background: rgba(6, 8, 13, 0.94);
   box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.5);
   font-size: 0.72rem;
   font-weight: 600;
@@ -1734,12 +2054,13 @@ progress::-moz-progress-bar {
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--panel-border);
-  border-radius: 1rem;
-  background:
-    linear-gradient(168deg, rgba(20, 28, 48, 0.42), rgba(6, 9, 18, 0.1) 38%),
-    var(--panel-bg);
+  /* The gold hairline along the leading edge is the only ornament the panel
+     gets — it reads as the spine of a page pulled out of the archive. */
+  border-left: 2px solid var(--accent-dim);
+  border-radius: var(--r-lg);
+  background: var(--panel-bg);
   box-shadow: var(--shadow-panel);
-  backdrop-filter: blur(26px) saturate(1.35);
+  backdrop-filter: blur(26px) saturate(1.05);
   transform: translateY(-50%) scale(1);
   transform-origin: 100% 50%;
   transition: opacity 0.2s ease, transform 0.24s var(--ease-out-soft),
@@ -1760,8 +2081,8 @@ progress::-moz-progress-bar {
 
 .shell-panel-body {
   display: grid;
-  gap: 1.05rem;
-  padding: 1.25rem;
+  gap: 1.35rem;
+  padding: 1.4rem 1.35rem 1.6rem;
 }
 
 /* Inner components lose their own card chrome inside a shell panel. */
@@ -1777,9 +2098,11 @@ progress::-moz-progress-bar {
   backdrop-filter: none;
 }
 
+/* Sections inside a panel are separated by the rule their own titles already
+   draw, so a second divider between them just doubles the line. */
 .shell-panel-body > * + * {
-  border-top: 1px solid var(--panel-border);
-  padding-top: 1rem;
+  border-top: 0;
+  padding-top: 0;
 }
 
 .shell-panel-body .archive-dom-navigation {
@@ -1894,7 +2217,6 @@ progress::-moz-progress-bar {
   outline-offset: 2px;
 }
 
-.genre-badge,
 .rating-icons,
 .filter-chip {
   display: inline-flex;
@@ -1902,16 +2224,22 @@ progress::-moz-progress-bar {
   gap: 0.35rem;
 }
 
+.genre-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+}
+
 .genre-icon {
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .rating-text {
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-family: var(--mono-font);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: normal;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
 }
 
 .navigation-description {
@@ -1994,7 +2322,7 @@ progress::-moz-progress-bar {
   left: 0.75rem;
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--accent);
-  border-radius: 0.45rem;
+  border-radius: var(--r-sm);
   color: var(--void);
   background: var(--accent);
   font-weight: 750;
@@ -2021,31 +2349,36 @@ progress::-moz-progress-bar {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 .planet-codex-header h2 {
   margin: 0;
-  font-size: 1.15rem;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .planet-codex-rate {
   font-family: var(--mono-font);
-  font-size: 0.82rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
   color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid var(--panel-border);
-  border-radius: 999px;
-  padding: 3px 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
 }
 
 .planet-gacha {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--panel-border);
-  border-radius: 16px;
-  background: linear-gradient(160deg, rgba(30, 40, 80, 0.35), rgba(8, 12, 22, 0.35));
+  padding: 0 0 1.1rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
 }
 
 .planet-gacha-status {
@@ -2126,13 +2459,13 @@ progress::-moz-progress-bar {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 16px;
+  border-radius: var(--r-md);
   backface-visibility: hidden;
 }
 
 .planet-reveal-back {
-  background: radial-gradient(circle at 50% 40%, #23305c, #0a0e1c);
-  border: 1px solid var(--panel-border-strong);
+  background: radial-gradient(circle at 50% 40%, #2a2416, #0a0b10);
+  border: 1px solid var(--rule-strong);
   font-size: 2.6rem;
   color: var(--accent);
   font-weight: 700;
@@ -2140,8 +2473,8 @@ progress::-moz-progress-bar {
 
 .planet-reveal-front {
   transform: rotateY(180deg);
-  background: radial-gradient(circle at 50% 30%, rgba(30, 40, 80, 0.6), rgba(6, 9, 18, 0.9));
-  border: 2px solid var(--panel-border-strong);
+  background: radial-gradient(circle at 50% 30%, rgba(52, 42, 22, 0.6), rgba(6, 8, 13, 0.92));
+  border: 1px solid var(--accent-dim);
 }
 
 .planet-reveal-front strong {
@@ -2162,9 +2495,9 @@ progress::-moz-progress-bar {
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #05231a;
-  background: #4ade80;
-  border-radius: 999px;
+  color: var(--void);
+  background: var(--accent-strong);
+  border-radius: var(--r-sm);
   padding: 2px 7px;
 }
 
@@ -2209,20 +2542,23 @@ progress::-moz-progress-bar {
 }
 
 .planet-chip-locked {
-  background: radial-gradient(circle at 40% 35%, #1a2136, #070b14);
-  border: 1px dashed var(--panel-border);
+  background: radial-gradient(circle at 40% 35%, #1d1a12, #08090d);
+  border: 1px dashed var(--rule);
   color: var(--text-faint);
   font-weight: 700;
   font-size: 1.2rem;
 }
 
+/* The dex is a plate of specimens: one hairline grid, no card per cell. */
 .planet-dex-grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-  gap: 10px;
+  gap: 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
 }
 
 .planet-dex-cell {
@@ -2231,9 +2567,11 @@ progress::-moz-progress-bar {
   align-items: center;
   gap: 5px;
   padding: 12px 8px;
-  border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  background: var(--field-bg);
+  border: 0;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
   position: relative;
   min-height: 108px;
   justify-content: center;
@@ -2264,8 +2602,8 @@ progress::-moz-progress-bar {
   top: 6px;
   right: 8px;
   font-family: var(--mono-font);
-  font-size: 0.72rem;
-  color: var(--starlight);
+  font-size: 0.68rem;
+  color: var(--accent);
 }
 
 /* 3D hover label for a collected planet. */
@@ -2276,7 +2614,7 @@ progress::-moz-progress-bar {
   padding: 3px 10px;
   border: 1px solid;
   border-radius: 999px;
-  background: rgba(6, 9, 18, 0.82);
+  background: rgba(7, 8, 12, 0.85);
   color: var(--text-primary);
   font-size: 0.78rem;
   white-space: nowrap;
@@ -2433,7 +2771,7 @@ progress::-moz-progress-bar {
   width: 1.9rem;
   height: 2.7rem;
   object-fit: cover;
-  border-radius: 0.25rem;
+  border-radius: var(--r-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
@@ -2460,9 +2798,9 @@ progress::-moz-progress-bar {
   max-height: 17rem;
   overflow-y: auto;
   background: var(--panel-bg-solid);
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 0.6rem;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6);
 }
 
 .autocomplete-status {
@@ -2476,7 +2814,7 @@ progress::-moz-progress-bar {
   align-items: center;
   gap: 0.7rem;
   padding: 0.4rem 0.5rem;
-  border-radius: 0.45rem;
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
@@ -2489,8 +2827,8 @@ progress::-moz-progress-bar {
   width: 2.1rem;
   height: 3.1rem;
   object-fit: cover;
-  border-radius: 0.28rem;
-  background: rgba(158, 196, 255, 0.08);
+  border-radius: var(--r-sm);
+  background: rgba(198, 180, 150, 0.08);
   display: grid;
   place-items: center;
   font-size: 1rem;
@@ -2533,7 +2871,7 @@ progress::-moz-progress-bar {
   width: 5.4rem;
   height: 8rem;
   object-fit: cover;
-  border-radius: 0.5rem;
+  border-radius: var(--r-sm);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
@@ -2593,7 +2931,7 @@ progress::-moz-progress-bar {
 
 /* Optional-field hint inside form labels. */
 .optional-hint {
-  color: rgba(226, 236, 255, 0.45);
+  color: var(--text-faint);
   font-size: 0.78em;
   font-weight: 400;
 }
@@ -2604,7 +2942,7 @@ progress::-moz-progress-bar {
   border: 0;
   background: none;
   cursor: zoom-in;
-  border-radius: 0.5rem;
+  border-radius: var(--r-sm);
   line-height: 0;
 }
 
@@ -2628,7 +2966,7 @@ progress::-moz-progress-bar {
 .poster-lightbox img {
   max-width: min(86vw, 34rem);
   max-height: 84vh;
-  border-radius: 0.75rem;
+  border-radius: var(--r-md);
   box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.7);
 }
 
@@ -2642,8 +2980,10 @@ progress::-moz-progress-bar {
 .data-transfer {
   display: grid;
   gap: 0.7rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--panel-border);
+}
+
+.data-transfer > h3 {
+  margin: 0;
 }
 
 .transfer-intro {
@@ -2700,18 +3040,21 @@ progress::-moz-progress-bar {
 }
 
 .transfer-compare > section {
-  padding: 0.75rem 0.85rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.7rem;
-  background: var(--field-bg);
+  padding: 0.75rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--rule-strong);
+  border-radius: 0;
+  background: transparent;
 }
 
 .transfer-compare h3 {
   margin: 0 0 0.5rem;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  font-family: var(--mono-font);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .transfer-compare .transfer-summary {
@@ -2726,8 +3069,9 @@ progress::-moz-progress-bar {
 }
 
 .watchlist-intro {
-  color: rgba(226, 236, 255, 0.6);
-  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
 }
 
 .watchlist-form {
@@ -2736,18 +3080,21 @@ progress::-moz-progress-bar {
 }
 
 .watchlist-notice {
-  color: #9fdcff;
-  font-size: 0.85rem;
+  color: var(--accent-strong);
+  font-size: 0.82rem;
 }
 
 .watchlist-count {
   margin-top: 0.4rem;
-  font-size: 0.95rem;
+  color: var(--text-faint);
+  font-family: var(--mono-font);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
 }
 
 .watchlist-list {
   display: grid;
-  gap: 0.6rem;
+  gap: 0;
   list-style: none;
   padding: 0;
 }
@@ -2755,9 +3102,10 @@ progress::-moz-progress-bar {
 .watchlist-list li {
   display: grid;
   gap: 0.35rem;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.6rem;
+  padding: 0.6rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
 }
 
 .watchlist-entry-actions {
@@ -2778,21 +3126,21 @@ progress::-moz-progress-bar {
   justify-items: center;
   max-width: min(92vw, 34rem);
   padding: 0.85rem 1.1rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.8rem;
-  background: rgba(4, 8, 20, 0.82);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: rgba(6, 8, 13, 0.86);
   backdrop-filter: blur(14px);
   text-align: center;
 }
 
 .gesture-guide-moves {
-  color: rgba(232, 240, 255, 0.92);
-  font-size: 0.88rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .gesture-guide-cta {
-  color: #9fdcff;
-  font-size: 0.85rem;
+  color: var(--accent);
+  font-size: 0.82rem;
 }
 
 /* ---- Sky corner utilities ---- */
@@ -2810,16 +3158,16 @@ progress::-moz-progress-bar {
   height: 2.4rem;
   display: grid;
   place-items: center;
-  border: 1px solid var(--panel-border);
+  border: 1px solid var(--rule);
   border-radius: 50%;
-  background: rgba(4, 8, 20, 0.72);
-  color: rgba(232, 240, 255, 0.9);
+  background: rgba(6, 8, 13, 0.76);
+  color: var(--text-secondary);
   font-size: 1.05rem;
   cursor: pointer;
   backdrop-filter: blur(10px);
 }
 
 .sky-utility-button[aria-pressed='true'] {
-  color: #9fdcff;
-  border-color: rgba(159, 220, 255, 0.5);
+  color: var(--accent);
+  border-color: rgba(232, 181, 101, 0.5);
 }
