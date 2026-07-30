@@ -137,6 +137,8 @@ export interface ArchiveCommands {
   clearWatchlistPrefill(): void;
   /** Notes another viewing of a work; each rewatch brightens its star. */
   markRewatched(starId: string): CommandResult<{ rewatchCount: number }>;
+  /** Replaces the whole archive with a validated backup document. */
+  importArchive(document: PersistedStateV2): CommandResult<{ workCount: number }>;
   pullPlanet(): CommandResult<PullPlanetValue>;
   toggleSelectedGenre(genre: Genre): void;
   setAchievementPanelOpen(isOpen: boolean): void;
@@ -740,6 +742,32 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
         },
       });
     },
+    importArchive: (document) => executor.execute({
+      operation: 'importArchive',
+      // The executor re-validates the candidate against the codec before it is
+      // ever written, so a hand-edited file cannot corrupt the saved archive.
+      derive: () => ({
+        candidate: structuredClone(document),
+        value: { workCount: document.stars.length },
+        completionEvents: [],
+        // Everything pointing at the previous universe must let go: selections,
+        // camera poses and drafts all reference ids that no longer exist.
+        applyRuntime: (runtime) => ({
+          ...runtime,
+          selectedStarId: null,
+          selectedGenres: new Set(),
+          preFocusPose: null,
+          pendingCameraRequest: null,
+          watchlistPrefill: null,
+          constellationDraft: {
+            active: false,
+            phase: 'selecting',
+            starIds: [],
+            error: null,
+          },
+        }),
+      }),
+    }),
     pullPlanet: () => {
       const collection = store.getState().persisted.planetCollection;
       if (availableTickets(collection) < 1) {
