@@ -2719,6 +2719,19 @@ progress::-moz-progress-bar {
   gap: 0.2rem;
 }
 
+/* ---- Cloud sync ---- */
+.cloud-sync {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.cloud-auth-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
 /* ---- Watchlist panel ---- */
 .watchlist-panel {
   display: grid;
