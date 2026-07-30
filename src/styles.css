@@ -2,35 +2,35 @@
    Asteron — 관측 기록부
 
    The chrome is a printed catalogue, not a dashboard: ruled lines
-   instead of stacked cards, near-square corners, and warm light
-   borrowed from the accretion disk the sky is built around. The
-   old cyan-on-navy fought that gold; this palette answers it.
+   instead of stacked cards, near-square corners, and a deep navy
+   ink that reads as night paper. The accent is a cornflower blue —
+   starlight rather than the neon cyan a dashboard reaches for.
    ============================================================ */
 :root {
   --void: #010208;
-  /* Ink: the paper this record is printed on. */
-  --panel-bg: rgba(9, 11, 16, 0.88);
-  --panel-bg-solid: #0a0c11;
-  --rule: rgba(196, 178, 148, 0.16);
-  --rule-strong: rgba(214, 196, 164, 0.34);
+  /* Ink: the night paper this record is printed on. */
+  --panel-bg: rgba(10, 15, 32, 0.9);
+  --panel-bg-solid: #0b1020;
+  --rule: rgba(150, 172, 220, 0.17);
+  --rule-strong: rgba(164, 186, 230, 0.34);
   --panel-border: var(--rule);
   --panel-border-strong: var(--rule-strong);
-  --panel-highlight: rgba(255, 244, 224, 0.045);
-  --field-bg: rgba(0, 0, 0, 0.28);
+  --panel-highlight: rgba(224, 236, 255, 0.05);
+  --field-bg: rgba(0, 0, 0, 0.24);
 
-  /* Warm greys, so text sits on the page rather than glowing at you. */
-  --text-primary: #f2ece1;
-  --text-secondary: #cbc2b2;
-  --text-muted: #9a9182;
+  /* Cool greys, so text sits on the page rather than glowing at you. */
+  --text-primary: #e9edfa;
+  --text-secondary: #bcc6e0;
+  --text-muted: #929db9;
   /* Faint still has to clear 4.5:1 on the panel ink — it carries real labels
      (list sub-heads, record keys), not just decoration. */
-  --text-faint: #8a8272;
+  --text-faint: #7d879f;
 
-  /* The accretion disk: white-hot core, gold, ember. */
-  --accent: #e8b565;
-  --accent-strong: #ffd591;
-  --accent-dim: #4a3a22;
-  --accent-soft: rgba(232, 181, 101, 0.12);
+  /* Cornflower, not cyan: the blue of a star seen through atmosphere. */
+  --accent: #7aa5ff;
+  --accent-strong: #a8c4ff;
+  --accent-dim: #26385f;
+  --accent-soft: rgba(122, 165, 255, 0.13);
   --starlight: #ffe9b3;
   --danger: #e0685f;
   --danger-soft: rgba(96, 30, 26, 0.5);
@@ -118,12 +118,12 @@
 ::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
-  background-color: rgba(198, 180, 150, 0.18);
+  background-color: rgba(150, 172, 220, 0.18);
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(198, 180, 150, 0.36);
+  background-color: rgba(150, 172, 220, 0.36);
 }
 
 html,
@@ -167,7 +167,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  text-shadow: 0 0 1.8rem rgba(232, 181, 101, 0.28);
+  text-shadow: 0 0 1.8rem rgba(122, 165, 255, 0.28);
 }
 
 .eyebrow {
@@ -259,7 +259,7 @@ body {
 .rating-star-glyph {
   font-size: 1.6rem;
   line-height: 1;
-  color: rgba(198, 180, 150, 0.22);
+  color: rgba(150, 172, 220, 0.22);
   transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.12s ease;
 }
 
@@ -468,27 +468,27 @@ body {
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   padding: 0.7rem 1.15rem;
-  color: #171104;
+  color: #08101f;
   background: linear-gradient(180deg, var(--accent-strong), var(--accent));
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
-  box-shadow: 0 0.4rem 1.6rem rgba(232, 181, 101, 0.16);
+  box-shadow: 0 0.4rem 1.6rem rgba(122, 165, 255, 0.16);
   transition: border-color 0.18s ease, background 0.18s ease,
     box-shadow 0.2s ease, transform 0.15s var(--ease-out-soft);
 }
 
 .primary-action:hover {
   border-color: var(--accent-strong);
-  background: linear-gradient(180deg, #ffe3ae, var(--accent-strong));
-  box-shadow: 0 0.5rem 2rem rgba(232, 181, 101, 0.3);
+  background: linear-gradient(180deg, #c9dbff, var(--accent-strong));
+  box-shadow: 0 0.5rem 2rem rgba(122, 165, 255, 0.3);
 }
 
 .primary-action:active {
   transform: translateY(1px);
-  box-shadow: 0 0.2rem 0.8rem rgba(232, 181, 101, 0.22);
+  box-shadow: 0 0.2rem 0.8rem rgba(122, 165, 255, 0.22);
 }
 
 .primary-action:disabled {
@@ -518,7 +518,7 @@ body {
   border-left: 2px solid var(--accent);
   border-radius: var(--r-md);
   color: var(--text-primary);
-  background: rgba(10, 12, 18, 0.94);
+  background: rgba(10, 15, 32, 0.94);
   box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(18px);
   animation: surface-in 0.3s var(--ease-out-soft);
@@ -551,7 +551,7 @@ body {
   border-color: var(--rule-strong);
   border-left-color: var(--danger);
   color: #fff1f2;
-  background: rgba(22, 10, 10, 0.94);
+  background: rgba(28, 14, 22, 0.94);
 }
 
 .toast.toast-danger p {
@@ -566,7 +566,7 @@ body {
   border-color: var(--rule-strong);
   border-left-color: var(--accent-strong);
   color: var(--text-primary);
-  background: rgba(18, 14, 8, 0.94);
+  background: rgba(12, 17, 36, 0.94);
 }
 
 .toast.toast-unlock p {
@@ -593,7 +593,7 @@ body {
   font-size: 1.1rem;
   line-height: 1;
   color: var(--accent-strong);
-  text-shadow: 0 0 0.6rem rgba(232, 181, 101, 0.8);
+  text-shadow: 0 0 0.6rem rgba(122, 165, 255, 0.8);
   animation: toast-badge-pop 0.5s var(--ease-out-soft) both;
 }
 
@@ -610,7 +610,7 @@ body {
   background: linear-gradient(
     110deg,
     transparent 35%,
-    rgba(255, 213, 145, 0.85) 50%,
+    rgba(168, 196, 255, 0.85) 50%,
     transparent 65%
   );
   background-size: 220% 100%;
@@ -641,7 +641,7 @@ body {
   height: 3px;
   border-radius: 999px;
   background: var(--accent-strong);
-  box-shadow: 0 0 4px rgba(255, 213, 145, 0.9);
+  box-shadow: 0 0 4px rgba(168, 196, 255, 0.9);
   opacity: 0;
   animation: toast-spark-fly 0.7s ease-out var(--d, 0ms) 1;
 }
@@ -813,7 +813,7 @@ body {
   background: linear-gradient(
     110deg,
     transparent 30%,
-    rgba(232, 181, 101, 0.32) 50%,
+    rgba(122, 165, 255, 0.32) 50%,
     transparent 70%
   );
   animation: sheen-sweep 0.55s ease;
@@ -1118,7 +1118,7 @@ body {
   border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--work-glow-color) 7%, transparent), transparent 34%),
-    rgba(6, 8, 13, 0.9);
+    rgba(8, 12, 26, 0.9);
   box-shadow:
     0 0 2rem color-mix(in srgb, var(--work-glow-color) 16%, transparent),
     0 1.2rem 3rem rgba(0, 0, 0, 0.6);
@@ -1264,7 +1264,7 @@ body {
   border-radius: inherit;
   background: radial-gradient(
     26rem circle at var(--spot-x, 50%) var(--spot-y, -30%),
-    rgba(232, 181, 101, 0.09),
+    rgba(122, 165, 255, 0.09),
     transparent 62%
   );
   opacity: 0;
@@ -1799,7 +1799,7 @@ progress::-moz-progress-bar {
   border: 1px solid var(--panel-border-strong);
   border-radius: 999px;
   color: var(--text-primary);
-  background: rgba(7, 8, 12, 0.85);
+  background: rgba(9, 13, 28, 0.88);
   box-shadow:
     0 0 1rem var(--accent-soft),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -1932,7 +1932,7 @@ progress::-moz-progress-bar {
   border-radius: var(--r-lg);
   background: var(--panel-bg-solid);
   box-shadow:
-    0 0 4rem rgba(232, 181, 101, 0.14),
+    0 0 4rem rgba(122, 165, 255, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -1967,7 +1967,7 @@ progress::-moz-progress-bar {
   padding: 0.42rem;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(17, 17, 21, 0.62), rgba(7, 8, 12, 0.62));
+  background: linear-gradient(180deg, rgba(18, 25, 48, 0.62), rgba(9, 13, 28, 0.62));
   box-shadow:
     0 0.7rem 2.6rem rgba(0, 0, 0, 0.5),
     inset 0 1px 0 var(--panel-highlight);
@@ -1993,7 +1993,7 @@ progress::-moz-progress-bar {
 
 .dock-button:hover {
   color: var(--text-primary);
-  background: rgba(198, 180, 150, 0.09);
+  background: rgba(150, 172, 220, 0.09);
   transform: scale(1.06);
 }
 
@@ -2002,12 +2002,12 @@ progress::-moz-progress-bar {
 }
 
 .dock-button.is-active {
-  border-color: rgba(232, 181, 101, 0.42);
+  border-color: rgba(122, 165, 255, 0.42);
   color: var(--accent);
   background: var(--accent-soft);
   box-shadow:
-    0 0 1.1rem rgba(232, 181, 101, 0.25),
-    inset 0 0 0.6rem rgba(232, 181, 101, 0.08);
+    0 0 1.1rem rgba(122, 165, 255, 0.25),
+    inset 0 0 0.6rem rgba(122, 165, 255, 0.08);
 }
 
 /* Hover tooltip driven by the button's data-label. */
@@ -2020,7 +2020,7 @@ progress::-moz-progress-bar {
   border: 1px solid var(--rule);
   border-radius: var(--r-sm);
   color: var(--text-secondary);
-  background: rgba(6, 8, 13, 0.94);
+  background: rgba(8, 12, 26, 0.94);
   box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.5);
   font-size: 0.72rem;
   font-weight: 600;
@@ -2464,7 +2464,7 @@ progress::-moz-progress-bar {
 }
 
 .planet-reveal-back {
-  background: radial-gradient(circle at 50% 40%, #2a2416, #0a0b10);
+  background: radial-gradient(circle at 50% 40%, #1c2547, #080b16);
   border: 1px solid var(--rule-strong);
   font-size: 2.6rem;
   color: var(--accent);
@@ -2473,7 +2473,7 @@ progress::-moz-progress-bar {
 
 .planet-reveal-front {
   transform: rotateY(180deg);
-  background: radial-gradient(circle at 50% 30%, rgba(52, 42, 22, 0.6), rgba(6, 8, 13, 0.92));
+  background: radial-gradient(circle at 50% 30%, rgba(30, 42, 82, 0.6), rgba(8, 12, 26, 0.92));
   border: 1px solid var(--accent-dim);
 }
 
@@ -2542,7 +2542,7 @@ progress::-moz-progress-bar {
 }
 
 .planet-chip-locked {
-  background: radial-gradient(circle at 40% 35%, #1d1a12, #08090d);
+  background: radial-gradient(circle at 40% 35%, #161d33, #070a12);
   border: 1px dashed var(--rule);
   color: var(--text-faint);
   font-weight: 700;
@@ -2614,7 +2614,7 @@ progress::-moz-progress-bar {
   padding: 3px 10px;
   border: 1px solid;
   border-radius: 999px;
-  background: rgba(7, 8, 12, 0.85);
+  background: rgba(9, 13, 28, 0.88);
   color: var(--text-primary);
   font-size: 0.78rem;
   white-space: nowrap;
@@ -2652,7 +2652,7 @@ progress::-moz-progress-bar {
 }
 
 .pull-reveal-overlay.rarity-legendary {
-  background: radial-gradient(circle at 50% 45%, rgba(60, 44, 8, 0.6), rgba(2, 3, 8, 0.98));
+  background: radial-gradient(circle at 50% 45%, rgba(24, 38, 78, 0.6), rgba(2, 3, 8, 0.98));
 }
 
 @keyframes pullRevealFade {
@@ -2828,7 +2828,7 @@ progress::-moz-progress-bar {
   height: 3.1rem;
   object-fit: cover;
   border-radius: var(--r-sm);
-  background: rgba(198, 180, 150, 0.08);
+  background: rgba(150, 172, 220, 0.08);
   display: grid;
   place-items: center;
   font-size: 1rem;
@@ -3128,7 +3128,7 @@ progress::-moz-progress-bar {
   padding: 0.85rem 1.1rem;
   border: 1px solid var(--rule);
   border-radius: var(--r-md);
-  background: rgba(6, 8, 13, 0.86);
+  background: rgba(8, 12, 26, 0.86);
   backdrop-filter: blur(14px);
   text-align: center;
 }
@@ -3160,7 +3160,7 @@ progress::-moz-progress-bar {
   place-items: center;
   border: 1px solid var(--rule);
   border-radius: 50%;
-  background: rgba(6, 8, 13, 0.76);
+  background: rgba(8, 12, 26, 0.76);
   color: var(--text-secondary);
   font-size: 1.05rem;
   cursor: pointer;
@@ -3169,5 +3169,5 @@ progress::-moz-progress-bar {
 
 .sky-utility-button[aria-pressed='true'] {
   color: var(--accent);
-  border-color: rgba(232, 181, 101, 0.5);
+  border-color: rgba(122, 165, 255, 0.5);
 }
