@@ -46,17 +46,15 @@
     />
     <meta name="twitter:image" content="https://star-movie.pages.dev/og.png" />
 
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-    />
-    <!-- Elegant serif used for display headings, brand, and the poster title. -->
+    <!-- Type: an archival voice, not a product one.
+         Hahmlet (serif) carries titles and numerals like a printed catalogue;
+         IBM Plex Sans KR runs the interface; IBM Plex Mono stamps the small
+         labels the way an observation log would. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
     />
   </head>
   <body style="margin: 0; background-color: #04070f">
@@ -81,24 +79,24 @@
           radial-gradient(circle at 50% 45%, rgba(18, 26, 48, 0.55), #04070f 70%);
         transition: opacity 0.6s ease;
         pointer-events: none;
-        font-family: 'Nanum Myeongjo', serif;
+        font-family: 'Hahmlet', serif;
       }
       #boot-loader.is-done {
         opacity: 0;
       }
       #boot-loader .boot-wordmark {
-        color: rgba(244, 247, 255, 0.95);
+        color: #f2ece1;
         font-size: clamp(1.4rem, 4vw, 2.1rem);
-        font-weight: 700;
+        font-weight: 600;
         letter-spacing: 0.42em;
         text-indent: 0.42em;
-        text-shadow: 0 0 1.8rem rgba(124, 214, 255, 0.35);
+        text-shadow: 0 0 1.8rem rgba(232, 181, 101, 0.4);
         animation: boot-wordmark-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
       }
       #boot-loader .boot-rule {
         width: min(11rem, 42vw);
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(124, 214, 255, 0.7), transparent);
+        background: linear-gradient(90deg, transparent, rgba(232, 181, 101, 0.75), transparent);
         background-size: 200% 100%;
         animation: boot-rule-shimmer 1.3s ease-in-out infinite;
       }
