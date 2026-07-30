@@ -2638,6 +2638,100 @@ progress::-moz-progress-bar {
   right: 1.2rem;
 }
 
+/* ---- Data transfer (backup / restore) ---- */
+.data-transfer {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.transfer-intro {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.transfer-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0;
+}
+
+.transfer-summary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.transfer-summary dt {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+}
+
+.transfer-summary dd {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.transfer-status {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+}
+
+/* Side-by-side "current vs incoming" inside the replace confirmation. */
+.transfer-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.transfer-compare > section {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.7rem;
+  background: var(--field-bg);
+}
+
+.transfer-compare h3 {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.transfer-compare .transfer-summary {
+  display: grid;
+  gap: 0.2rem;
+}
+
+/* ---- Cloud sync ---- */
+.cloud-sync {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.cloud-auth-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
 /* ---- Watchlist panel ---- */
 .watchlist-panel {
   display: grid;

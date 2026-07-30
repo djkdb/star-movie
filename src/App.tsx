@@ -8,6 +8,8 @@ import { AddWorkForm } from './components/AddWorkForm';
 import { ArchiveDomNavigation } from './components/ArchiveDomNavigation';
 import { ArchiveShell, type ShellPanelDefinition } from './components/ArchiveShell';
 import { ConstellationControls } from './components/ConstellationControls';
+import { CloudSyncPanel } from './components/CloudSyncPanel';
+import { DataTransferPanel } from './components/DataTransferPanel';
 import { GenreFilter } from './components/GenreFilter';
 import { GestureGuide } from './components/GestureGuide';
 import { HUD } from './components/HUD';
@@ -203,6 +205,8 @@ export function App({ store }: AppProps) {
         <>
           <HUD store={archiveStore} />
           <GenreFilter store={archiveStore} />
+          <DataTransferPanel store={archiveStore} />
+          <CloudSyncPanel store={archiveStore} />
           <TmdbAttribution variant="block" />
         </>
       ),
