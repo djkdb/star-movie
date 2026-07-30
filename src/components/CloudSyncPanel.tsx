@@ -69,10 +69,14 @@ export function CloudSyncPanel({ store, gateway: injected }: CloudSyncPanelProps
       setRemote(null);
       return;
     }
-    const result = await gateway.fetchMeta();
-    if (!mounted.current) return;
-    if (result.ok) setRemote(result.value);
-    else setError(result.message);
+    try {
+      const result = await gateway.fetchMeta();
+      if (!mounted.current) return;
+      if (result.ok) setRemote(result.value);
+      else setError(result.message);
+    } catch {
+      // A background refresh failing must not interrupt anything.
+    }
   }, [gateway]);
 
   useEffect(() => {
@@ -99,93 +103,112 @@ export function CloudSyncPanel({ store, gateway: injected }: CloudSyncPanelProps
     setError(null);
     setNotice(null);
     setBusy('auth');
-    if (mode === 'signUp') {
-      const result = await gateway.signUp(email.trim(), password);
+    try {
+      if (mode === 'signUp') {
+        const result = await gateway.signUp(email.trim(), password);
+        if (!mounted.current) return;
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        setPassword('');
+        setNotice(result.value.needsConfirmation
+          ? '가입 확인 메일을 보냈어요. 메일의 링크를 눌러 인증한 뒤 로그인해 주세요.'
+          : '가입이 끝났어요.');
+        return;
+      }
+
+      const result = await gateway.signIn(email.trim(), password);
       if (!mounted.current) return;
-      setBusy('none');
       if (!result.ok) {
         setError(result.message);
         return;
       }
       setPassword('');
-      if (result.value.needsConfirmation) {
-        setNotice('가입 확인 메일을 보냈어요. 메일의 링크를 눌러 인증한 뒤 로그인해 주세요.');
-      }
-      return;
+    } catch {
+      // A gateway is expected to return failures, but never trust it to.
+      if (mounted.current) setError('알 수 없는 오류가 발생했어요. 다시 시도해 주세요.');
+    } finally {
+      // Whatever happens — including a thrown error — the form must come back.
+      if (mounted.current) setBusy('none');
     }
-
-    const result = await gateway.signIn(email.trim(), password);
-    if (!mounted.current) return;
-    setBusy('none');
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
-    setPassword('');
   };
 
   const handlePush = async () => {
     setError(null);
     setNotice(null);
     setBusy('push');
-    const result = await gateway.pushArchive(
-      persisted,
-      describeDevice(navigator.userAgent),
-    );
-    if (!mounted.current) return;
-    setBusy('none');
-    if (!result.ok) {
-      setError(result.message);
-      return;
+    try {
+      const result = await gateway.pushArchive(
+        persisted,
+        describeDevice(navigator.userAgent),
+      );
+      if (!mounted.current) return;
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      writeSyncedRevision(result.value.revision);
+      setRemote(result.value);
+      setNotice('클라우드에 저장했어요.');
+    } catch {
+      if (mounted.current) setError('클라우드에 저장하지 못했어요. 다시 시도해 주세요.');
+    } finally {
+      if (mounted.current) setBusy('none');
     }
-    writeSyncedRevision(result.value.revision);
-    setRemote(result.value);
-    setNotice('클라우드에 저장했어요.');
   };
 
   const startPull = async () => {
     setError(null);
     setNotice(null);
     setBusy('pull');
-    const result = await gateway.fetchMeta();
-    if (!mounted.current) return;
-    setBusy('none');
-    if (!result.ok) {
-      setError(result.message);
-      return;
+    try {
+      const result = await gateway.fetchMeta();
+      if (!mounted.current) return;
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      if (result.value === null) {
+        setError('클라우드에 저장된 기록이 아직 없어요.');
+        return;
+      }
+      setRemote(result.value);
+      setConfirmPull({ meta: result.value });
+    } catch {
+      if (mounted.current) setError('클라우드를 확인하지 못했어요. 다시 시도해 주세요.');
+    } finally {
+      if (mounted.current) setBusy('none');
     }
-    if (result.value === null) {
-      setError('클라우드에 저장된 기록이 아직 없어요.');
-      return;
-    }
-    setRemote(result.value);
-    setConfirmPull({ meta: result.value });
   };
 
   const confirmPullNow = async () => {
     setConfirmPull(null);
     setBusy('pull');
-    const result = await gateway.fetchArchive();
-    if (!mounted.current) return;
-    if (!result.ok) {
-      setBusy('none');
-      setError(result.message);
-      return;
-    }
-    if (result.value === null) {
-      setBusy('none');
-      setError('클라우드에 저장된 기록이 아직 없어요.');
-      return;
-    }
-    const applied = store.getState().commands.importArchive(result.value.document);
-    setBusy('none');
-    if (applied.ok) {
-      writeSyncedRevision(result.value.meta.revision);
-      setRemote(result.value.meta);
-      store.getState().commands.pushGentleToast(
-        '클라우드에서 불러왔어요',
-        `작품 ${applied.value.workCount}편이 다시 하늘에 떠올랐습니다.`,
-      );
+    try {
+      const result = await gateway.fetchArchive();
+      if (!mounted.current) return;
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      if (result.value === null) {
+        setError('클라우드에 저장된 기록이 아직 없어요.');
+        return;
+      }
+      const applied = store.getState().commands.importArchive(result.value.document);
+      if (applied.ok) {
+        writeSyncedRevision(result.value.meta.revision);
+        setRemote(result.value.meta);
+        store.getState().commands.pushGentleToast(
+          '클라우드에서 불러왔어요',
+          `작품 ${applied.value.workCount}편이 다시 하늘에 떠올랐습니다.`,
+        );
+      }
+    } catch {
+      if (mounted.current) setError('클라우드에서 불러오지 못했어요. 다시 시도해 주세요.');
+    } finally {
+      if (mounted.current) setBusy('none');
     }
   };
 
@@ -232,7 +255,7 @@ export function CloudSyncPanel({ store, gateway: injected }: CloudSyncPanelProps
                 onClick={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setError(null); }}
                 type="button"
               >
-                {mode === 'signIn' ? '계정이 없어요' : '이미 계정이 있어요'}
+                {mode === 'signIn' ? '회원가입' : '로그인으로'}
               </button>
             </div>
           </form>

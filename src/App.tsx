@@ -9,6 +9,7 @@ import { ArchiveDomNavigation } from './components/ArchiveDomNavigation';
 import { ArchiveShell, type ShellPanelDefinition } from './components/ArchiveShell';
 import { ConstellationControls } from './components/ConstellationControls';
 import { CloudSyncPanel } from './components/CloudSyncPanel';
+import { WelcomeGate } from './components/WelcomeGate';
 import { DataTransferPanel } from './components/DataTransferPanel';
 import { GenreFilter } from './components/GenreFilter';
 import { GestureGuide } from './components/GestureGuide';
@@ -269,6 +270,7 @@ export function App({ store }: AppProps) {
         panels={panels}
       />
       <SceneFocusVeil />
+      <WelcomeGate store={archiveStore} />
       <CursorSpotlight />
       <WorkCard store={archiveStore} />
       <GestureGuide store={archiveStore} />
