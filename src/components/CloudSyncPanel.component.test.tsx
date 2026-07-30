@@ -171,6 +171,40 @@ describe('CloudSyncPanel', () => {
     }
   });
 
+  it('recovers the form when the gateway throws instead of returning', async () => {
+    // Supabase throws on network failure. If that escapes, the button stays
+    // stuck on "처리 중…" forever — which is exactly what happened in the wild.
+    const store = createStore();
+    const { gateway } = createFakeGateway();
+    gateway.signIn = async () => { throw new Error('Failed to fetch'); };
+    try {
+      render(<CloudSyncPanel gateway={gateway} store={store} />);
+      await userEvent.type(await screen.findByLabelText('이메일'), 'me@example.com');
+      await userEvent.type(screen.getByLabelText('비밀번호'), 'hunter22');
+      await userEvent.click(screen.getByRole('button', { name: '로그인' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '로그인' })).toBeEnabled());
+      expect(screen.queryByText('처리 중…')).not.toBeInTheDocument();
+    } finally {
+      store.dispose();
+    }
+  });
+
+  it('switches to the sign-up form with the 회원가입 button', async () => {
+    const store = createStore();
+    const { gateway } = createFakeGateway();
+    try {
+      render(<CloudSyncPanel gateway={gateway} store={store} />);
+      await userEvent.click(await screen.findByRole('button', { name: '회원가입' }));
+
+      expect(screen.getByRole('button', { name: '가입하기' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '로그인으로' })).toBeInTheDocument();
+    } finally {
+      store.dispose();
+    }
+  });
+
   it('surfaces a cloud error instead of failing silently', async () => {
     const store = createStore();
     const { gateway } = createFakeGateway({

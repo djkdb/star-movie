@@ -33,6 +33,41 @@ export type CloudResult<T> =
   | { ok: true; value: T }
   | { ok: false; message: string };
 
+/** A hung request must never trap the UI in a "working…" state forever. */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+/**
+ * Every call to Supabase goes through here.
+ *
+ * The client *throws* on network failure rather than returning an error, and a
+ * request can also simply never settle. Either one would leave the caller stuck
+ * showing a spinner, so both are turned into an ordinary failed CloudResult.
+ */
+async function guard<T>(run: () => Promise<CloudResult<T>>): Promise<CloudResult<T>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      run(),
+      new Promise<CloudResult<T>>((resolve) => {
+        timer = setTimeout(
+          () => resolve({
+            ok: false,
+            message: '응답이 없어요. 네트워크 상태를 확인하고 다시 시도해 주세요.',
+          }),
+          REQUEST_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } catch (cause) {
+    return {
+      ok: false,
+      message: friendlyMessage(cause instanceof Error ? cause : null),
+    };
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 /** Supabase errors are technical; users get something they can act on. */
 function friendlyMessage(error: { message?: string } | null): string {
   const raw = error?.message ?? '';
@@ -82,9 +117,13 @@ export function createSupabaseGateway(client: SupabaseClient): CloudArchiveGatew
 
   return {
     async getSession() {
-      const { data } = await client.auth.getSession();
-      const user = data.session?.user;
-      return user === undefined ? null : { userId: user.id, email: user.email ?? null };
+      try {
+        const { data } = await client.auth.getSession();
+        const user = data.session?.user;
+        return user === undefined ? null : { userId: user.id, email: user.email ?? null };
+      } catch {
+        return null;
+      }
     },
 
     onSessionChange(listener) {
@@ -95,24 +134,28 @@ export function createSupabaseGateway(client: SupabaseClient): CloudArchiveGatew
       return () => data.subscription.unsubscribe();
     },
 
-    async signUp(email, password) {
+    signUp: (email, password) => guard(async () => {
       const { data, error } = await client.auth.signUp({ email, password });
       if (error !== null) return { ok: false, message: friendlyMessage(error) };
       // With email confirmation on, Supabase returns a user but no session.
       return { ok: true, value: { needsConfirmation: data.session === null } };
-    },
+    }),
 
-    async signIn(email, password) {
+    signIn: (email, password) => guard(async () => {
       const { error } = await client.auth.signInWithPassword({ email, password });
       if (error !== null) return { ok: false, message: friendlyMessage(error) };
       return { ok: true, value: undefined };
-    },
+    }),
 
     async signOut() {
-      await client.auth.signOut();
+      try {
+        await client.auth.signOut();
+      } catch {
+        // Signing out is best effort; the local session is cleared regardless.
+      }
     },
 
-    async fetchMeta() {
+    fetchMeta: () => guard(async () => {
       const row = await readRow();
       if (!row.ok) return row;
       if (row.value === null) return { ok: true, value: null };
@@ -121,9 +164,9 @@ export function createSupabaseGateway(client: SupabaseClient): CloudArchiveGatew
         return { ok: false, message: '클라우드에 저장된 기록을 읽을 수 없어요.' };
       }
       return { ok: true, value: toMeta(row.value, decoded.data) };
-    },
+    }),
 
-    async fetchArchive() {
+    fetchArchive: () => guard(async () => {
       const row = await readRow();
       if (!row.ok) return row;
       if (row.value === null) return { ok: true, value: null };
@@ -137,9 +180,9 @@ export function createSupabaseGateway(client: SupabaseClient): CloudArchiveGatew
         ok: true,
         value: { meta: toMeta(row.value, decoded.data), document: decoded.data },
       };
-    },
+    }),
 
-    async pushArchive(document, deviceLabel) {
+    pushArchive: (document, deviceLabel) => guard(async () => {
       const userId = await requireUser();
       if (userId === null) return { ok: false, message: '로그인이 필요해요.' };
       const { data, error } = await client
@@ -157,7 +200,7 @@ export function createSupabaseGateway(client: SupabaseClient): CloudArchiveGatew
         .single();
       if (error !== null) return { ok: false, message: friendlyMessage(error) };
       return { ok: true, value: toMeta(data as ArchiveRow, document) };
-    },
+    }),
   };
 }
 
