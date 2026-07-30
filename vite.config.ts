@@ -39,22 +39,26 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // Pretendard (jsDelivr) + Nanum Myeongjo (Google Fonts) stylesheets:
-            // small, may revalidate so a new subset is picked up.
-            urlPattern: /^https:\/\/(cdn\.jsdelivr\.net|fonts\.googleapis\.com)\/.*/i,
+            // The Google Fonts stylesheet: small, and revalidated so a new
+            // subset split is picked up without a hard reload.
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'font-css',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
           {
             // The font files themselves are immutable — cache them for a year.
+            // Google splits Korean into ~100 unicode-range chunks per family so
+            // a page fetches only the syllables it uses; across three families
+            // that is far more than a couple dozen entries, and too low a cap
+            // silently evicts chunks and drops text back to a fallback face.
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'font-files',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
