@@ -172,6 +172,7 @@ export function createDefaultRuntimeStore(hasPersistedRegistration = false): Run
     isAchievementPanelOpen: false,
     isPlanetCodexOpen: false,
     requestedPanelId: null,
+    cinematicTour: null,
     qualityLevel: 'full',
     pendingCameraRequest: null,
     preFocusPose: null,

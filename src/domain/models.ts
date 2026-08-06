@@ -218,6 +218,11 @@ export interface WatchlistPrefill {
   tmdbId?: number;
 }
 
+/** Clock origin of the running camera tour, shared with the recorder. */
+export interface CinematicTourState {
+  startedAtMs: number;
+}
+
 export interface RuntimeStore {
   /** False only for a session bootstrapped without a persisted registration. */
   hasPersistedRegistration: boolean;
@@ -230,6 +235,11 @@ export interface RuntimeStore {
   isPlanetCodexOpen: boolean;
   /** A one-shot request for the shell to open a dock panel by id, then clear. */
   requestedPanelId: string | null;
+  /**
+   * Set while the scripted camera flight for the shareable clip is running.
+   * Runtime only — a tour never outlives the session that started it.
+   */
+  cinematicTour: CinematicTourState | null;
   qualityLevel: QualityLevel;
   pendingCameraRequest: CameraRequest | null;
   /** Camera pose captured just before a star focus, restored on deselection. */

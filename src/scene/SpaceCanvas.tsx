@@ -50,6 +50,7 @@ import {
 } from './backgroundModel';
 import { ArrivalFlight } from './ArrivalFlight';
 import { CameraRig } from './CameraRig';
+import { CinematicTour } from './CinematicTour';
 import { registerGalaxyCanvas } from './galaxyCapture';
 import { SceneErrorBoundary } from './SceneErrorBoundary';
 import { usePrefersReducedMotion, getSceneFrameLoop } from './usePrefersReducedMotion';
@@ -576,6 +577,8 @@ interface SpaceSceneProps {
   selectedGenres: ReadonlySet<Genre>;
   qualityLevel: QualityLevel;
   reducedMotion: boolean;
+  /** Clock origin of the running clip flight, or null when idle. */
+  cinematicTourStartedAtMs: number | null;
   activeDragPayload: StarDragPayload | null;
   onBlackholeDrop: (payload: StarDragPayload) => void;
   onBlackholeOpen: () => void;
@@ -593,6 +596,7 @@ function SpaceScene({
   qualityLevel,
   reducedMotion,
   activeDragPayload,
+  cinematicTourStartedAtMs,
   onBlackholeDrop,
   onBlackholeOpen,
   onStarDragStart,
@@ -755,11 +759,19 @@ function SpaceScene({
         selectedStarId={selectedStarId}
         stars={viewModel.archiveContent.stars}
       />
+      {/* The scripted flight recorded into the shareable clip. It writes the
+          camera directly, so it is mounted after the rig that would otherwise
+          tween against it. */}
+      <CinematicTour
+        controlsRef={controlsRef}
+        onFinished={() => store.getState().commands.stopCinematicTour()}
+        startedAtMs={cinematicTourStartedAtMs}
+      />
       {/* The opening ride in from deep space. Skipped entirely under reduced
           motion, and any input drops the viewer straight into the home view. */}
       <ArrivalFlight
         controlsRef={controlsRef}
-        enabled={!reducedMotion}
+        enabled={!reducedMotion && cinematicTourStartedAtMs === null}
         homePose={SPACE_CAMERA_HOME_POSE}
       />
     </>
@@ -808,6 +820,7 @@ export function SpaceCanvas({
   const selectedStarId = useStore(store, (state) => state.runtime.selectedStarId);
   const selectedGenres = useStore(store, (state) => state.runtime.selectedGenres);
   const qualityLevel = useStore(store, (state) => state.runtime.qualityLevel);
+  const cinematicTour = useStore(store, (state) => state.runtime.cinematicTour);
   const reducedMotion = usePrefersReducedMotion();
   const canvasRegionRef = useRef<HTMLElement>(null);
   const archiveCloseRef = useRef<HTMLButtonElement>(null);
@@ -909,7 +922,7 @@ export function SpaceCanvas({
           <Canvas
             aria-hidden="true"
             dpr={[1, 1.5]}
-            frameloop={getSceneFrameLoop(reducedMotion)}
+            frameloop={cinematicTour === null ? getSceneFrameLoop(reducedMotion) : 'always'}
             // Anti-aliasing is owned by the post-processing composer; enabling it
             // on the Canvas too makes both resolve MSAA and alias the shared
             // depth-stencil buffer, which flickers/blacks out the scene.
@@ -931,6 +944,7 @@ export function SpaceCanvas({
                 />
                 <SpaceScene
                   activeDragPayload={activeDragPayload}
+                  cinematicTourStartedAtMs={cinematicTour?.startedAtMs ?? null}
                   constellationDraft={constellationDraft}
                   onBlackholeDrop={requestBlackholeMove}
                   onBlackholeOpen={() => setArchiveOpen(true)}

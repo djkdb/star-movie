@@ -145,6 +145,9 @@ export interface ArchiveCommands {
   setPlanetCodexOpen(isOpen: boolean): void;
   requestPanelOpen(panelId: string): void;
   consumePanelRequest(): void;
+  /** Hands the camera to the scripted flight used by the clip export. */
+  startCinematicTour(startedAtMs: number): void;
+  stopCinematicTour(): void;
   setListDrawerOpen(isOpen: boolean): void;
   toggleListDrawer(): void;
   degradeQuality(): QualityLevel;
@@ -839,6 +842,25 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
         state.runtime.requestedPanelId === null
           ? state
           : { runtime: { ...state.runtime, requestedPanelId: null } }
+      ));
+    },
+    startCinematicTour: (startedAtMs) => {
+      store.setState((state) => ({
+        // The tour drives the camera itself, so any pending focus request and
+        // the selection that would re-open a work card are dropped first.
+        runtime: {
+          ...state.runtime,
+          cinematicTour: { startedAtMs },
+          pendingCameraRequest: null,
+          selectedStarId: null,
+        },
+      }));
+    },
+    stopCinematicTour: () => {
+      store.setState((state) => (
+        state.runtime.cinematicTour === null
+          ? state
+          : { runtime: { ...state.runtime, cinematicTour: null } }
       ));
     },
     setPlanetCodexOpen: (isOpen) => {
