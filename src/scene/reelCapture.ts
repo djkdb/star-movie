@@ -47,6 +47,9 @@ const INK = '#050813';
 /** Held past the clip end so the muxer cannot clip the closing card. */
 const TAIL_MS = 250;
 
+/** The interface typeface, so the clip and the app read as the same product. */
+const CAPTION_FONT = "'Wanted Sans', -apple-system, 'Apple SD Gothic Neo', system-ui, sans-serif";
+
 /**
  * Resolves once the display faces are resident, so captions do not bake in a
  * fallback. Call this *before* taking the clip clock origin: anything awaited
@@ -113,6 +116,7 @@ function drawCaption(
   ctx.textBaseline = 'middle';
 
   const lines = caption.headline.split('\n');
+  setTracking(ctx, 0);
   // Cards sit low: the top third of a Reel is where the account header lands.
   const blockCenter = REEL_HEIGHT * 0.76;
   const headlineSize = lines.length > 1 ? 92 : 132;
@@ -121,14 +125,16 @@ function drawCaption(
 
   if (caption.eyebrow !== '') {
     ctx.fillStyle = '#7aa5ff';
-    ctx.font = "400 34px 'IBM Plex Mono', ui-monospace, monospace";
-    setTracking(ctx, 6);
+    ctx.font = `500 34px ${CAPTION_FONT}`;
+    setTracking(ctx, 2);
     ctx.fillText(caption.eyebrow, REEL_WIDTH / 2, headlineTop - headlineSize * 0.95);
     setTracking(ctx, 0);
   }
 
   ctx.fillStyle = '#e9edfa';
-  ctx.font = `600 ${headlineSize}px 'Hahmlet', 'Nanum Myeongjo', serif`;
+  // Heavier than the interface: a caption competes with the sky behind it and
+  // with whatever the platform draws on top.
+  ctx.font = `800 ${headlineSize}px ${CAPTION_FONT}`;
   ctx.shadowColor = 'rgba(122, 165, 255, 0.5)';
   ctx.shadowBlur = 44;
   lines.forEach((line, index) => {
@@ -138,7 +144,7 @@ function drawCaption(
 
   if (caption.sub !== '') {
     ctx.fillStyle = 'rgba(188, 198, 224, 0.94)';
-    ctx.font = "400 40px 'IBM Plex Sans KR', system-ui, sans-serif";
+    ctx.font = `500 40px ${CAPTION_FONT}`;
     ctx.fillText(
       caption.sub,
       REEL_WIDTH / 2,

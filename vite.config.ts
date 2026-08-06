@@ -34,31 +34,26 @@ export default defineConfig({
       workbox: {
         // The 3D bundle is large; precache the app shell so it opens offline.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+        // …but not the 92 unicode-range chunks of the Korean typeface. Their
+        // whole point is that a page fetches only the syllables it renders;
+        // precaching them all would put 2.2MB into every install to hold
+        // glyphs most users never see. They are runtime-cached below instead,
+        // and font-display: swap covers the first paint.
+        globIgnores: ['**/fonts/wanted-sans/woff2/**'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // The Google Fonts stylesheet: small, and revalidated so a new
-            // subset split is picked up without a hard reload.
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'font-css',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            // The font files themselves are immutable — cache them for a year.
-            // Google splits Korean into ~100 unicode-range chunks per family so
-            // a page fetches only the syllables it uses; across three families
-            // that is far more than a couple dozen entries, and too low a cap
-            // silently evicts chunks and drops text back to a fallback face.
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            // The typeface chunks are same-origin and immutable, so they are
+            // kept for a year once a syllable has actually been rendered. The
+            // cap sits above the 92 chunks the family ships, because too low a
+            // cap silently evicts chunks and drops text to a fallback face.
+            urlPattern: /\/fonts\/wanted-sans\/.*\.woff2$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'font-files',
-              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
