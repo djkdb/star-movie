@@ -135,6 +135,11 @@ body,
   min-width: 320px;
   min-height: 100%;
   margin: 0;
+  /* Korean has no inter-syllable break opportunity the way English has
+     hyphenation points, so the default breaks words mid-syllable-block
+     (손가/락으로). keep-all breaks at spaces instead. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 body {
@@ -3130,11 +3135,14 @@ progress::-moz-progress-bar {
   flex-wrap: wrap;
 }
 
-/* ---- First-visit gesture guide ---- */
+/* ---- First-visit gesture guide ----
+   The dock sits along the bottom edge on phones, so the guide has to clear it
+   by the dock's own height. Sitting on top of it made every dock button
+   untappable on a first visit — which is precisely the visit that matters. */
 .gesture-guide {
   position: fixed;
   left: 50%;
-  bottom: 1.4rem;
+  bottom: calc(max(0.9rem, env(safe-area-inset-bottom)) + 4.6rem);
   transform: translateX(-50%);
   z-index: 40;
   display: grid;
@@ -3147,6 +3155,14 @@ progress::-moz-progress-bar {
   background: rgba(8, 12, 26, 0.86);
   backdrop-filter: blur(14px);
   text-align: center;
+}
+
+@media (min-width: 768px) {
+  /* On wide screens the dock is a column on the right, so the guide can sit
+     back down where it reads better. */
+  .gesture-guide {
+    bottom: 1.4rem;
+  }
 }
 
 .gesture-guide-moves {
