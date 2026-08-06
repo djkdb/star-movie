@@ -46,16 +46,13 @@
     />
     <meta name="twitter:image" content="https://star-movie.pages.dev/og.png" />
 
-    <!-- Type: an archival voice, not a product one.
-         Hahmlet (serif) carries titles and numerals like a printed catalogue;
-         IBM Plex Sans KR runs the interface; IBM Plex Mono stamps the small
-         labels the way an observation log would. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
-    />
+    <!-- Type: one voice for everything. Wanted Sans is a variable face, so
+         titles, body and the small labels are all the same typeface at
+         different weights — a serif for headings read as a printed archive
+         rather than a current product. Self-hosted (see
+         public/fonts/wanted-sans) so there is no third-party request on first
+         paint and the typeface survives offline. -->
+    <link rel="stylesheet" href="/fonts/wanted-sans/wanted-sans.css" />
   </head>
   <body style="margin: 0; background-color: #04070f">
     <!-- Boot overlay: shown before the JS bundle (and its CSS) even loads, so
@@ -79,7 +76,7 @@
           radial-gradient(circle at 50% 45%, rgba(18, 26, 48, 0.55), #04070f 70%);
         transition: opacity 0.6s ease;
         pointer-events: none;
-        font-family: 'Hahmlet', serif;
+        font-family: 'Wanted Sans', system-ui, sans-serif;
       }
       #boot-loader.is-done {
         opacity: 0;

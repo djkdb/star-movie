@@ -35,9 +35,12 @@
   --danger: #e0685f;
   --danger-soft: rgba(96, 30, 26, 0.5);
 
-  --mono-font: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  /* Titles and figures: a serif with a printed-catalogue weight. */
-  --display-font: 'Hahmlet', 'Nanum Myeongjo', 'Apple SD Gothic Neo', serif;
+  /* One typeface, three roles. Wanted Sans is variable (400–1000), so the
+     hierarchy comes from weight and size rather than from mixing families —
+     which is what the serif-plus-mono pairing was doing, and what made the
+     chrome read as a reprint instead of a current product. */
+  --label-font: 'Wanted Sans', -apple-system, 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --display-font: 'Wanted Sans', -apple-system, 'Apple SD Gothic Neo', system-ui, sans-serif;
 
   /* Corners stay near-square — rounded boxes are what made this read
      as a template. Only pills that must read as pills keep 999px. */
@@ -52,7 +55,7 @@
 
   color: var(--text-primary);
   background: var(--void);
-  font-family: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont,
+  font-family: 'Wanted Sans', -apple-system, BlinkMacSystemFont,
     'Apple SD Gothic Neo', 'Segoe UI', system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -69,12 +72,12 @@
 .transfer-summary dt,
 .status-badge,
 .character-count {
-  font-family: var(--mono-font);
-  font-weight: 400;
-  /* Hangul has no case and wide tracking pulls syllables apart, so labels
-     stay only just loose enough to read as labels. */
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-family: var(--label-font);
+  font-weight: 500;
+  /* No tracking and no caps: with a single sans the label role is carried by
+     weight and size, and Hangul has no case for uppercase to act on anyway. */
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .shell-panel-body h2,
@@ -83,8 +86,8 @@
 .confirm-dialog h2,
 .achievement-panel h2 {
   font-family: var(--display-font);
-  font-weight: 600;
-  letter-spacing: -0.005em;
+  font-weight: 700;
+  letter-spacing: -0.022em;
 }
 
 /* Figures read as catalogue numbers, never as dashboard KPIs. */
@@ -336,7 +339,7 @@ body {
    carry the accent so it looks like part of this record. */
 .form-field input[type='date'] {
   color-scheme: dark;
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.88rem;
   letter-spacing: 0.02em;
 }
@@ -536,7 +539,7 @@ body {
   border: 0;
   color: var(--text-muted);
   background: transparent;
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.66rem;
   letter-spacing: 0.1em;
   white-space: nowrap;
@@ -1066,7 +1069,7 @@ body {
 .archive-list-item dt,
 .work-card-details dt {
   color: var(--text-faint);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.62rem;
   font-weight: 400;
   letter-spacing: 0.08em;
@@ -1155,7 +1158,7 @@ body {
   padding: 0;
   color: var(--accent);
   background: transparent;
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.7rem;
   font-weight: 400;
   letter-spacing: 0.05em;
@@ -1437,7 +1440,7 @@ progress::-moz-progress-bar {
 .panel-action {
   width: 100%;
   margin-top: 1rem;
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.72rem;
   letter-spacing: 0.05em;
 }
@@ -1519,7 +1522,7 @@ progress::-moz-progress-bar {
 
 .list-controls label {
   color: var(--text-muted);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.62rem;
   font-weight: 400;
   letter-spacing: 0.08em;
@@ -1561,7 +1564,7 @@ progress::-moz-progress-bar {
 /* Sub-section heads sit a step below the serif title: mono, small, quiet. */
 .list-view h3 {
   color: var(--text-faint);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.62rem;
   font-weight: 400;
   letter-spacing: 0.09em;
@@ -1654,7 +1657,7 @@ progress::-moz-progress-bar {
 .compact-archive-list time,
 .compact-archive-list span {
   color: var(--text-faint);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.68rem;
   letter-spacing: 0.04em;
 }
@@ -1682,7 +1685,7 @@ progress::-moz-progress-bar {
 
 .achievement-list li > span {
   color: var(--text-muted);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -2236,7 +2239,7 @@ progress::-moz-progress-bar {
 
 .rating-text {
   color: var(--text-secondary);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.72rem;
   font-weight: 400;
   letter-spacing: 0.06em;
@@ -2360,7 +2363,7 @@ progress::-moz-progress-bar {
 }
 
 .planet-codex-rate {
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.72rem;
   letter-spacing: 0.05em;
   color: var(--accent);
@@ -2601,7 +2604,7 @@ progress::-moz-progress-bar {
   position: absolute;
   top: 6px;
   right: 8px;
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.68rem;
   color: var(--accent);
 }
@@ -3050,7 +3053,7 @@ progress::-moz-progress-bar {
 .transfer-compare h3 {
   margin: 0 0 0.5rem;
   color: var(--text-muted);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.62rem;
   font-weight: 400;
   letter-spacing: 0.08em;
@@ -3100,7 +3103,7 @@ progress::-moz-progress-bar {
 .watchlist-count {
   margin-top: 0.4rem;
   color: var(--text-faint);
-  font-family: var(--mono-font);
+  font-family: var(--label-font);
   font-size: 0.66rem;
   letter-spacing: 0.06em;
 }
