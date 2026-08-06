@@ -3171,3 +3171,85 @@ progress::-moz-progress-bar {
   color: var(--accent);
   border-color: rgba(122, 165, 255, 0.5);
 }
+
+/* ---- Reel studio ---------------------------------------------
+   The shareable-clip export, and the framing mode it films in. */
+.reel-studio {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.reel-studio > h3 {
+  margin: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rule-strong);
+  color: var(--text-primary);
+  font-family: var(--display-font);
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.reel-studio-intro {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.reel-studio-button {
+  width: 100%;
+}
+
+.reel-studio-hint,
+.reel-studio-status {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.reel-studio-status {
+  color: var(--accent);
+}
+
+/* Filming: the canvas becomes the 9:16 frame the recorder reads, and every
+   panel steps out of shot. Pointer events go too — a stray drag during the
+   flight would otherwise be baked into the file. */
+:root[data-reel-framing='true'] .shell-dock,
+:root[data-reel-framing='true'] .shell-panel,
+:root[data-reel-framing='true'] .sky-utilities,
+:root[data-reel-framing='true'] .sky-brand,
+:root[data-reel-framing='true'] .gesture-guide,
+:root[data-reel-framing='true'] .toast-region,
+:root[data-reel-framing='true'] .work-card {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+:root[data-reel-framing='true'] .archive-shell-canvas {
+  left: 50%;
+  width: min(calc(100vh * 9 / 16), 100vw);
+  height: 100vh;
+  height: 100dvh;
+  transform: translateX(-50%);
+}
+
+:root[data-reel-framing='true'] .space-canvas-shell {
+  pointer-events: none;
+}
+
+/* The compositing canvas, shown over the framed scene while filming so the
+   viewer sees the captions and crop that are going into the file. */
+.reel-stage {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  left: 50%;
+  height: 100vh;
+  height: 100dvh;
+  width: auto;
+  max-width: 100vw;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
