@@ -84,7 +84,9 @@ describe('WorkCard', () => {
     expect(card).toHaveClass('work-card');
     expect(card).toHaveStyle({ '--work-glow-color': '#fff8e0' });
     expect(screen.getByText('SF')).toBeInTheDocument();
-    expect(screen.getByLabelText('별점 5점')).toHaveTextContent('★★★★★');
+    const rating = screen.getByLabelText('별점 5점');
+    expect(rating).toHaveTextContent('5/5');
+    expect(rating.querySelectorAll('.star-glyph.is-filled')).toHaveLength(5);
     expect(screen.getByText('우주와 가족에 관한 영화')).toBeInTheDocument();
     expect(screen.getByText('2025-04-01')).toBeInTheDocument();
     expect(screen.getByText('Christopher Nolan')).toBeInTheDocument();

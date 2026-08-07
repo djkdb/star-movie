@@ -9,8 +9,8 @@
 :root {
   --void: #010208;
   /* Ink: the night paper this record is printed on. */
-  --panel-bg: rgba(10, 15, 32, 0.9);
-  --panel-bg-solid: #0b1020;
+  --panel-bg: rgba(14, 20, 40, 0.9);
+  --panel-bg-solid: var(--surface-raised);
   --rule: rgba(150, 172, 220, 0.17);
   --rule-strong: rgba(164, 186, 230, 0.34);
   --panel-border: var(--rule);
@@ -47,6 +47,28 @@
   --r-sm: 2px;
   --r-md: 3px;
   --r-lg: 4px;
+
+  /* ---- Type scale -------------------------------------------------
+     Eight steps, and nothing off-scale. The chrome had drifted to 35
+     distinct sizes — 11.2px next to 11.52px next to 12.48px — which is
+     what "the fonts feel off" actually was: no size read as a decision. */
+  --t-2xs: 0.6875rem;
+  --t-xs: 0.75rem;
+  --t-sm: 0.8125rem;
+  --t-base: 0.875rem;
+  --t-md: 1rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.5rem;
+  --t-2xl: 2rem;
+
+  /* ---- Surface ladder ---------------------------------------------
+     Dark interfaces carry depth by getting lighter, not by casting
+     shadows: each step is roughly +6% luminance. Everything used to sit
+     on one tone, so a dialog over a panel over the sky read flat. */
+  --surface-base: #0b1020;
+  --surface-raised: #0e1428;
+  --surface-overlay: #131b33;
+  --surface-popover: #18213e;
 
   --shadow-panel:
     0 0 0 1px rgba(0, 0, 0, 0.5),
@@ -172,7 +194,7 @@ body {
 .sky-brand h1 {
   font-family: var(--display-font);
   color: rgba(244, 247, 255, 0.95);
-  font-size: 1.5rem;
+  font-size: var(--t-xl);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-shadow: 0 0 1.8rem rgba(122, 165, 255, 0.28);
@@ -181,14 +203,14 @@ body {
 .eyebrow {
   margin-bottom: 0.5rem !important;
   color: var(--accent);
-  font-size: 0.7rem;
+  font-size: var(--t-xs);
   font-weight: 700;
   letter-spacing: 0.32em;
 }
 
 .sky-brand .eyebrow {
   margin-bottom: 0.35rem !important;
-  font-size: 0.55rem;
+  font-size: var(--t-2xs);
   font-weight: 600;
   letter-spacing: 0.44em;
   opacity: 0.75;
@@ -206,7 +228,7 @@ body {
 
 .add-work-panel h2 {
   margin-bottom: 1rem;
-  font-size: 1.1rem;
+  font-size: var(--t-lg);
 }
 
 /* The entry form is a filled-in record: fields sit in ruled rows rather than
@@ -238,7 +260,7 @@ body {
 .form-field legend,
 .form-field-label {
   color: var(--text-muted);
-  font-size: 0.63rem;
+  font-size: var(--t-2xs);
   font-weight: 500;
 }
 
@@ -265,15 +287,21 @@ body {
 }
 
 .rating-star-glyph {
-  font-size: 1.6rem;
+  display: grid;
+  place-items: center;
   line-height: 1;
-  color: rgba(150, 172, 220, 0.22);
-  transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.12s ease;
+  color: var(--rule-strong);
+  transition: color 0.15s ease, filter 0.15s ease, transform 0.12s ease;
+}
+
+.rating-star-glyph .star-glyph {
+  width: 1.55rem;
+  height: 1.55rem;
 }
 
 .rating-star.is-filled .rating-star-glyph {
   color: var(--rating-glow, var(--starlight));
-  text-shadow: 0 0 0.5rem color-mix(in srgb, var(--rating-glow, var(--starlight)) 60%, transparent);
+  filter: drop-shadow(0 0 0.4rem color-mix(in srgb, var(--rating-glow, var(--starlight)) 55%, transparent));
 }
 
 .rating-star:active .rating-star-glyph {
@@ -288,7 +316,7 @@ body {
 }
 
 .rating-picker[aria-invalid='true'] .rating-star-glyph {
-  color: rgba(224, 104, 95, 0.5);
+  color: color-mix(in srgb, var(--danger) 55%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -310,7 +338,7 @@ body {
   color: var(--text-primary);
   background: transparent;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: var(--t-md);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -345,7 +373,7 @@ body {
 .form-field input[type='date'] {
   color-scheme: dark;
   font-family: var(--label-font);
-  font-size: 0.88rem;
+  font-size: var(--t-base);
   letter-spacing: 0.02em;
 }
 
@@ -419,13 +447,13 @@ body {
 .field-error {
   margin: 0.35rem 0 0;
   color: #e79b93;
-  font-size: 0.74rem;
+  font-size: var(--t-xs);
 }
 
 .character-count {
   justify-self: end;
   color: var(--text-faint);
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
 }
 
 /* 감독 is two paired controls. Placing labels on one row and controls on the
@@ -479,7 +507,7 @@ body {
   color: #08101f;
   background: linear-gradient(180deg, var(--accent-strong), var(--accent));
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -526,7 +554,7 @@ body {
   border-left: 2px solid var(--accent);
   border-radius: var(--r-md);
   color: var(--text-primary);
-  background: rgba(10, 15, 32, 0.94);
+  background: var(--surface-popover);
   box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(18px);
   animation: surface-in 0.3s var(--ease-out-soft);
@@ -535,7 +563,7 @@ body {
 .toast p {
   margin-top: 0.25rem;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--t-base);
 }
 
 .toast button {
@@ -545,7 +573,7 @@ body {
   color: var(--text-muted);
   background: transparent;
   font-family: var(--label-font);
-  font-size: 0.66rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.1em;
   white-space: nowrap;
   cursor: pointer;
@@ -598,7 +626,7 @@ body {
   position: absolute;
   top: 0.95rem;
   left: 0.95rem;
-  font-size: 1.1rem;
+  font-size: var(--t-lg);
   line-height: 1;
   color: var(--accent-strong);
   text-shadow: 0 0 0.6rem rgba(122, 165, 255, 0.8);
@@ -902,7 +930,7 @@ body {
   border-bottom: 1px solid var(--rule-strong);
   color: var(--text-primary);
   font-family: var(--display-font);
-  font-size: 1.02rem;
+  font-size: var(--t-md);
   font-weight: 600;
   letter-spacing: -0.01em;
   text-transform: none;
@@ -954,7 +982,7 @@ body {
   color: var(--text-secondary);
   background: transparent;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: var(--t-base);
   font-weight: 500;
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease,
@@ -986,7 +1014,7 @@ body {
 .muted-copy,
 .empty-state {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--t-base);
 }
 
 .empty-state-rich {
@@ -1008,14 +1036,14 @@ body {
   margin: 0;
   color: var(--text-secondary);
   font-family: var(--display-font);
-  font-size: 1rem;
+  font-size: var(--t-md);
 }
 
 .empty-state-hint {
   margin: 0;
   max-width: 22rem;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   line-height: 1.5;
 }
 
@@ -1038,7 +1066,7 @@ body {
   padding: 0;
   color: var(--accent);
   background: transparent;
-  font-size: 1.05rem;
+  font-size: var(--t-md);
   font-weight: 500;
 }
 
@@ -1075,7 +1103,7 @@ body {
 .work-card-details dt {
   color: var(--text-faint);
   font-family: var(--label-font);
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1126,7 +1154,7 @@ body {
   border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--work-glow-color) 7%, transparent), transparent 34%),
-    rgba(8, 12, 26, 0.9);
+    var(--surface-overlay);
   box-shadow:
     0 0 2rem color-mix(in srgb, var(--work-glow-color) 16%, transparent),
     0 1.2rem 3rem rgba(0, 0, 0, 0.6);
@@ -1134,7 +1162,7 @@ body {
 }
 
 .work-card h2 {
-  font-size: 1.3rem;
+  font-size: var(--t-xl);
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.3;
@@ -1164,7 +1192,7 @@ body {
   color: var(--accent);
   background: transparent;
   font-family: var(--label-font);
-  font-size: 0.7rem;
+  font-size: var(--t-xs);
   font-weight: 400;
   letter-spacing: 0.05em;
 }
@@ -1207,7 +1235,7 @@ body {
   border: 1px solid var(--rule-strong);
   border-top: 2px solid var(--danger);
   border-radius: var(--r-lg);
-  background: var(--panel-bg-solid);
+  background: var(--surface-overlay);
   box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.72);
 }
 
@@ -1217,7 +1245,7 @@ body {
 
 .confirm-dialog h3 {
   margin-top: 1rem;
-  font-size: 0.92rem;
+  font-size: var(--t-md);
 }
 
 .affected-constellation-list {
@@ -1345,7 +1373,7 @@ body {
 
 .hud-statistics dt {
   color: var(--text-muted);
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   font-weight: 400;
   letter-spacing: 0.08em;
 }
@@ -1354,7 +1382,7 @@ body {
   margin: 0;
   justify-self: end;
   color: var(--text-primary);
-  font-size: 1.35rem;
+  font-size: var(--t-xl);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -1365,7 +1393,7 @@ body {
 /* The 최다 장르 cell holds classmarks, not a figure — keep it at label scale. */
 .hud-statistics dd.badge-list {
   justify-content: flex-end;
-  font-size: 0.7rem;
+  font-size: var(--t-xs);
 }
 
 .badge-list,
@@ -1386,7 +1414,7 @@ body {
   align-items: center;
   gap: 0.6rem;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--t-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1427,7 +1455,7 @@ progress::-moz-progress-bar {
   color: var(--text-secondary);
   background: transparent;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: var(--t-base);
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease,
     background-color 0.15s ease;
@@ -1446,7 +1474,7 @@ progress::-moz-progress-bar {
   width: 100%;
   margin-top: 1rem;
   font-family: var(--label-font);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
   letter-spacing: 0.05em;
 }
 
@@ -1467,7 +1495,7 @@ progress::-moz-progress-bar {
   padding: 0.5rem 0.1rem 0.5rem 0;
   color: var(--text-muted);
   background: transparent;
-  font-size: 0.86rem;
+  font-size: var(--t-base);
   font-weight: 400;
   text-align: left;
 }
@@ -1505,7 +1533,7 @@ progress::-moz-progress-bar {
 .filter-status {
   margin: 0.85rem 0 0;
   color: var(--text-faint);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
 }
 
 /* The list drawer toggle is superseded by the shell dock. */
@@ -1528,7 +1556,7 @@ progress::-moz-progress-bar {
 .list-controls label {
   color: var(--text-muted);
   font-family: var(--label-font);
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1544,7 +1572,7 @@ progress::-moz-progress-bar {
   color: var(--text-primary);
   background: transparent;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: var(--t-base);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -1570,7 +1598,7 @@ progress::-moz-progress-bar {
 .list-view h3 {
   color: var(--text-faint);
   font-family: var(--label-font);
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   font-weight: 400;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1616,12 +1644,12 @@ progress::-moz-progress-bar {
 .work-list button > :last-child {
   grid-column: 1 / -1;
   color: var(--text-faint);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
 }
 
 .work-title {
   overflow: hidden;
-  font-size: 0.94rem;
+  font-size: var(--t-md);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1663,7 +1691,7 @@ progress::-moz-progress-bar {
 .compact-archive-list span {
   color: var(--text-faint);
   font-family: var(--label-font);
-  font-size: 0.68rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.04em;
 }
 
@@ -1691,7 +1719,7 @@ progress::-moz-progress-bar {
 .achievement-list li > span {
   color: var(--text-muted);
   font-family: var(--label-font);
-  font-size: 0.7rem;
+  font-size: var(--t-xs);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -1715,7 +1743,7 @@ progress::-moz-progress-bar {
 .achievement-list p {
   margin-top: 0;
   color: var(--text-faint);
-  font-size: 0.8rem;
+  font-size: var(--t-sm);
 }
 
 .achievement-list progress {
@@ -1743,7 +1771,7 @@ progress::-moz-progress-bar {
   padding: 0;
   color: var(--text-faint);
   background: transparent;
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   font-weight: 400;
   letter-spacing: 0.08em;
 }
@@ -1811,7 +1839,7 @@ progress::-moz-progress-bar {
   box-shadow:
     0 0 1rem var(--accent-soft),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  font-size: 0.76rem;
+  font-size: var(--t-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.2;
@@ -1867,7 +1895,7 @@ progress::-moz-progress-bar {
 .constellation-operation-status {
   margin-top: 0.65rem;
   color: var(--accent);
-  font-size: 0.85rem;
+  font-size: var(--t-base);
 }
 
 .constellation-name-dialog label,
@@ -1879,7 +1907,7 @@ progress::-moz-progress-bar {
 .constellation-name-dialog label {
   margin-bottom: 0.4rem;
   color: var(--text-primary);
-  font-size: 0.85rem;
+  font-size: var(--t-base);
   font-weight: 700;
 }
 
@@ -1910,8 +1938,8 @@ progress::-moz-progress-bar {
   color: var(--text-primary);
   background: rgba(4, 6, 14, 0.9);
   box-shadow: 0 0 1rem var(--accent-soft);
-  font-size: 0.78rem;
-  font-weight: 750;
+  font-size: var(--t-sm);
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
   backdrop-filter: blur(8px);
@@ -2028,9 +2056,9 @@ progress::-moz-progress-bar {
   border: 1px solid var(--rule);
   border-radius: var(--r-sm);
   color: var(--text-secondary);
-  background: rgba(8, 12, 26, 0.94);
+  background: var(--surface-popover);
   box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.5);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -2193,18 +2221,18 @@ progress::-moz-progress-bar {
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .add-work-panel,
   .work-card {
-    background-color: rgba(4, 6, 14, 0.88);
+    background-color: var(--surface-overlay);
   }
 
   .navigation-panel,
   .archive-panel,
   .glass-panel {
-    background-color: rgba(7, 11, 20, 0.82);
+    background-color: var(--surface-raised);
   }
 
   .star-title-label,
   .constellation-name-label {
-    background-color: rgba(4, 6, 14, 0.9);
+    background-color: var(--surface-popover);
   }
 }
 
@@ -2238,14 +2266,32 @@ progress::-moz-progress-bar {
   gap: 0.24rem;
 }
 
-.genre-icon {
-  font-weight: 700;
+.genre-dot {
+  flex: 0 0 auto;
+  display: block;
+}
+
+/* Stars are drawn on the dock's 24px grid now, so they inherit its stroke
+   rather than whatever the platform emoji font decides ★ looks like. */
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.09rem;
+  color: var(--rule-strong);
+}
+
+.star-glyph {
+  display: block;
+}
+
+.star-glyph.is-filled {
+  color: var(--starlight);
 }
 
 .rating-text {
   color: var(--text-secondary);
   font-family: var(--label-font);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
   font-weight: 400;
   letter-spacing: 0.06em;
 }
@@ -2253,7 +2299,7 @@ progress::-moz-progress-bar {
 .navigation-description {
   margin: 0.6rem 0 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--t-base);
   line-height: 1.5;
 }
 
@@ -2333,7 +2379,7 @@ progress::-moz-progress-bar {
   border-radius: var(--r-sm);
   color: var(--void);
   background: var(--accent);
-  font-weight: 750;
+  font-weight: 700;
   text-decoration: none;
   transform: translateY(calc(-100% - 1.5rem));
 }
@@ -2369,7 +2415,7 @@ progress::-moz-progress-bar {
 
 .planet-codex-rate {
   font-family: var(--label-font);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
   letter-spacing: 0.05em;
   color: var(--accent);
   background: transparent;
@@ -2399,13 +2445,13 @@ progress::-moz-progress-bar {
 
 .planet-ticket-count {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: var(--t-md);
   color: var(--text-primary);
 }
 
 .planet-ticket-count strong {
   color: var(--starlight);
-  font-size: 1.15rem;
+  font-size: var(--t-lg);
   margin: 0 2px;
 }
 
@@ -2415,7 +2461,7 @@ progress::-moz-progress-bar {
 
 .planet-ticket-progress {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--t-sm);
   color: var(--text-muted);
 }
 
@@ -2429,7 +2475,7 @@ progress::-moz-progress-bar {
 .planet-reveal-placeholder {
   margin: 0;
   color: var(--text-faint);
-  font-size: 0.85rem;
+  font-size: var(--t-base);
 }
 
 .planet-reveal-card {
@@ -2486,12 +2532,12 @@ progress::-moz-progress-bar {
 }
 
 .planet-reveal-front strong {
-  font-size: 0.95rem;
+  font-size: var(--t-md);
   color: var(--text-primary);
 }
 
 .planet-reveal-front .rarity-chip {
-  font-size: 0.75rem;
+  font-size: var(--t-xs);
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -2500,8 +2546,8 @@ progress::-moz-progress-bar {
   position: absolute;
   top: 8px;
   right: 8px;
-  font-size: 0.6rem;
-  font-weight: 800;
+  font-size: var(--t-2xs);
+  font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--void);
   background: var(--accent-strong);
@@ -2516,7 +2562,7 @@ progress::-moz-progress-bar {
 .planet-gacha-error {
   margin: 0;
   color: var(--danger);
-  font-size: 0.8rem;
+  font-size: var(--t-sm);
 }
 
 /* Planet chip: a palette-driven CSS planet used across the dex and reveal. */
@@ -2554,7 +2600,7 @@ progress::-moz-progress-bar {
   border: 1px dashed var(--rule);
   color: var(--text-faint);
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: var(--t-lg);
 }
 
 /* The dex is a plate of specimens: one hairline grid, no card per cell. */
@@ -2590,7 +2636,7 @@ progress::-moz-progress-bar {
 }
 
 .planet-dex-name {
-  font-size: 0.78rem;
+  font-size: var(--t-sm);
   color: var(--text-secondary);
   text-align: center;
 }
@@ -2600,7 +2646,7 @@ progress::-moz-progress-bar {
 }
 
 .planet-dex-rarity {
-  font-size: 0.68rem;
+  font-size: var(--t-2xs);
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -2610,7 +2656,7 @@ progress::-moz-progress-bar {
   top: 6px;
   right: 8px;
   font-family: var(--label-font);
-  font-size: 0.68rem;
+  font-size: var(--t-2xs);
   color: var(--accent);
 }
 
@@ -2624,14 +2670,14 @@ progress::-moz-progress-bar {
   border-radius: 999px;
   background: rgba(9, 13, 28, 0.88);
   color: var(--text-primary);
-  font-size: 0.78rem;
+  font-size: var(--t-sm);
   white-space: nowrap;
 }
 
 .planet-hover-label em {
   font-style: normal;
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--t-xs);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2704,16 +2750,16 @@ progress::-moz-progress-bar {
 }
 
 .pull-reveal-caption .rarity-chip {
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-size: var(--t-sm);
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .pull-reveal-caption strong {
   font-family: var(--display-font);
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: var(--t-2xl);
+  font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--text-primary);
   text-shadow: 0 0 22px rgba(180, 210, 255, 0.4);
@@ -2722,7 +2768,7 @@ progress::-moz-progress-bar {
 .pull-reveal-caption p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--t-base);
 }
 
 .pull-reveal-new {
@@ -2757,7 +2803,7 @@ progress::-moz-progress-bar {
 
 .galaxy-export-hint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--t-sm);
   color: var(--text-faint);
   text-align: center;
 }
@@ -2790,7 +2836,7 @@ progress::-moz-progress-bar {
 
 .autocomplete-hint {
   margin: 0.1rem 0 0;
-  font-size: 0.74rem;
+  font-size: var(--t-xs);
   color: var(--text-faint);
 }
 
@@ -2805,7 +2851,7 @@ progress::-moz-progress-bar {
   list-style: none;
   max-height: 17rem;
   overflow-y: auto;
-  background: var(--panel-bg-solid);
+  background: var(--surface-popover);
   border: 1px solid var(--rule-strong);
   border-radius: var(--r-md);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6);
@@ -2814,7 +2860,7 @@ progress::-moz-progress-bar {
 .autocomplete-status {
   padding: 0.6rem 0.7rem;
   color: var(--text-faint);
-  font-size: 0.86rem;
+  font-size: var(--t-base);
 }
 
 .autocomplete-option {
@@ -2839,7 +2885,7 @@ progress::-moz-progress-bar {
   background: rgba(150, 172, 220, 0.08);
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: var(--t-md);
 }
 
 .autocomplete-option-thumb.is-empty {
@@ -2850,7 +2896,7 @@ progress::-moz-progress-bar {
   flex: 1 1 auto;
   min-width: 0;
   color: var(--text-primary);
-  font-size: 0.92rem;
+  font-size: var(--t-md);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2859,7 +2905,7 @@ progress::-moz-progress-bar {
 .autocomplete-option-year {
   flex: 0 0 auto;
   color: var(--text-faint);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2933,14 +2979,16 @@ progress::-moz-progress-bar {
   flex: 1 1 12rem;
   min-width: 0;
   color: var(--text-faint);
-  font-size: 0.68rem;
+  font-size: var(--t-2xs);
   line-height: 1.35;
 }
 
 /* Optional-field hint inside form labels. */
 .optional-hint {
   color: var(--text-faint);
-  font-size: 0.78em;
+  /* Absolute, not em: this sits inside labels that are already the smallest
+     step, and 0.78em of those compounded down to 8.6px. */
+  font-size: var(--t-2xs);
   font-weight: 400;
 }
 
@@ -2997,7 +3045,7 @@ progress::-moz-progress-bar {
 .transfer-intro {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   line-height: 1.6;
 }
 
@@ -3016,15 +3064,15 @@ progress::-moz-progress-bar {
 
 .transfer-summary dt {
   color: var(--text-faint);
-  font-size: 0.72rem;
+  font-size: var(--t-xs);
 }
 
 .transfer-summary dd {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--t-base);
   font-variant-numeric: tabular-nums;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .transfer-actions {
@@ -3036,7 +3084,7 @@ progress::-moz-progress-bar {
 .transfer-status {
   margin: 0;
   color: var(--text-faint);
-  font-size: 0.78rem;
+  font-size: var(--t-sm);
 }
 
 /* Side-by-side "current vs incoming" inside the replace confirmation. */
@@ -3059,7 +3107,7 @@ progress::-moz-progress-bar {
   margin: 0 0 0.5rem;
   color: var(--text-muted);
   font-family: var(--label-font);
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3078,7 +3126,7 @@ progress::-moz-progress-bar {
 
 .watchlist-intro {
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   line-height: 1.6;
 }
 
@@ -3087,16 +3135,73 @@ progress::-moz-progress-bar {
   gap: 0.45rem;
 }
 
+/* These two had no rule at all and were rendering as white and grey OS
+   controls inside a dark panel. Nothing in the app should ever fall back to
+   the platform's own chrome, so the field treatment is shared rather than
+   re-declared per form. */
+.watchlist-form input,
+.watchlist-form select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  padding: 0.35rem 0 0.4rem;
+  color: var(--text-primary);
+  background: transparent;
+  font: inherit;
+  font-size: var(--t-base);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.watchlist-form select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.4rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+  background-position: right 0.55rem center, right 0.25rem center;
+  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+}
+
+.watchlist-form input::placeholder {
+  color: var(--text-faint);
+}
+
+.watchlist-form input:hover,
+.watchlist-form select:hover {
+  border-bottom-color: var(--accent-dim);
+}
+
+.watchlist-form input:focus,
+.watchlist-form select:focus {
+  outline: 0;
+  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 0 0 var(--accent);
+}
+
+.watchlist-form select option {
+  color: var(--text-primary);
+  background: var(--surface-popover);
+}
+
 .watchlist-notice {
   color: var(--accent-strong);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
+}
+
+/* Any heading the design system has not spoken for otherwise — without this
+   the browser default (1.17em) lands off-scale at 18.72px. */
+.shell-panel-body h3 {
+  font-size: var(--t-base);
 }
 
 .watchlist-count {
   margin-top: 0.4rem;
   color: var(--text-faint);
   font-family: var(--label-font);
-  font-size: 0.66rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.06em;
 }
 
@@ -3154,12 +3259,12 @@ progress::-moz-progress-bar {
 
 .gesture-guide-moves {
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--t-base);
 }
 
 .gesture-guide-cta {
   color: var(--accent);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
 }
 
 /* ---- Sky corner utilities ---- */
@@ -3181,7 +3286,7 @@ progress::-moz-progress-bar {
   border-radius: 50%;
   background: rgba(8, 12, 26, 0.76);
   color: var(--text-secondary);
-  font-size: 1.05rem;
+  font-size: var(--t-md);
   cursor: pointer;
   backdrop-filter: blur(10px);
 }
@@ -3204,7 +3309,7 @@ progress::-moz-progress-bar {
   border-bottom: 1px solid var(--rule-strong);
   color: var(--text-primary);
   font-family: var(--display-font);
-  font-size: 1.02rem;
+  font-size: var(--t-md);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -3212,7 +3317,7 @@ progress::-moz-progress-bar {
 .reel-studio-intro {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   line-height: 1.6;
 }
 
@@ -3224,7 +3329,7 @@ progress::-moz-progress-bar {
 .reel-studio-status {
   margin: 0;
   color: var(--text-faint);
-  font-size: 0.76rem;
+  font-size: var(--t-xs);
   line-height: 1.5;
 }
 
