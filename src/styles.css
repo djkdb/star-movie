@@ -497,6 +497,44 @@ body {
   color: var(--text-faint);
 }
 
+/* Two selects side by side inside an already narrow panel collapsed to 21px
+   wide on a phone — below the 24px WCAG 2.5.8 minimum, and not something a
+   finger can hit. Below the tablet breakpoint they stack. */
+@media (max-width: 767.98px) {
+  .director-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .director-field > label:nth-of-type(1) { grid-area: 2 / 1; }
+  .director-field > select:nth-of-type(1) { grid-area: 3 / 1; }
+  .director-field > label:nth-of-type(2) { grid-area: 4 / 1; }
+
+  .director-field > select:nth-of-type(2),
+  .director-field > input {
+    grid-area: 5 / 1;
+  }
+
+  .director-field > .field-error {
+    grid-row: 6;
+  }
+}
+
+/* Every control in a panel stays thumb-sized on touch, where a 30px row is
+   technically hittable and practically not. */
+@media (pointer: coarse) {
+  .shell-panel button,
+  .shell-panel select,
+  .shell-panel input:not([type='radio']),
+  .shell-panel a {
+    min-height: 44px;
+  }
+
+  .shell-panel .rating-star {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
 /* One solid gold stamp per panel. Everything else is an outline, so the
    commit action is the only filled thing on the page. */
 .primary-action {
