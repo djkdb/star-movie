@@ -2,7 +2,7 @@ import { useStore } from 'zustand';
 
 import { GENRES } from '../domain/models';
 import type { ArchiveStoreApi } from '../store/archiveStore';
-import { GENRE_ICONS } from './WorkMetadata';
+import { GenreDot } from './WorkMetadata';
 
 export interface GenreFilterProps {
   store: ArchiveStoreApi;
@@ -25,7 +25,7 @@ export function GenreFilter({ store }: GenreFilterProps) {
               aria-pressed={selected}
               onClick={() => store.getState().commands.toggleSelectedGenre(genre)}
             >
-              <span aria-hidden="true" className="genre-icon">{GENRE_ICONS[genre]}</span>
+              <GenreDot genre={genre} />
               <span>{genre}</span>
             </button>
           );

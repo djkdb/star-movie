@@ -10,6 +10,7 @@ import {
 import { posterUrl, type MovieSuggestion } from '../services/tmdbClient';
 import type { ArchiveStoreApi, DomainError } from '../store/archiveStore';
 import { TmdbAttribution } from './TmdbAttribution';
+import { StarGlyph } from './WorkMetadata';
 import { fetchMovieDirector, useMovieSuggestions } from './useMovieSuggestions';
 
 /** The six user-facing fields; posterPath/tmdbId are metadata, not inputs. */
@@ -274,12 +275,16 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       return;
     }
 
-    // First light: fly to the very first star while its fireworks bloom.
+    // Fly to the new star every time, not only the first. Watching a star
+    // arrive is the whole reason the archive is a sky — and it was happening
+    // exactly once per universe, so every record after the first landed as a
+    // line of toast text with nothing to look at.
+    store.getState().commands.requestCameraFocus({
+      type: 'star',
+      starId: result.value.starId,
+    });
+
     if (wasEmptySky) {
-      store.getState().commands.requestCameraFocus({
-        type: 'star',
-        starId: result.value.starId,
-      });
       store.getState().commands.pushGentleToast(
         '첫 별이 떠올랐습니다',
         '당신의 우주가 시작됐어요. 이야기가 쌓일수록 하늘이 넓어집니다.',
@@ -440,7 +445,9 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
                     type="radio"
                     value={rating}
                   />
-                  <span aria-hidden="true" className="rating-star-glyph">★</span>
+                  <span aria-hidden="true" className="rating-star-glyph">
+                    <StarGlyph filled={filled} />
+                  </span>
                   <span className="visually-hidden">{rating}점</span>
                 </label>
               );
