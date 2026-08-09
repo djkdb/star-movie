@@ -3173,8 +3173,8 @@ progress::-moz-progress-bar {
 .welcome-gate-card {
   width: min(30rem, 100%);
   padding: 1.8rem 1.6rem 1.5rem;
-  border: 1px solid var(--panel-border-strong);
-  border-radius: 1.1rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-lg);
   background:
     linear-gradient(168deg, rgba(20, 28, 48, 0.5), rgba(6, 9, 18, 0.2) 42%),
     var(--panel-bg-solid);
@@ -3186,14 +3186,14 @@ progress::-moz-progress-bar {
 .welcome-gate-card h2 {
   margin: 0 0 0.7rem;
   font-family: var(--display-font);
-  font-size: 1.35rem;
+  font-size: var(--t-xl);
   line-height: 1.45;
 }
 
 .welcome-gate-copy {
   margin: 0 0 1.4rem;
   color: var(--text-muted);
-  font-size: 0.88rem;
+  font-size: var(--t-base);
   line-height: 1.6;
 }
 
@@ -3213,14 +3213,14 @@ progress::-moz-progress-bar {
 
 .welcome-gate-compare dt {
   color: var(--accent);
-  font-size: 0.76rem;
+  font-size: var(--t-xs);
   font-weight: 650;
 }
 
 .welcome-gate-compare dd {
   margin: 0.15rem 0 0;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--t-sm);
   line-height: 1.55;
 }
 
