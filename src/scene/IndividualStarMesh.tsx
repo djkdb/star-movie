@@ -96,12 +96,43 @@ export function IndividualStarMesh({
   });
 
   const stop = (event: ThreeEvent<PointerEvent>) => event.stopPropagation();
+
+  /**
+   * Where and when the pointer went down, so a tap can be told from a drag.
+   *
+   * Touch cannot rely on `onClick`: the trackball controls call
+   * preventDefault() on the underlying touch events, and a browser only
+   * synthesises a click when the touch sequence goes unprevented — so on a
+   * phone the click simply never arrived and stars could not be opened at all.
+   */
+  const pressRef = useRef<{ x: number; y: number; at: number } | null>(null);
+
+  /** Generous enough for a fingertip that never holds perfectly still. */
+  const TAP_SLOP_PX = 12;
+  const TAP_MAX_MS = 700;
+
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     stop(event);
+    pressRef.current = { x: event.clientX, y: event.clientY, at: performance.now() };
     onDragStart?.(dragPayload);
   };
   const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
     stop(event);
+    onDragEnd?.(dragPayload);
+
+    const press = pressRef.current;
+    pressRef.current = null;
+    // Mouse still opens the card through onClick; acting on both would select
+    // twice, so only touch and pen are resolved here.
+    if (press === null || event.pointerType === 'mouse') return;
+    const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+    if (moved <= TAP_SLOP_PX && performance.now() - press.at <= TAP_MAX_MS) {
+      onSelect(star.id);
+    }
+  };
+  const handlePointerCancel = (event: ThreeEvent<PointerEvent>) => {
+    stop(event);
+    pressRef.current = null;
     onDragEnd?.(dragPayload);
   };
 
@@ -127,7 +158,7 @@ export function IndividualStarMesh({
           event.stopPropagation();
           onSelect(star.id);
         }}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         userData={{ archiveObjectType: 'star-hit', starId: star.id }}
@@ -143,7 +174,7 @@ export function IndividualStarMesh({
           event.stopPropagation();
           onSelect(star.id);
         }}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         onPointerDown={handlePointerDown}
         onPointerOut={(event) => {
           stop(event);
