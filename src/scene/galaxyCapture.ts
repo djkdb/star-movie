@@ -18,6 +18,11 @@ export function registerGalaxyCanvas(canvas: HTMLCanvasElement): void {
   registeredCanvas = canvas;
 }
 
+/** The live scene canvas, for exporters that composite it frame by frame. */
+export function getRegisteredCanvas(): HTMLCanvasElement | null {
+  return registeredCanvas;
+}
+
 /** Reads the current sky frame as a PNG data URL, or null if unavailable. */
 export function captureGalaxyDataUrl(): string | null {
   if (registeredCanvas === null) return null;

@@ -34,27 +34,26 @@ export default defineConfig({
       workbox: {
         // The 3D bundle is large; precache the app shell so it opens offline.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+        // …but not the 92 unicode-range chunks of the Korean typeface. Their
+        // whole point is that a page fetches only the syllables it renders;
+        // precaching them all would put 2.2MB into every install to hold
+        // glyphs most users never see. They are runtime-cached below instead,
+        // and font-display: swap covers the first paint.
+        globIgnores: ['**/fonts/wanted-sans/woff2/**'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // Pretendard (jsDelivr) + Nanum Myeongjo (Google Fonts) stylesheets:
-            // small, may revalidate so a new subset is picked up.
-            urlPattern: /^https:\/\/(cdn\.jsdelivr\.net|fonts\.googleapis\.com)\/.*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'font-css',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            // The font files themselves are immutable — cache them for a year.
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            // The typeface chunks are same-origin and immutable, so they are
+            // kept for a year once a syllable has actually been rendered. The
+            // cap sits above the 92 chunks the family ships, because too low a
+            // cap silently evicts chunks and drops text to a fallback face.
+            urlPattern: /\/fonts\/wanted-sans\/.*\.woff2$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'font-files',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

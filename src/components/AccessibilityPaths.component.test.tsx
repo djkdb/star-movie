@@ -87,10 +87,19 @@ describe('complete accessible interaction paths', () => {
 
     const genre = screen.getByLabelText('장르 SF');
     const rating = screen.getByLabelText('별점 4점');
-    expect(genre).toHaveTextContent('◉');
+
+    // The marks beside these are drawn, and the genre dot carries only that
+    // genre's star colour — so both have to survive being read with no colour
+    // and no icon at all. That means a text equivalent, not a glyph.
     expect(genre).toHaveTextContent('SF');
-    expect(rating).toHaveTextContent('★★★★☆');
     expect(rating).toHaveTextContent('4/5');
+
+    // And the rating's own marks must not be colour-only either: four of the
+    // five stars are filled, which is a shape difference a monochrome or
+    // high-contrast rendering still shows.
+    const stars = rating.querySelectorAll('.star-glyph');
+    expect(stars).toHaveLength(5);
+    expect(rating.querySelectorAll('.star-glyph.is-filled')).toHaveLength(4);
   });
 
   it('R12.6 R14.1 isolates a Canvas failure and keeps the DOM navigation route available', () => {
