@@ -963,7 +963,8 @@ body {
 .constellation-controls h2,
 .planet-codex-header h2,
 .watchlist-panel > h2,
-.data-transfer > h3 {
+.data-transfer > h3,
+.cloud-sync > h3 {
   padding-bottom: 0.55rem;
   border-bottom: 1px solid var(--rule-strong);
   color: var(--text-primary);
@@ -3157,11 +3158,16 @@ progress::-moz-progress-bar {
 }
 
 /* ---- Cloud sync ---- */
+/* Arrived from the cloud-sync branch after the design system landed, so it
+   still carried the old divider-above-section pattern. Section titles draw
+   their own rule now; a second one above them just doubles the line. */
 .cloud-sync {
   display: grid;
   gap: 0.7rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--panel-border);
+}
+
+.cloud-sync > h3 {
+  margin: 0;
 }
 
 .cloud-auth-form {
