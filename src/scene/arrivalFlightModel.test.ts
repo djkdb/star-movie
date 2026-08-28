@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { SPACE_CAMERA_FOV, SPACE_CAMERA_HOME_POSE } from './backgroundModel';
+import {
+  SPACE_CAMERA_FOV,
+  SPACE_CAMERA_HOME_POSE,
+  SPACE_CAMERA_MAX_DISTANCE,
+} from './backgroundModel';
 import {
   ARRIVAL_DURATION_SECONDS,
   ARRIVAL_FOV_BOOST,
@@ -67,7 +71,10 @@ describe('opening arrival flight', () => {
     for (let step = 0; step <= 20; step += 1) {
       const elapsed = (ARRIVAL_DURATION_SECONDS * step) / 20;
       const { pose } = sampleArrivalFlight(elapsed, HOME);
-      expect(distanceFromTarget(pose.position)).toBeLessThanOrEqual(900);
+      // Against the constant, not a copy of it: the limit moved to 2200 and a
+      // hardcoded 900 would have gone on asserting a bound nothing enforces.
+      expect(distanceFromTarget(pose.position))
+        .toBeLessThanOrEqual(SPACE_CAMERA_MAX_DISTANCE);
     }
   });
 

@@ -1,10 +1,15 @@
 export const SPACE_BACKGROUND_COLOR = '#000104';
 export const SPACE_CAMERA_FOV = 60;
-// Fully zoomed out the camera rests just inside the outermost backdrop
-// stars (radius ~950-1020): the whole archive reads tiny at the center, the
-// farthest stars are right in front of you, and the sky still surrounds the
-// camera — it can never exit into empty black space.
-export const SPACE_CAMERA_MAX_DISTANCE = 900;
+/**
+ * Far enough out to see the whole universe at once, outermost stars included.
+ *
+ * The limit used to stop at 900, just inside the outer backdrop shell (radius
+ * ~950-1020), so the farthest stars were always behind the camera and could
+ * never be seen. A sphere of radius R only fits inside a 60° vertical field
+ * when the camera is at least 2R away, which for this sky is about 2040 —
+ * hence 2200, leaving a little margin around the silhouette.
+ */
+export const SPACE_CAMERA_MAX_DISTANCE = 2200;
 /**
  * The default free-view framing. Shared so the recenter button, the opening
  * arrival flight, and the camera's initial placement can never drift apart.

@@ -18,7 +18,7 @@ export const ARRIVAL_DURATION_SECONDS = 2.6;
 /**
  * Distance the flight starts from the home target. Sits inside the near
  * backdrop shell so those stars sweep past the camera on the way in, and
- * stays under SPACE_CAMERA_MAX_DISTANCE (900).
+ * stays well under SPACE_CAMERA_MAX_DISTANCE.
  */
 export const ARRIVAL_START_DISTANCE = 640;
 

@@ -656,7 +656,10 @@ function SpaceScene({
     <>
       <color attach="background" args={[SPACE_BACKGROUND_COLOR]} />
       <PerspectiveCamera
-        far={2_000}
+        // The far side of the star sphere sits at max distance plus its own
+        // radius, so the plane has to clear ~3200 or the sky is cut in half
+        // exactly when you pull back to look at all of it.
+        far={3_600}
         fov={SPACE_CAMERA_FOV}
         makeDefault
         near={0.1}
