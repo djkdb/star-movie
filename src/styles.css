@@ -24,7 +24,9 @@
   --text-muted: #929db9;
   /* Faint still has to clear 4.5:1 on the panel ink — it carries real labels
      (list sub-heads, record keys), not just decoration. */
-  --text-faint: #7d879f;
+  /* Lifted from #7d879f, which measured 4.19:1 against the panel with the
+     star cluster behind it — the one tier that genuinely failed. */
+  --text-faint: #98a2b8;
 
   /* Cornflower, not cyan: the blue of a star seen through atmosphere. */
   --accent: #7aa5ff;
@@ -42,11 +44,52 @@
   --label-font: 'Wanted Sans', -apple-system, 'Apple SD Gothic Neo', system-ui, sans-serif;
   --display-font: 'Wanted Sans', -apple-system, 'Apple SD Gothic Neo', system-ui, sans-serif;
 
-  /* Corners stay near-square — rounded boxes are what made this read
-     as a template. Only pills that must read as pills keep 999px. */
-  --r-sm: 2px;
-  --r-md: 3px;
-  --r-lg: 4px;
+  /* ---- Radii, concentric ------------------------------------------
+     Glass is a moulded material, so corners are generous. They are also
+     *concentric*: a control inside a surface uses the parent radius minus
+     the gap between them, which is what keeps nested curves parallel
+     instead of merely both-being-round. That relationship is the part
+     that reads as considered rather than as blur-and-round. */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 30px;
+  --r-pill: 999px;
+
+  /* ---- Liquid glass -----------------------------------------------
+     The material is three layers, not one: a translucent body, the
+     backdrop seen *through* it (blurred and saturated, so colour from the
+     sky bleeds into the panel), and a specular rim where light catches
+     the moulded edge.
+
+     The body stays dark on purpose. A light translucent fill is what most
+     dark-mode "glass" gets wrong — over a bright star it turns milky and
+     the text underneath stops being readable. Here the glassiness comes
+     from the rim and the backdrop, and legibility never depends on what
+     happens to be behind the panel. */
+  --glass-body: rgba(16, 23, 44, 0.64);
+  --glass-body-strong: rgba(14, 20, 38, 0.78);
+  /* The blur radius is what protects legibility here, not opacity: at 28px a
+     star behind the panel is spread far enough that it lifts the backdrop
+     barely at all. Measured on composited pixels with the cluster dragged
+     behind the panel — an earlier estimate that sampled the raw scene buffer
+     instead made this look like a contrast crisis it is not. */
+  --glass-backdrop: blur(28px) saturate(185%) brightness(1.04);
+  --glass-backdrop-light: blur(18px) saturate(165%) brightness(1.03);
+
+  /* Light lands on the top edge and wraps a hairline all the way round;
+     the underside catches a fainter bounce. */
+  --glass-rim:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  --glass-rim-soft:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --glass-lift: 0 0.6rem 2rem rgba(0, 0, 0, 0.42);
+  --glass-lift-high:
+    0 1.4rem 3.6rem rgba(0, 0, 0, 0.55),
+    0 0.2rem 0.8rem rgba(0, 0, 0, 0.35);
 
   /* ---- Type scale -------------------------------------------------
      Eight steps, and nothing off-scale. The chrome had drifted to 35
@@ -243,12 +286,13 @@ body {
 .form-field {
   display: grid;
   align-content: start;
-  gap: 0.3rem;
+  gap: 0.42rem;
   min-width: 0;
   margin: 0;
-  padding: 0.85rem 0;
+  /* No row rule any more: each control is a bounded well, so a divider
+     between them only cuts the form into slices it does not have. */
+  padding: 0.6rem 0;
   border: 0;
-  border-bottom: 1px solid var(--rule);
 }
 
 .form-field-wide,
@@ -327,19 +371,24 @@ body {
 
 /* Controls are written *on* the ruled line, not boxed inside a pill: no side
    borders, a single baseline rule, and the ink brightens as you fill it in. */
+/* Fields are wells rather than lines now: a pill of the same glass, lit on
+   its inner top edge so it reads as pressed into the surface rather than
+   floating on it — the inverse of the buttons, which are lit on the outside. */
 .form-field input,
 .form-field select,
 .form-field textarea {
   width: 100%;
   border: 0;
-  border-bottom: 1px solid var(--rule-strong);
-  border-radius: 0;
-  padding: 0.32rem 0 0.4rem;
+  border-radius: var(--r-md);
+  padding: 0.62rem 0.85rem;
   color: var(--text-primary);
-  background: transparent;
+  background: rgba(6, 10, 22, 0.5);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   font: inherit;
   font-size: var(--t-md);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .form-field input::placeholder,
@@ -353,11 +402,10 @@ body {
 .list-controls select {
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 1.4rem;
-  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
-    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
-  background-position: right 0.55rem center, right 0.25rem center;
-  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237aa5ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 0.8rem center;
+  background-size: 0.75rem 0.75rem;
   background-repeat: no-repeat;
 }
 
@@ -402,35 +450,29 @@ body {
 .form-field input:hover,
 .form-field select:hover,
 .form-field textarea:hover {
-  border-bottom-color: var(--accent-dim);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
-/* The review is the one field you actually write into, so it gets a page of
-   its own rather than a single rule floating under empty space. */
+/* The review is the one field you actually write into, so it gets room. */
 .form-field textarea {
-  min-height: 4.6rem;
-  border: 1px solid var(--rule);
-  padding: 0.55rem 0.65rem;
-  background: var(--field-bg);
+  min-height: 5rem;
+  border-radius: var(--r-sm);
+  padding: 0.7rem 0.85rem;
   line-height: 1.65;
   resize: vertical;
-}
-
-.form-field textarea:hover {
-  border-color: var(--accent-dim);
-}
-
-.form-field textarea:focus {
-  border-color: var(--accent);
-  box-shadow: none;
 }
 
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
   outline: 0;
-  border-bottom-color: var(--accent);
-  box-shadow: 0 1px 0 0 var(--accent);
+  background: rgba(6, 10, 22, 0.68);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(122, 165, 255, 0.5),
+    0 0 0 3px rgba(122, 165, 255, 0.16);
 }
 
 .primary-action:focus-visible,
@@ -539,25 +581,32 @@ body {
    commit action is the only filled thing on the page. */
 .primary-action {
   position: relative;
-  border: 1px solid var(--accent);
-  border-radius: var(--r-md);
-  padding: 0.7rem 1.15rem;
-  color: #08101f;
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 0.72rem 1.3rem;
+  color: #071022;
   background: linear-gradient(180deg, var(--accent-strong), var(--accent));
   font: inherit;
   font-size: var(--t-sm);
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 0.4rem 1.6rem rgba(122, 165, 255, 0.16);
+  /* Lit from above like a moulded surface: a bright crown, a darker
+     underside, and the glow it throws on what is behind it. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.16),
+    0 0.5rem 1.6rem rgba(122, 165, 255, 0.3);
   transition: border-color 0.18s ease, background 0.18s ease,
     box-shadow 0.2s ease, transform 0.15s var(--ease-out-soft);
 }
 
 .primary-action:hover {
-  border-color: var(--accent-strong);
-  background: linear-gradient(180deg, #c9dbff, var(--accent-strong));
-  box-shadow: 0 0.5rem 2rem rgba(122, 165, 255, 0.3);
+  background: linear-gradient(180deg, #d6e4ff, var(--accent-strong));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 0.6rem 2.2rem rgba(122, 165, 255, 0.45);
 }
 
 .primary-action:active {
@@ -567,10 +616,9 @@ body {
 
 .primary-action:disabled {
   cursor: not-allowed;
-  border-color: var(--rule-strong);
   color: var(--text-faint);
-  background: transparent;
-  box-shadow: none;
+  background: var(--glass-body);
+  box-shadow: var(--glass-rim-soft);
 }
 
 .toast-region {
@@ -588,13 +636,16 @@ body {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid var(--rule-strong);
-  border-left: 2px solid var(--accent);
+  border: 1px solid transparent;
   border-radius: var(--r-md);
   color: var(--text-primary);
-  background: var(--surface-popover);
-  box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(18px);
+  background: var(--glass-body-strong);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 42%, rgba(255, 255, 255, 0.24)),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    var(--glass-lift);
+  backdrop-filter: var(--glass-backdrop-light);
+  -webkit-backdrop-filter: var(--glass-backdrop-light);
   animation: surface-in 0.3s var(--ease-out-soft);
 }
 
@@ -1015,25 +1066,30 @@ body {
 .secondary-action,
 .danger-action,
 .card-close-button {
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--r-md);
-  padding: 0.52rem 0.8rem;
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 0.55rem 0.95rem;
   color: var(--text-secondary);
-  background: transparent;
+  background: var(--glass-body);
+  box-shadow: var(--glass-rim-soft);
+  backdrop-filter: var(--glass-backdrop-light);
+  -webkit-backdrop-filter: var(--glass-backdrop-light);
   font: inherit;
   font-size: var(--t-base);
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease,
-    background-color 0.15s ease;
+  transition: color 0.18s ease, background-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .navigation-list button:not(:disabled):hover,
 .secondary-action:hover,
 .card-close-button:hover {
-  border-color: var(--accent);
   color: var(--accent-strong);
-  background: var(--accent-soft);
+  background: rgba(122, 165, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 1px rgba(122, 165, 255, 0.28);
 }
 
 .navigation-list button:disabled {
@@ -1188,16 +1244,20 @@ body {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   padding: 1.35rem;
-  border: 1px solid var(--rule-strong);
-  border-top: 2px solid color-mix(in srgb, var(--work-glow-color) 70%, transparent);
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--work-glow-color) 7%, transparent), transparent 34%),
-    var(--surface-overlay);
+    linear-gradient(180deg, color-mix(in srgb, var(--work-glow-color) 9%, transparent), transparent 38%),
+    var(--glass-body);
+  /* The selected star's own colour lights the rim, so the card reads as
+     glass held up against that particular star. */
   box-shadow:
-    0 0 2rem color-mix(in srgb, var(--work-glow-color) 16%, transparent),
-    0 1.2rem 3rem rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(24px) saturate(1.15);
+    inset 0 1px 0 color-mix(in srgb, var(--work-glow-color) 45%, rgba(255, 255, 255, 0.26)),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 0 2.4rem color-mix(in srgb, var(--work-glow-color) 18%, transparent),
+    var(--glass-lift-high);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
 }
 
 .work-card h2 {
@@ -1271,11 +1331,15 @@ body {
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
   padding: 1.5rem;
-  border: 1px solid var(--rule-strong);
-  border-top: 2px solid var(--danger);
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
-  background: var(--surface-overlay);
-  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.72);
+  background: var(--glass-body-strong);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--danger) 40%, rgba(255, 255, 255, 0.24)),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    var(--glass-lift-high);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
 }
 
 .confirm-dialog > p {
@@ -1319,11 +1383,12 @@ body {
 
 .glass-panel {
   position: relative;
-  border: 1px solid var(--panel-border);
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
-  background: var(--panel-bg);
-  box-shadow: var(--shadow-panel);
-  backdrop-filter: blur(26px) saturate(1.1);
+  background: var(--glass-body);
+  box-shadow: var(--glass-rim-soft), var(--glass-lift);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
 }
 
 /* Cursor spotlight: the glass catches a soft pool of starlight under the
@@ -1488,25 +1553,28 @@ progress::-moz-progress-bar {
 .drawer-toggle,
 .list-view button,
 .panel-heading-row button {
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--r-md);
-  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 0.55rem 0.9rem;
   color: var(--text-secondary);
-  background: transparent;
+  background: var(--glass-body);
+  box-shadow: var(--glass-rim-soft);
   font: inherit;
   font-size: var(--t-base);
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease,
-    background-color 0.15s ease;
+  transition: color 0.18s ease, background-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .panel-action:hover,
 .drawer-toggle:hover,
 .list-view button:hover,
 .panel-heading-row button:hover {
-  border-color: var(--accent);
   color: var(--accent-strong);
-  background: var(--accent-soft);
+  background: rgba(122, 165, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 1px rgba(122, 165, 255, 0.28);
 }
 
 .panel-action {
@@ -1542,11 +1610,12 @@ progress::-moz-progress-bar {
 .filter-chip::before {
   content: '';
   flex: 0 0 auto;
-  width: 0.42rem;
-  height: 0.42rem;
-  border: 1px solid var(--rule-strong);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--r-pill);
+  box-shadow: inset 0 0 0 1px var(--rule-strong);
   background: transparent;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .filter-chip:hover {
@@ -1605,14 +1674,16 @@ progress::-moz-progress-bar {
 .list-controls select {
   min-width: 0;
   border: 0;
-  border-bottom: 1px solid var(--rule-strong);
-  border-radius: 0;
-  padding: 0.3rem 0 0.35rem;
+  border-radius: var(--r-md);
+  padding: 0.5rem 0.8rem;
   color: var(--text-primary);
-  background: transparent;
+  background: rgba(6, 10, 22, 0.5);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   font: inherit;
   font-size: var(--t-base);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .list-controls input:focus,
@@ -1953,18 +2024,23 @@ progress::-moz-progress-bar {
 .constellation-name-dialog input {
   border: 0;
   border-bottom: 1px solid var(--rule-strong);
-  border-radius: 0;
-  padding: 0.35rem 0 0.4rem;
+  border-radius: var(--r-md);
+  padding: 0.62rem 0.85rem;
   color: var(--text-primary);
-  background: transparent;
+  background: rgba(6, 10, 22, 0.5);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   font: inherit;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .constellation-name-dialog input:focus {
   outline: 0;
-  border-bottom-color: var(--accent);
-  box-shadow: 0 1px 0 0 var(--accent);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(122, 165, 255, 0.5),
+    0 0 0 3px rgba(122, 165, 255, 0.16);
 }
 
 .constellation-name-label {
@@ -2040,14 +2116,13 @@ progress::-moz-progress-bar {
   display: grid;
   gap: 0.3rem;
   padding: 0.42rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(18, 25, 48, 0.62), rgba(9, 13, 28, 0.62));
-  box-shadow:
-    0 0.7rem 2.6rem rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 var(--panel-highlight);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--glass-body);
+  box-shadow: var(--glass-rim), var(--glass-lift);
   transform: translateY(-50%);
-  backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
 }
 
 .dock-button {
@@ -2128,14 +2203,12 @@ progress::-moz-progress-bar {
   max-height: min(80dvh, 46rem);
   overflow-y: auto;
   overscroll-behavior: contain;
-  border: 1px solid var(--panel-border);
-  /* The gold hairline along the leading edge is the only ornament the panel
-     gets — it reads as the spine of a page pulled out of the archive. */
-  border-left: 2px solid var(--accent-dim);
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
-  background: var(--panel-bg);
-  box-shadow: var(--shadow-panel);
-  backdrop-filter: blur(26px) saturate(1.05);
+  background: var(--glass-body);
+  box-shadow: var(--glass-rim), var(--glass-lift-high);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
   transform: translateY(-50%) scale(1);
   transform-origin: 100% 50%;
   transition: opacity 0.2s ease, transform 0.24s var(--ease-out-soft),
@@ -3268,24 +3341,25 @@ progress::-moz-progress-bar {
   width: 100%;
   min-width: 0;
   border: 0;
-  border-bottom: 1px solid var(--rule-strong);
-  border-radius: 0;
-  padding: 0.35rem 0 0.4rem;
+  border-radius: var(--r-md);
+  padding: 0.55rem 0.8rem;
   color: var(--text-primary);
-  background: transparent;
+  background: rgba(6, 10, 22, 0.5);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   font: inherit;
   font-size: var(--t-base);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .watchlist-form select {
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 1.4rem;
-  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
-    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
-  background-position: right 0.55rem center, right 0.25rem center;
-  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237aa5ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 0.8rem center;
+  background-size: 0.75rem 0.75rem;
   background-repeat: no-repeat;
 }
 
@@ -3295,14 +3369,19 @@ progress::-moz-progress-bar {
 
 .watchlist-form input:hover,
 .watchlist-form select:hover {
-  border-bottom-color: var(--accent-dim);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .watchlist-form input:focus,
 .watchlist-form select:focus {
   outline: 0;
-  border-bottom-color: var(--accent);
-  box-shadow: 0 1px 0 0 var(--accent);
+  background: rgba(6, 10, 22, 0.68);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(122, 165, 255, 0.5),
+    0 0 0 3px rgba(122, 165, 255, 0.16);
 }
 
 .watchlist-form select option {
