@@ -11,6 +11,7 @@ import { ConstellationControls } from './components/ConstellationControls';
 import { CloudSyncPanel } from './components/CloudSyncPanel';
 import { WelcomeGate } from './components/WelcomeGate';
 import { DataTransferPanel } from './components/DataTransferPanel';
+import { DemoNotice } from './components/DemoNotice';
 import { ReelStudio } from './components/ReelStudio';
 import { GenreFilter } from './components/GenreFilter';
 import { GestureGuide } from './components/GestureGuide';
@@ -271,6 +272,7 @@ export function App({ store }: AppProps) {
         openRequestId={requestedPanelId}
         panels={panels}
       />
+      <DemoNotice store={archiveStore} />
       <SceneFocusVeil />
       <WelcomeGate store={archiveStore} />
       <CursorSpotlight />

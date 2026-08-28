@@ -1,3 +1,4 @@
+import { markDemoPlanted } from '../domain/demoMark';
 import { createDemoSeedPersistedStore } from '../domain/demoSeedState';
 import {
   createBrowserPersistenceService,
@@ -27,7 +28,11 @@ export async function bootstrapPersistedState(
 export function seedDemoArchiveIfFirstRun(service: PersistenceService): boolean {
   const existing = service.load();
   if (existing.source !== 'default') return false;
-  return service.saveUserAction(createDemoSeedPersistedStore()).ok;
+  const seeded = service.saveUserAction(createDemoSeedPersistedStore()).ok;
+  // Marked, not just saved: the visitor has to be told this sky is a sample
+  // and given a way to clear it, and only a planted sky may be offered that.
+  if (seeded) markDemoPlanted();
+  return seeded;
 }
 
 /** Allows the Store construction boundary to consume the already-loaded result. */
