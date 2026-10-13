@@ -750,7 +750,11 @@ export function createArchiveStore(options: ArchiveStoreOptions): ArchiveStoreAp
       // The executor re-validates the candidate against the codec before it is
       // ever written, so a hand-edited file cannot corrupt the saved archive.
       derive: () => ({
-        candidate: structuredClone(document),
+        // An imported archive is a finished history, not a blank slate: its
+        // achievement progress has to be recomputed against the works it
+        // actually carries, or a restored backup reads 0/6 while every target
+        // behind it is already met.
+        candidate: reconcileRestoredProgress(structuredClone(document), providers.nowIso()),
         value: { workCount: document.stars.length },
         completionEvents: [],
         // Everything pointing at the previous universe must let go: selections,
@@ -1239,7 +1243,7 @@ export function createArchiveStoreFromLoadResult(
     persistence,
     providers,
     initialState: {
-      persisted: reconcileRestoredProgress(loadResult.state),
+      persisted: reconcileRestoredProgress(loadResult.state, providers?.nowIso?.()),
       runtime: createDefaultStore(loadResult.hasPersistedRegistration).runtime,
     },
   });

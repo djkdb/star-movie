@@ -458,3 +458,65 @@ describe('calculateAchievementProgress rules', () => {
     ).toBe(2);
   });
 });
+
+describe('an archive that arrives already past a target', () => {
+  // A backup restored onto a new phone, or an achievement shipped after the
+  // works that satisfy it were recorded, lands here fully grown. Recomputing
+  // progress but never the unlock left those reading "10/10 진행 중", locked,
+  // until the owner happened to add one more work.
+  function restoredWithTenNolanWorks(): PersistedStateV2 {
+    const restored = createDefaultStore(true).persisted;
+    restored.stars = nolanStars(restored, 10);
+    return restored;
+  }
+
+  it('unlocks what the works already earned, without announcing any of it', () => {
+    const restored = restoredWithTenNolanWorks();
+    expect(restored.achievements[0]).toMatchObject({ progress: 0, unlocked: false });
+
+    const reconciled = reconcileRestoredProgress(restored, LATER);
+
+    expect(reconciled.achievements[0]).toMatchObject({
+      ruleId: 'director-master',
+      progress: 10,
+      unlocked: true,
+      unlockedAt: LATER,
+    });
+  });
+
+  it('keeps a real unlock date rather than overwriting it with the boot time', () => {
+    const restored = restoredWithTenNolanWorks();
+    restored.achievements[0] = {
+      ...restored.achievements[0]!,
+      progress: 10,
+      unlocked: true,
+      unlockedAt: NOW,
+    };
+
+    expect(reconcileRestoredProgress(restored, LATER).achievements[0]).toMatchObject({
+      unlockedAt: NOW,
+    });
+  });
+
+  it('catches an imported backup up without firing ten toasts at once', () => {
+    const store = createArchiveStore({
+      persistence: new PersistenceService({
+        storage: new FakeLocalStorageAdapter(),
+        scheduler: new FakeClock(),
+        nowIso: () => NOW,
+      }),
+      providers: { nowIso: () => NOW },
+    });
+
+    const imported = restoredWithTenNolanWorks();
+    expect(store.getState().commands.importArchive(imported).ok).toBe(true);
+
+    expect(store.getState().persisted.achievements[0]).toMatchObject({
+      progress: 10,
+      unlocked: true,
+    });
+    expect(store.getState().runtime.toastEvents).toEqual([]);
+    expect(store.getState().runtime.completionEvents).toEqual([]);
+    store.dispose();
+  });
+});

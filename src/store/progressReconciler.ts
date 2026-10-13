@@ -185,19 +185,25 @@ function reconcileAchievements(
       };
     }
 
-    if (emitUnlockEvents && progress >= achievement.target) {
+    // Reaching the target unlocks, whether the archive got here by a live
+    // mutation or by arriving fully-grown from an import or a restore. Only
+    // the announcement is conditional: a boot that silently catches up on
+    // progress must not fire a stack of toasts for history already lived.
+    if (progress >= achievement.target) {
       const unlocked = {
         ...achievement,
         progress,
         unlocked: true,
-        unlockedAt: nowIso,
+        unlockedAt: prior?.unlockedAt ?? nowIso,
       };
-      // The stored name stays generic; the toast names the actual director.
-      const announced =
-        achievement.ruleId === 'director-master'
-          ? { ...unlocked, ...directorMasterDisplay(candidate.stars) }
-          : unlocked;
-      events.push(createAchievementUnlockEvent(announced, nowIso));
+      if (emitUnlockEvents) {
+        // The stored name stays generic; the toast names the actual director.
+        const announced =
+          achievement.ruleId === 'director-master'
+            ? { ...unlocked, ...directorMasterDisplay(candidate.stars) }
+            : unlocked;
+        events.push(createAchievementUnlockEvent(announced, nowIso));
+      }
       return unlocked;
     }
 
@@ -274,15 +280,24 @@ export function reconcileProgressAfterMutation(
 }
 
 /**
- * Recomputes current achievement progress for a persisted bootstrap without
- * creating unlocks or runtime events. Saved sticky unlock metadata remains the
- * authority during restore.
+ * Recomputes achievement progress for a persisted bootstrap — an archive read
+ * back from storage, imported from a backup file, or pulled down from the
+ * cloud — without announcing anything.
+ *
+ * An archive can arrive already past a target: a backup restored onto a new
+ * phone, or an achievement shipped after the works that satisfy it were
+ * recorded. Progress alone was recomputed here before, so those sat visibly
+ * stuck — "8/8 진행 중", locked, until the owner happened to add another work.
+ * Unlocks are therefore derived too; only the toasts stay suppressed, because
+ * nobody wants six notifications for history they already lived. Saved unlock
+ * timestamps remain the authority, so a restored unlock keeps its real date.
  */
 export function reconcileRestoredProgress(
   restoredState: PersistedStateV2,
+  nowIso: string = new Date().toISOString(),
 ): PersistedStateV2 {
   const candidate = structuredClone(restoredState);
-  reconcileAchievements(restoredState, candidate, '', false);
+  reconcileAchievements(restoredState, candidate, nowIso, false);
 
   const hundred = restoredState.milestoneUnlocks.hundred;
   candidate.galaxies = hundred.unlocked && hundred.rewardId !== null

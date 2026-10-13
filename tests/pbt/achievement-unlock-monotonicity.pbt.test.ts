@@ -143,6 +143,12 @@ function restoreWithoutNotifications(
   expect(store.getState().runtime.completionEvents).toEqual([]);
   expect(store.getState().runtime.toastEvents).toEqual([]);
   expect(store.getState().persisted.achievements[0]?.progress).toBe(progress);
+  // A restore recomputes the unlock as well as the progress — an archive can
+  // arrive already past the target, from a backup or from works recorded
+  // before the achievement shipped — but it still announces nothing.
+  if (progress >= TARGET) {
+    expect(store.getState().persisted.achievements[0]?.unlocked).toBe(true);
+  }
 
   const result = structuredClone(store.getState().persisted);
   store.dispose();
@@ -182,12 +188,16 @@ function reopenPanelWithoutNotifications(current: PersistedStateV2): PersistedSt
 // Feature: space-movie-archive, Property 26: Achievement 해금의 단조성과 이벤트 단일성
 // **Validates: Requirements 17.3, 17.4, 17.5, 17.6, 17.11, 17.12, 17.13**
 describe('Property 26: Achievement unlock monotonicity and event uniqueness', () => {
-  it('R17.3 R17.4 R17.5 R17.6 R17.11 R17.12 R17.13 preserves sticky unlock metadata and emits one notification across mutations, decreases, restores, and panel reopenings', () => {
+  it('R17.3 R17.4 R17.5 R17.6 R17.11 R17.12 R17.13 unlocks once and stays unlocked across mutations, decreases, restores, and panel reopenings, announcing it at most once', () => {
     fc.assert(
       fc.property(scenarioArbitrary, (actions) => {
         let current = createDefaultStore(true).persisted;
         let unlockNotificationCount = 0;
-        let firstUnlockedAt: string | null = null;
+        // The single locked-to-unlocked transition, and whether the action
+        // that caused it was the kind that announces. A restore unlocks
+        // silently, so an announcement is expected only when a live mutation
+        // got there first.
+        let firstUnlock: { at: string | null; announced: boolean } | null = null;
 
         actions.forEach((action, index) => {
           const before = current.achievements[0]!;
@@ -209,7 +219,6 @@ describe('Property 26: Achievement unlock monotonicity and event uniqueness', ()
             expect(notifications).toHaveLength(shouldUnlock ? 1 : 0);
             if (shouldUnlock) {
               unlockNotificationCount += notifications.length;
-              firstUnlockedAt = nowIso;
               // Every seeded work is by Christopher Nolan, so the dynamic
               // director-master event names that director.
               expect(notifications[0]).toMatchObject({
@@ -240,20 +249,33 @@ describe('Property 26: Achievement unlock monotonicity and event uniqueness', ()
             : action.progress;
           expect(after.progress).toBe(expectedProgress);
 
+          if (!before.unlocked && after.unlocked) {
+            // Unlocking is a one-way door: it may never happen twice.
+            expect(firstUnlock).toBeNull();
+            firstUnlock = {
+              at: after.unlockedAt,
+              announced: action.kind === 'mutation',
+            };
+          }
+
           if (before.unlocked) {
             expect(after.unlocked).toBe(true);
             expect(after.unlockedAt).toBe(stickyUnlockedAt);
           }
-          if (firstUnlockedAt !== null) {
+          if (firstUnlock !== null) {
             expect(after.unlocked).toBe(true);
-            expect(after.unlockedAt).toBe(firstUnlockedAt);
+            expect(after.unlockedAt).toBe(firstUnlock.at);
           }
         });
 
-        expect(unlockNotificationCount).toBe(1);
+        // Every scenario contains a mutation that crosses the target, so by
+        // the end the achievement is unlocked — either by that mutation, or
+        // by a restore that arrived past the target before it.
+        expect(firstUnlock).not.toBeNull();
+        expect(unlockNotificationCount).toBe(firstUnlock!.announced ? 1 : 0);
         expect(current.achievements[0]).toMatchObject({
           unlocked: true,
-          unlockedAt: firstUnlockedAt,
+          unlockedAt: firstUnlock!.at,
         });
       }),
       { numRuns: 100 },
