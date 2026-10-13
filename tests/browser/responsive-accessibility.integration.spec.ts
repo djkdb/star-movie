@@ -226,8 +226,11 @@ test.describe('accessible browser acceptance', () => {
 
   test('R4.2-R4.13 R6.9 R7.6 R10.7-R10.8 R12.6-R12.8 completes the archive journey with keyboard controls', async ({ page }) => {
     // A long serial keyboard journey over the fullscreen WebGL sky needs
-    // extra headroom under software rendering.
-    test.setTimeout(240_000);
+    // extra headroom under software rendering: every keystroke costs a frame,
+    // and a software renderer paints the sky at a couple of frames a second.
+    // 240s was enough only while the journey aborted three steps in; running
+    // it end to end lands at about four minutes on this hardware.
+    test.setTimeout(360_000);
     await page.setViewportSize({ width: 1024, height: 900 });
     await bootArchive(page, { starCount: 1 });
 
