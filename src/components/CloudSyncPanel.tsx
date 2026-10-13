@@ -14,17 +14,6 @@ import type { ArchiveStoreApi } from '../store/archiveStore';
 /** Remembers which cloud revision this device last agreed with. */
 const SYNCED_REVISION_KEY = 'space-movie-archive:cloud-revision';
 
-function readSyncedRevision(): number | null {
-  try {
-    const raw = window.localStorage.getItem(SYNCED_REVISION_KEY);
-    if (raw === null) return null;
-    const value = Number.parseInt(raw, 10);
-    return Number.isFinite(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
 function writeSyncedRevision(revision: number): void {
   try {
     window.localStorage.setItem(SYNCED_REVISION_KEY, String(revision));
