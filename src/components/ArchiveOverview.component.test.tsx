@@ -310,4 +310,55 @@ describe('HUD, AchievementPanel, GenreFilter and ListView', () => {
       starId: drama.id,
     });
   });
+  it('pages a long archive instead of rendering every row at once', async () => {
+    // Forty-two works rendered in full made the panel roughly six screens
+    // tall, which put 별자리 만들기 and 보고 싶은 작품 — the sections after the
+    // list — about 2,500px below anything a thumb would reach for.
+    const { store } = createHarness();
+    const many = Array.from({ length: 42 }, (_, index) =>
+      createStar(index + 10, { title: `Long Work ${index + 10}` }),
+    );
+    act(() => {
+      store.setState((state) => ({
+        ...state,
+        persisted: { ...state.persisted, stars: many },
+      }));
+    });
+    const user = userEvent.setup();
+    render(<ListView store={store} />);
+
+    const rows = () => within(
+      screen.getByRole('heading', { name: '활성 작품 (42)' }).closest('section')!,
+    ).getAllByRole('button').filter((button) => button.className !== 'section-more');
+
+    expect(rows()).toHaveLength(12);
+    const more = screen.getByRole('button', { name: '30편 더 보기' });
+
+    await user.click(more);
+    expect(rows()).toHaveLength(24);
+    expect(screen.getByRole('button', { name: '18편 더 보기' })).toBeInTheDocument();
+  });
+
+  it('starts a new search from the top of the list', async () => {
+    const { store } = createHarness();
+    act(() => {
+      store.setState((state) => ({
+        ...state,
+        persisted: {
+          ...state.persisted,
+          stars: Array.from({ length: 30 }, (_, index) =>
+            createStar(index + 10, { title: `Paged Work ${index + 10}` })),
+        },
+      }));
+    });
+    const user = userEvent.setup();
+    render(<ListView store={store} />);
+
+    await user.click(screen.getByRole('button', { name: '18편 더 보기' }));
+    expect(screen.getByRole('button', { name: '6편 더 보기' })).toBeInTheDocument();
+
+    // A different list should not inherit how far the previous one was opened.
+    await user.type(screen.getByRole('searchbox', { name: '검색' }), 'Paged');
+    expect(screen.getByRole('button', { name: '18편 더 보기' })).toBeInTheDocument();
+  });
 });

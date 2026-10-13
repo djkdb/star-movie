@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from 'react';
 import { useStore } from 'zustand';
 
 import type { ArchiveStoreApi } from '../store/archiveStore';
+import { UnlockBadgeIcon } from './icons';
 
 // A small, deterministic burst — an unlock earns a spark of celebration
 // without a confetti dependency. Eight radial motes, staggered.
@@ -139,7 +140,7 @@ function ToastItem({ event, onDismiss }: ToastItemProps) {
     <div className={VARIANT_CLASS[content.variant]} ref={surfaceRef}>
       {content.variant === 'unlock' && (
         <>
-          <span aria-hidden="true" className="toast-badge">✦</span>
+          <span className="toast-badge"><UnlockBadgeIcon size={18} /></span>
           <span aria-hidden="true" className="toast-sparkles">
             {UNLOCK_SPARKS.map((spark, index) => (
               <span

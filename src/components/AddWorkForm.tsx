@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react';
 import { useStore } from 'zustand';
 
+import { todayLocalDate } from '../domain/memoryLane';
 import { EMOTION_TAGS, GENRES, type Rating } from '../domain/models';
 import { RATING_GLOW_COLORS } from '../domain/ratingGlow';
 import {
@@ -12,10 +13,10 @@ import type { ArchiveStoreApi, DomainError } from '../store/archiveStore';
 import { TmdbAttribution } from './TmdbAttribution';
 import { StarGlyph } from './WorkMetadata';
 import { fetchMovieDirector, useMovieSuggestions } from './useMovieSuggestions';
+import { FilmFrameIcon } from './icons';
 
 /** The six user-facing fields; posterPath/tmdbId are metadata, not inputs. */
 type FormField = 'title' | 'genre' | 'rating' | 'review' | 'watchedDate' | 'director';
-type DirectorMode = 'existing' | 'custom';
 
 /** TMDB metadata attached when a work is picked from autocomplete. */
 interface SelectedMovie {
@@ -23,22 +24,28 @@ interface SelectedMovie {
   posterPath: string | null;
 }
 
-type Draft = Record<Exclude<FormField, 'director'>, string> & {
-  existingDirector: string;
-  customDirector: string;
+type Draft = Record<FormField, string> & {
   watchedWith: string;
   emotion: string;
 };
 
+/**
+ * How many previously-recorded directors are offered as one-tap chips. Enough
+ * to cover the names a regular logger reaches for, few enough that the row
+ * never becomes a second list to read.
+ */
+const RECENT_DIRECTOR_COUNT = 5;
+
 type FieldErrors = Partial<Record<FormField, string>>;
 
+/** Visual order, so "focus the first invalid field" means the topmost one. */
 const FIELD_ORDER: readonly FormField[] = [
   'title',
   'genre',
   'rating',
-  'review',
-  'watchedDate',
   'director',
+  'watchedDate',
+  'review',
 ];
 
 const FIELD_ERROR_MESSAGES: Record<FormField, string> = {
@@ -50,17 +57,24 @@ const FIELD_ERROR_MESSAGES: Record<FormField, string> = {
   director: '감독은 앞뒤 공백을 제외하고 1자 이상 200자 이하로 입력해 주세요.',
 };
 
-const EMPTY_DRAFT: Draft = {
-  title: '',
-  genre: '',
-  rating: '',
-  review: '',
-  watchedDate: '',
-  existingDirector: '',
-  customDirector: '',
-  watchedWith: '',
-  emotion: '',
-};
+/**
+ * A fresh draft. 감상일 starts on today because that is what it almost always
+ * is — a film is logged the night it is watched — and leaving it blank made a
+ * required field out of a near-certainty, one more thing standing between a
+ * first-time visitor and their first star.
+ */
+function createEmptyDraft(today: Date = new Date()): Draft {
+  return {
+    title: '',
+    genre: '',
+    rating: '',
+    review: '',
+    watchedDate: todayLocalDate(today),
+    director: '',
+    watchedWith: '',
+    emotion: '',
+  };
+}
 
 function mapFieldErrors(
   fieldErrors: Partial<Record<string, string[]>>,
@@ -74,13 +88,8 @@ function mapFieldErrors(
   return mapped;
 }
 
-function selectedDirector(draft: Draft, mode: DirectorMode): string {
-  return mode === 'existing' ? draft.existingDirector : draft.customDirector;
-}
-
 function createWorkInput(
   draft: Draft,
-  mode: DirectorMode,
   selected: SelectedMovie | null,
 ): WorkInput {
   return {
@@ -89,7 +98,7 @@ function createWorkInput(
     rating: draft.rating === '' ? '' : Number(draft.rating),
     review: draft.review,
     watchedDate: draft.watchedDate,
-    director: selectedDirector(draft, mode),
+    director: draft.director,
     ...(selected?.posterPath != null ? { posterPath: selected.posterPath } : {}),
     ...(selected !== null ? { tmdbId: selected.tmdbId } : {}),
     ...(draft.watchedWith.trim().length > 0 ? { watchedWith: draft.watchedWith } : {}),
@@ -109,8 +118,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
   const stars = useStore(store, (state) => state.persisted.stars);
   const watchlistPrefill = useStore(store, (state) => state.runtime.watchlistPrefill);
   const appliedPrefillId = useRef<string | null>(null);
-  const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
-  const [directorMode, setDirectorMode] = useState<DirectorMode>('custom');
+  const [draft, setDraft] = useState<Draft>(createEmptyDraft);
   const [errors, setErrors] = useState<FieldErrors>({});
   const fieldRefs = useRef<Partial<Record<FormField, HTMLElement | null>>>({});
 
@@ -148,28 +156,26 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
     setActiveIndex(-1);
   }, [watchlistPrefill]);
 
-  const directors = useMemo(() => {
+  // Most recently recorded first: the director you are logging again is far
+  // more likely to be the one from last night than the one from last spring.
+  const recentDirectors = useMemo(() => {
     const byNormalizedName = new Map<string, string>();
-    for (const star of stars) {
+    for (const star of [...stars].reverse()) {
       if (!byNormalizedName.has(star.normalizedDirector)) {
         byNormalizedName.set(star.normalizedDirector, star.director);
       }
     }
-    return [...byNormalizedName.values()].sort((left, right) =>
-      left.localeCompare(right, 'ko'),
-    );
+    return [...byNormalizedName.values()].slice(0, RECENT_DIRECTOR_COUNT);
   }, [stars]);
 
   const updateDraft = (field: keyof Draft, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
     // Optional memory fields never carry validation errors to clear.
     if (field === 'watchedWith' || field === 'emotion') return;
-    const errorField =
-      field === 'existingDirector' || field === 'customDirector' ? 'director' : field;
     setErrors((current) => {
-      if (current[errorField] === undefined) return current;
+      if (current[field] === undefined) return current;
       const next = { ...current };
-      delete next[errorField];
+      delete next[field];
       return next;
     });
   };
@@ -188,9 +194,8 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       ...current,
       title: suggestion.title,
       genre: suggestion.genre ?? current.genre,
-      customDirector: '',
+      director: '',
     }));
-    setDirectorMode('custom');
     setSelectedMovie({ tmdbId: suggestion.tmdbId, posterPath: suggestion.posterPath });
     setSuggestOpen(false);
     setActiveIndex(-1);
@@ -206,7 +211,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
     const token = ++directorFetchToken.current;
     void fetchMovieDirector(suggestion.tmdbId).then((name) => {
       if (name !== null && directorFetchToken.current === token) {
-        setDraft((current) => ({ ...current, customDirector: name }));
+        setDraft((current) => ({ ...current, director: name }));
       }
     });
   };
@@ -244,22 +249,9 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
     focusFirstError(nextErrors);
   };
 
-  const handleDirectorModeChange = (mode: DirectorMode) => {
-    setDirectorMode(mode);
-    setErrors((current) => {
-      if (current.director === undefined) return current;
-      const next = { ...current };
-      delete next.director;
-      return next;
-    });
-    if (mode === 'existing' && draft.existingDirector === '' && directors[0] !== undefined) {
-      setDraft((current) => ({ ...current, existingDirector: directors[0] ?? '' }));
-    }
-  };
-
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const input = createWorkInput(draft, directorMode, selectedMovie);
+    const input = createWorkInput(draft, selectedMovie);
     const validation = validateWorkInput(input);
     if (!validation.success) {
       reportValidationErrors(validation.fieldErrors);
@@ -297,8 +289,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
       );
     }
     setSheenActive(true);
-    setDraft(EMPTY_DRAFT);
-    setDirectorMode('custom');
+    setDraft(createEmptyDraft());
     setErrors({});
     setSelectedMovie(null);
     setSuggestOpen(false);
@@ -347,6 +338,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
               className={posterPreview !== null ? 'has-poster' : undefined}
               id="work-title"
               maxLength={200}
+              placeholder="예: 인터스텔라"
               ref={(node) => { fieldRefs.current.title = node; }}
               role="combobox"
               value={draft.title}
@@ -381,7 +373,7 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
                       {thumb !== null ? (
                         <img alt="" aria-hidden="true" className="autocomplete-option-thumb" src={thumb} />
                       ) : (
-                        <span aria-hidden="true" className="autocomplete-option-thumb is-empty">🎬</span>
+                        <span className="autocomplete-option-thumb is-empty"><FilmFrameIcon size={18} /></span>
                       )}
                       <span className="autocomplete-option-title">{suggestion.title}</span>
                       {suggestion.year !== null && (
@@ -456,42 +448,41 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
           {errors.rating !== undefined && <p id="rating-error" className="field-error">{errors.rating}</p>}
         </div>
 
-        <div className="form-field form-field-wide">
-          <label htmlFor="work-review">감상평</label>
-          <textarea
-            {...errorProps('review')}
-            id="work-review"
-            maxLength={100}
-            ref={(node) => { fieldRefs.current.review = node; }}
-            rows={3}
-            value={draft.review}
-            onChange={(event) => updateDraft('review', event.target.value)}
-          />
-          <span className="character-count" aria-live="off">{draft.review.length}/100</span>
-          {errors.review !== undefined && <p id="review-error" className="field-error">{errors.review}</p>}
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="work-watched-with">함께 본 사람 <span className="optional-hint">(선택)</span></label>
+        {/* One field, not three. 감독 used to open with "감독 입력 방식" — a
+            question about this form rather than about the film — and only then
+            offer a box to type in. The names already in the archive are better
+            offered as something to tap than as a mode to switch into. */}
+        <div className="form-field director-field">
+          <label htmlFor="work-director">감독</label>
           <input
-            id="work-watched-with"
-            maxLength={100}
-            placeholder="예: 혼자, 가족, 영화 동아리"
-            value={draft.watchedWith}
-            onChange={(event) => updateDraft('watchedWith', event.target.value)}
+            {...errorProps('director')}
+            id="work-director"
+            maxLength={200}
+            placeholder="예: 봉준호"
+            ref={(node) => { fieldRefs.current.director = node; }}
+            value={draft.director}
+            onChange={(event) => updateDraft('director', event.target.value)}
           />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="work-emotion">그날의 감정 <span className="optional-hint">(선택)</span></label>
-          <select
-            id="work-emotion"
-            value={draft.emotion}
-            onChange={(event) => updateDraft('emotion', event.target.value)}
-          >
-            <option value="">선택 안 함</option>
-            {EMOTION_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
-          </select>
+          {recentDirectors.length > 0 && draft.director.trim() === '' && (
+            <div className="director-recent">
+              <span className="director-recent-label" id="recent-director-label">
+                최근 기록한 감독
+              </span>
+              <div className="director-recent-chips" role="group" aria-labelledby="recent-director-label">
+                {recentDirectors.map((director) => (
+                  <button
+                    className="director-chip"
+                    key={director}
+                    type="button"
+                    onClick={() => updateDraft('director', director)}
+                  >
+                    {director}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {errors.director !== undefined && <p id="director-error" className="field-error">{errors.director}</p>}
         </div>
 
         <div className="form-field">
@@ -507,58 +498,61 @@ export function AddWorkForm({ store }: AddWorkFormProps) {
           {errors.watchedDate !== undefined && <p id="watchedDate-error" className="field-error">{errors.watchedDate}</p>}
         </div>
 
-        <fieldset className="form-field director-field">
-          <legend>감독</legend>
-          <label htmlFor="director-mode">감독 입력 방식</label>
-          <select
-            id="director-mode"
-            value={directorMode}
-            onChange={(event) => handleDirectorModeChange(event.target.value as DirectorMode)}
-          >
-            <option value="custom">직접 입력</option>
-            <option value="existing" disabled={directors.length === 0}>기존 감독 선택</option>
-          </select>
+        <div className="form-field form-field-wide">
+          <label htmlFor="work-review">감상평</label>
+          <textarea
+            {...errorProps('review')}
+            id="work-review"
+            maxLength={100}
+            ref={(node) => { fieldRefs.current.review = node; }}
+            rows={3}
+            value={draft.review}
+            onChange={(event) => updateDraft('review', event.target.value)}
+          />
+          <span className="character-count" aria-live="off">{draft.review.length}/100</span>
+          {errors.review !== undefined && <p id="review-error" className="field-error">{errors.review}</p>}
+        </div>
 
-          {directorMode === 'existing' ? (
-            <>
-              <label htmlFor="existing-director">기존 감독</label>
-              <select
-                {...errorProps('director')}
-                id="existing-director"
-                ref={(node) => { fieldRefs.current.director = node; }}
-                value={draft.existingDirector}
-                onChange={(event) => updateDraft('existingDirector', event.target.value)}
-              >
-                {directors.map((director) => (
-                  <option key={director} value={director}>{director}</option>
-                ))}
-              </select>
-            </>
-          ) : (
-            <>
-              <label htmlFor="custom-director">직접 입력 감독</label>
+        <details className="form-extra form-field-wide">
+          <summary>그날의 기억 더하기<span className="optional-hint">(선택)</span></summary>
+          <div className="form-extra-body">
+            <div className="form-field">
+              <label htmlFor="work-watched-with">함께 본 사람 <span className="optional-hint">(선택)</span></label>
               <input
-                {...errorProps('director')}
-                id="custom-director"
-                maxLength={200}
-                ref={(node) => { fieldRefs.current.director = node; }}
-                value={draft.customDirector}
-                onChange={(event) => updateDraft('customDirector', event.target.value)}
+                id="work-watched-with"
+                maxLength={100}
+                placeholder="예: 혼자, 가족, 영화 동아리"
+                value={draft.watchedWith}
+                onChange={(event) => updateDraft('watchedWith', event.target.value)}
               />
-            </>
-          )}
-          {errors.director !== undefined && <p id="director-error" className="field-error">{errors.director}</p>}
-        </fieldset>
+            </div>
 
-        <button
-          className={`primary-action form-field-wide${sheenActive ? ' sheen-run' : ''}`}
-          onAnimationEnd={(event) => {
-            if (event.animationName === 'sheen-sweep') setSheenActive(false);
-          }}
-          type="submit"
-        >
-          별로 등록하기
-        </button>
+            <div className="form-field">
+              <label htmlFor="work-emotion">그날의 감정 <span className="optional-hint">(선택)</span></label>
+              <select
+                id="work-emotion"
+                value={draft.emotion}
+                onChange={(event) => updateDraft('emotion', event.target.value)}
+              >
+                <option value="">선택 안 함</option>
+                {EMOTION_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+              </select>
+            </div>
+
+          </div>
+        </details>
+
+        <div className="form-submit-bar form-field-wide">
+          <button
+            className={`primary-action${sheenActive ? ' sheen-run' : ''}`}
+            onAnimationEnd={(event) => {
+              if (event.animationName === 'sheen-sweep') setSheenActive(false);
+            }}
+            type="submit"
+          >
+            별로 등록하기
+          </button>
+        </div>
       </form>
     </section>
   );

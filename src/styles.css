@@ -498,67 +498,155 @@ body {
   font-size: var(--t-2xs);
 }
 
-/* 감독 is two paired controls. Placing labels on one row and controls on the
-   next keeps each label above its own field instead of beside its
-   neighbour's — the misalignment that made this row look broken. */
-.director-field {
+/* ---- Optional memory fields ----------------------------------
+   함께 본 사람 and 그날의 감정 are lovely and almost never the reason
+   someone opened this form. Folded away, the required path — 제목,
+   장르, 별점, 감독, 감상일 — is what the panel actually shows. */
+.form-extra {
+  margin: 0.35rem 0 0;
+}
+
+.form-extra > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.62rem 0.85rem;
+  border-radius: var(--r-sm);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.form-extra > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A chevron that turns, drawn rather than typed. */
+.form-extra > summary::after {
+  width: 0.72rem;
+  height: 0.72rem;
+  margin-left: auto;
+  background: currentColor;
+  content: '';
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: rotate 0.2s var(--ease-out-soft);
+}
+
+.form-extra[open] > summary {
+  color: var(--text-primary);
+}
+
+.form-extra[open] > summary::after {
+  rotate: 180deg;
+}
+
+.form-extra > summary:hover {
+  background: var(--surface-overlay);
+}
+
+.form-extra-body {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 1.1rem;
-  row-gap: 0.3rem;
+  column-gap: 1.6rem;
+  padding-top: 0.2rem;
 }
 
-.director-field > legend {
-  grid-column: 1 / -1;
-  grid-row: 1;
-}
-
-.director-field > label:nth-of-type(1) {
-  grid-area: 2 / 1;
-}
-
-.director-field > label:nth-of-type(2) {
-  grid-area: 2 / 2;
-}
-
-.director-field > select:nth-of-type(1) {
-  grid-area: 3 / 1;
-}
-
-.director-field > select:nth-of-type(2),
-.director-field > input {
-  grid-area: 3 / 2;
-}
-
-.director-field > .field-error {
-  grid-column: 1 / -1;
-  grid-row: 4;
-}
-
-.director-field > label {
-  align-self: end;
-  color: var(--text-faint);
-}
-
-/* Two selects side by side inside an already narrow panel collapsed to 21px
-   wide on a phone — below the 24px WCAG 2.5.8 minimum, and not something a
-   finger can hit. Below the tablet breakpoint they stack. */
 @media (max-width: 767.98px) {
-  .director-field {
+  .form-extra-body {
     grid-template-columns: minmax(0, 1fr);
   }
+}
 
-  .director-field > label:nth-of-type(1) { grid-area: 2 / 1; }
-  .director-field > select:nth-of-type(1) { grid-area: 3 / 1; }
-  .director-field > label:nth-of-type(2) { grid-area: 4 / 1; }
+/* ---- The action that finishes the record ---------------------
+   The form is taller than the panel, so the submit button used to sit
+   roughly 350px below the fold: fill in every field, then find nothing
+   to press. Pinned to the panel's bottom edge, it is always the thing
+   under your thumb. The negative margins bleed it to the panel walls so
+   it reads as a bar rather than a floating button. */
+.form-submit-bar {
+  position: sticky;
+  /* Measured, not reasoned about: the engine holds the border box this far
+     above the scrollport's bottom edge, so anything but 0 leaves a strip of
+     the form showing under the bar. The negative bottom margin below is what
+     lets the unstuck position reach the panel's padding edge. */
+  bottom: 0;
+  z-index: 2;
+  margin: 0.9rem -1.35rem -1.6rem;
+  padding: 1.5rem 1.35rem calc(1.1rem + env(safe-area-inset-bottom, 0px));
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  /* A scrim, not a hairline. Panel glass at 78% still let the labels passing
+     underneath read as smudges around the button; a gradient that reaches
+     near-opaque by the button's top edge hides them and fades the seam
+     instead of ruling a line across the form. */
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 15, 31, 0) 0%,
+    rgba(10, 15, 31, 0.86) 34%,
+    rgba(10, 15, 31, 0.97) 100%
+  );
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
 
-  .director-field > select:nth-of-type(2),
-  .director-field > input {
-    grid-area: 5 / 1;
-  }
+.form-submit-bar > .primary-action {
+  width: 100%;
+}
 
-  .director-field > .field-error {
-    grid-row: 6;
-  }
+/* 감독 is a single name now, so the field needs no column layout of its own.
+   What it does need is the row of names already in the archive — one tap
+   instead of retyping 크리스토퍼 놀란 for the fourth time. */
+.director-recent {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.director-recent-label {
+  color: var(--text-faint);
+  font-size: var(--t-2xs);
+}
+
+/* One line that scrolls, never two that wrap: director names vary wildly in
+   length, and a wrapping row changed the height of the field depending on
+   whose films you had been watching. */
+.director-recent-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  margin: 0 -0.2rem;
+  padding: 0.2rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.director-recent-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.director-chip {
+  flex: none;
+  max-width: 11rem;
+  overflow: hidden;
+  padding: 0.3rem 0.6rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: var(--t-2xs);
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+
+.director-chip:hover {
+  border-color: var(--accent-dim);
+  color: var(--text-primary);
 }
 
 /* Every control in a panel stays thumb-sized on touch, where a 30px row is
@@ -711,14 +799,24 @@ body {
   padding-left: 2.6rem;
 }
 
+/* Drawn marks sit in the text they punctuate: the optical centre of a 24-grid
+   glyph is a touch below the cap line, so a small negative baseline shift is
+   what stops them riding high next to Hangul. */
+.icon-mark {
+  flex: none;
+  vertical-align: -0.17em;
+}
+
 .toast-badge {
   position: absolute;
   top: 0.95rem;
   left: 0.95rem;
-  font-size: var(--t-lg);
+  display: grid;
   line-height: 1;
   color: var(--accent-strong);
-  text-shadow: 0 0 0.6rem rgba(122, 165, 255, 0.8);
+  /* drop-shadow, not text-shadow: the badge is a shape now, and text-shadow
+     has nothing to paint behind an SVG. */
+  filter: drop-shadow(0 0 0.5rem rgba(122, 165, 255, 0.8));
   animation: toast-badge-pop 0.5s var(--ease-out-soft) both;
 }
 
@@ -963,7 +1061,6 @@ body {
   }
 
   .form-field,
-  .director-field legend,
   .director-field .field-error {
     grid-column: 1;
   }
@@ -1659,6 +1756,43 @@ progress::-moz-progress-bar {
   align-items: center;
   gap: 0.55rem 0.75rem;
   margin: 1rem 0;
+}
+
+/* The search box rides along instead of scrolling away with the first dozen
+   rows. The bleed matches the panel padding so the pinned block covers the
+   rows passing under it rather than letting them show at its edges. */
+.list-controls.is-pinned {
+  position: sticky;
+  top: -1.4rem;
+  z-index: 2;
+  margin: 0 -1.35rem 0.4rem;
+  padding: 0.85rem 1.35rem 0.7rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--glass-body-strong);
+  backdrop-filter: var(--glass-backdrop-light);
+  -webkit-backdrop-filter: var(--glass-backdrop-light);
+}
+
+/* Reveals the next page of a long section. Reads as a continuation of the
+   list it ends, not as another action competing with the record button. */
+.section-more {
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.6rem;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.section-more:hover {
+  border-color: var(--accent-dim);
+  background: var(--surface-raised);
+  color: var(--text-primary);
 }
 
 .list-controls label {
@@ -2568,7 +2702,9 @@ progress::-moz-progress-bar {
 }
 
 .ticket-icon {
+  display: inline-grid;
   margin-right: 6px;
+  color: var(--accent);
 }
 
 .planet-ticket-progress {
@@ -2910,6 +3046,10 @@ progress::-moz-progress-bar {
 }
 
 .galaxy-export-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   align-self: stretch;
 }
 
@@ -3471,13 +3611,18 @@ progress::-moz-progress-bar {
 }
 
 /* ---- Sky corner utilities ---- */
+/* Top-right, mirroring the brand in the opposite corner. They used to sit
+   bottom-left, which on a phone put them level with the dock and under the
+   open panel — a pair of strays beside the thing they were not part of. The
+   top corners are the only two the dock and the panels never reach. */
 .sky-utilities {
   position: fixed;
-  left: 1rem;
-  bottom: 1.1rem;
+  top: max(1.15rem, env(safe-area-inset-top));
+  right: 1rem;
   z-index: 30;
   display: grid;
-  gap: 0.45rem;
+  grid-auto-flow: column;
+  gap: 0.4rem;
 }
 
 .sky-utility-button {
@@ -3485,18 +3630,26 @@ progress::-moz-progress-bar {
   height: 2.4rem;
   display: grid;
   place-items: center;
-  border: 1px solid var(--rule);
+  border: 1px solid transparent;
   border-radius: 50%;
-  background: rgba(8, 12, 26, 0.76);
+  /* Same glass recipe as the dock, so these read as part of one interface. */
+  background: var(--glass-body);
+  box-shadow: var(--glass-rim-soft), var(--glass-lift);
+  backdrop-filter: var(--glass-backdrop-light);
+  -webkit-backdrop-filter: var(--glass-backdrop-light);
   color: var(--text-secondary);
-  font-size: var(--t-md);
   cursor: pointer;
-  backdrop-filter: blur(10px);
+  transition: color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sky-utility-button:hover {
+  color: var(--text-primary);
 }
 
 .sky-utility-button[aria-pressed='true'] {
   color: var(--accent);
-  border-color: rgba(122, 165, 255, 0.5);
+  box-shadow: var(--glass-rim-soft), var(--glass-lift),
+    inset 0 0 0 1px rgba(122, 165, 255, 0.45);
 }
 
 /* ---- Reel studio ---------------------------------------------

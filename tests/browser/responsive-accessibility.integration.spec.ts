@@ -54,10 +54,18 @@ async function addWorkWithKeyboard(page: Page): Promise<void> {
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
 
-  const rating = page.getByLabel('별점', { exact: true });
-  await rating.focus();
-  await page.keyboard.press('End');
-  await page.keyboard.press('Enter');
+  // 별점 is a radiogroup, and a radiogroup element is not itself focusable:
+  // focusing it was a no-op, so End and Enter went to whichever control still
+  // had focus — the genre select, which they silently reset to its last
+  // option while the rating stayed empty and the submit failed validation.
+  // A keyboard user enters the group at a radio and walks it with arrows;
+  // Home and End do nothing to a radio group, which is the other half of why
+  // the rating never got set.
+  await page.getByRole('radio', { name: '1점' }).focus();
+  for (let step = 0; step < 4; step += 1) {
+    await page.keyboard.press('ArrowRight');
+  }
+  await expect(page.getByRole('radio', { name: '5점' })).toBeChecked();
 
   const review = page.getByLabel('감상평', { exact: true });
   await review.focus();
@@ -66,7 +74,7 @@ async function addWorkWithKeyboard(page: Page): Promise<void> {
   const watchedDate = page.getByLabel('감상일', { exact: true });
   await watchedDate.fill('2025-02-03');
 
-  const director = page.getByLabel('직접 입력 감독', { exact: true });
+  const director = page.getByLabel('감독', { exact: true });
   await director.focus();
   await director.pressSequentially('Keyboard Director');
 

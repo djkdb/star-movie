@@ -154,18 +154,65 @@ test.describe('design system', () => {
     }
   });
 
-  test('no unicode glyph is standing in for an icon', async ({ page }) => {
+  test('no unicode glyph is standing in for an icon, anywhere on screen', async ({ page }) => {
     await openAllPanels(page);
+    // The star card and the toasts live outside every panel, so they have to
+    // be on screen for this sweep to mean anything. openAllPanels leaves the
+    // last one open, so the list has to be brought back first.
+    await page.click('button[aria-controls="shell-panel-list"]');
+    await page.waitForTimeout(300);
+    await page.locator('.work-list button').first().click();
+    await page.waitForTimeout(500);
 
     const glyphs = await page.evaluate(() => {
-      // The geometric and dingbat blocks these were drawn from. An icon has to
-      // be a drawn shape we control, not a character the platform picks.
-      const suspect = /[←-⇿─-➿⬀-⯿■-◿☀-⛿]/;
-      return [...document.querySelectorAll('.shell-panel *')]
+      // Two gaps let five of these survive the first sweep: the character
+      // class covered the BMP symbol blocks but not emoji, which live above
+      // U+FFFF, and the scan only looked inside .shell-panel — so the codex
+      // ticket, the export button, the rewatch label, the unlock badge and
+      // the autocomplete placeholder were all out of range. Both are widened
+      // here: every symbol block plus emoji, across the whole document.
+      // No need to list the variation selector: it only ever trails a base
+      // character the emoji range already catches, and a combining mark in a
+      // character class is its own kind of bug.
+      const suspect = /[←-⯿\u{1F000}-\u{1FAFF}]/u;
+      return [...document.querySelectorAll('body *')]
+        .filter((el) => !(el instanceof SVGElement))
         .filter((el) => el.children.length === 0 && suspect.test(el.textContent ?? ''))
-        .map((el) => `${el.className || el.tagName}: ${el.textContent?.trim().slice(0, 6)}`);
+        .map((el) => `${el.className || el.tagName}: ${el.textContent?.trim().slice(0, 12)}`);
     });
 
     expect(glyphs).toEqual([]);
+  });
+
+  test('the record button never falls below the fold', async ({ page }) => {
+    // The add form is taller than the panel it lives in, so an unpinned submit
+    // sat about 350px past the bottom edge: fill in every field, then find
+    // nothing to press without scrolling back for it.
+    await page.click('button[aria-controls="shell-panel-add"]');
+    await page.waitForTimeout(400);
+
+    const reach = await page.evaluate(() => {
+      const panel = document.querySelector('#shell-panel-add');
+      const button = panel?.querySelector('button[type="submit"]');
+      if (panel === null || button === undefined || button === null) return null;
+      const panelBox = panel.getBoundingClientRect();
+      const buttonBox = button.getBoundingClientRect();
+      const barBox = button.closest('.form-submit-bar')!.getBoundingClientRect();
+      return {
+        formOverflowsPanel: panel.scrollHeight > panel.clientHeight,
+        buttonVisible: buttonBox.bottom <= panelBox.bottom + 1
+          && buttonBox.top >= panelBox.top,
+        // The bar has to reach the panel's own edge. A sticky offset that is
+        // merely "close enough" leaves a strip of the form scrolling past in
+        // the open space below it.
+        barReachesPanelEdge: Math.abs(barBox.bottom - panelBox.bottom) <= 2,
+      };
+    });
+
+    expect(reach).not.toBeNull();
+    // Without the overflow there is nothing for a pinned bar to prove.
+    expect(reach!.formOverflowsPanel).toBe(true);
+    expect(reach!.buttonVisible).toBe(true);
+    expect(reach!.barReachesPanelEdge).toBe(true);
   });
 });

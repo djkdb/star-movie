@@ -12,6 +12,7 @@ import { exportGalaxyPoster } from '../scene/galaxyCapture';
 import { PlanetPullReveal } from '../scene/PlanetPullReveal';
 import type { ArchiveStoreApi } from '../store/archiveStore';
 import { selectPlanetCodexViewModel } from '../store/selectors';
+import { ImageIcon, TicketIcon } from './icons';
 
 export interface PlanetCodexPanelProps {
   store: ArchiveStoreApi;
@@ -103,7 +104,7 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
       <section className="planet-gacha" aria-label="행성 뽑기">
         <div className="planet-gacha-status">
           <p className="planet-ticket-count">
-            <span className="ticket-icon" aria-hidden="true">🎟️</span>
+            <span className="ticket-icon"><TicketIcon size={15} /></span>
             가챠 티켓 <strong>{viewModel.tickets}</strong>장
           </p>
           <p className="planet-ticket-progress">
@@ -173,7 +174,8 @@ export function PlanetCodexPanel({ store }: PlanetCodexPanelProps) {
           onClick={exportImage}
           type="button"
         >
-          🖼️ {exporting ? '저장 중…' : '내 우주 이미지 저장'}
+          <ImageIcon size={15} />
+          {exporting ? '저장 중…' : '내 우주 이미지 저장'}
         </button>
         <p className="galaxy-export-hint">
           지금 보이는 밤하늘을 “내가 본 영화들로 만든 우주” 이미지로 저장합니다.

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { SPACE_CAMERA_HOME_POSE } from '../scene/backgroundModel';
 import type { ArchiveStoreApi } from '../store/archiveStore';
@@ -54,6 +54,53 @@ function startAmbient(): AmbientAudio | null {
   }
 }
 
+/**
+ * A drawn mark, on the same 24-grid and stroke weight as the dock icons.
+ * These two buttons used to carry `⌂` and `♪̸` — characters, not shapes, so
+ * the platform picked the font and the barred note in particular landed as a
+ * note plus a stray combining slash.
+ */
+function UtilityGlyph({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="18"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 24 24"
+      width="18"
+    >
+      {children}
+    </svg>
+  );
+}
+
+/** Crosshair over a ring: put the view back where it started. */
+const RECENTER_ICON = (
+  <UtilityGlyph>
+    <circle cx="12" cy="12" r="6.5" />
+    <circle cx="12" cy="12" fill="currentColor" r="1.4" stroke="none" />
+    <path d="M12 2.5 V5.5 M12 18.5 V21.5 M2.5 12 H5.5 M18.5 12 H21.5" />
+  </UtilityGlyph>
+);
+
+/** A speaker, with waves when sound is on and a slash across it when off. */
+function SoundIcon({ on }: { on: boolean }) {
+  return (
+    <UtilityGlyph>
+      <path d="M4 9.5 H7.5 L12 5.5 V18.5 L7.5 14.5 H4 Z" />
+      {on ? (
+        <path d="M15.5 9.2 a4 4 0 0 1 0 5.6 M18.3 6.6 a7.6 7.6 0 0 1 0 10.8" />
+      ) : (
+        <path d="M15.5 9.8 L20.5 14.2 M20.5 9.8 L15.5 14.2" />
+      )}
+    </UtilityGlyph>
+  );
+}
+
 /** Corner utilities over the sky: recenter home, and an ambient sound toggle. */
 export function SkyUtilities({ store }: { store: ArchiveStoreApi }) {
   const [soundOn, setSoundOn] = useState(false);
@@ -94,7 +141,7 @@ export function SkyUtilities({ store }: { store: ArchiveStoreApi }) {
         title="처음 위치로"
         type="button"
       >
-        ⌂
+        {RECENTER_ICON}
       </button>
       <button
         aria-label={soundOn ? '우주 소리 끄기' : '우주 소리 켜기'}
@@ -104,7 +151,7 @@ export function SkyUtilities({ store }: { store: ArchiveStoreApi }) {
         title="우주 소리"
         type="button"
       >
-        {soundOn ? '♪' : '♪̸'}
+        <SoundIcon on={soundOn} />
       </button>
     </div>
   );

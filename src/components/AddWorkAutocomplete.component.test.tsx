@@ -71,7 +71,7 @@ describe('AddWorkForm TMDB autocomplete', () => {
 
     // Director backfills asynchronously from the credits lookup.
     await waitFor(() =>
-      expect(screen.getByLabelText('직접 입력 감독')).toHaveValue('봉준호'),
+      expect(screen.getByLabelText('감독')).toHaveValue('봉준호'),
     );
 
     // The picked poster renders as a preview thumbnail.

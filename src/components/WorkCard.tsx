@@ -18,6 +18,7 @@ import {
 } from './cardViewportLayout';
 import { useModalFocusTrap } from './useModalFocusTrap';
 import { GenreBadge, RatingDisplay } from './WorkMetadata';
+import { SparkleIcon } from './icons';
 
 type DeleteMode = 'hard' | 'soft';
 
@@ -238,9 +239,11 @@ export function WorkCard({ store, anchor }: WorkCardProps) {
           onClick={() => store.getState().commands.markRewatched(star.id)}
           type="button"
         >
-          {(star.rewatchCount ?? 0) > 0
-            ? `다시 봤어요 ✨ ${star.rewatchCount}회`
-            : '다시 봤어요'}
+          {(star.rewatchCount ?? 0) > 0 ? (
+            <>
+              다시 봤어요 <SparkleIcon size={14} /> {star.rewatchCount}회
+            </>
+          ) : '다시 봤어요'}
         </button>
         <button
           className="secondary-action"

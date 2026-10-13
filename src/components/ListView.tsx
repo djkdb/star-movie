@@ -13,12 +13,23 @@ export interface ListViewProps {
   store: ArchiveStoreApi;
 }
 
+/**
+ * How many rows a section shows before it asks. An archive of forty-odd works
+ * rendered every row at once, which made the panel six screens tall and buried
+ * everything below the list — 별자리 만들기 sat about 2,500px down, where
+ * nobody was ever going to find it. Twelve is roughly one panel-height, so the
+ * list reads as a list and the sections after it stay within reach.
+ */
+const SECTION_PAGE_SIZE = 12;
+
 export function ListView({ store }: ListViewProps) {
   const persisted = useStore(store, (state) => state.persisted);
   const selectedGenres = useStore(store, (state) => state.runtime.selectedGenres);
   const isDrawerOpen = useStore(store, (state) => state.runtime.isListDrawerOpen);
   const [sortBy, setSortBy] = useState<ListSortOption>('rating');
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeLimit, setActiveLimit] = useState(SECTION_PAGE_SIZE);
+  const [archiveLimit, setArchiveLimit] = useState(SECTION_PAGE_SIZE);
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
@@ -42,6 +53,17 @@ export function ListView({ store }: ListViewProps) {
     [persisted, searchQuery, selectedGenres, sortBy, store],
   );
 
+  // A new search is a new list, so it starts from the top again rather than
+  // inheriting however far the previous one had been expanded.
+  useEffect(() => {
+    setActiveLimit(SECTION_PAGE_SIZE);
+  }, [searchQuery, sortBy, selectedGenres]);
+
+  const shownActiveWorks = viewModel.activeWorks.slice(0, activeLimit);
+  const hiddenActiveCount = viewModel.activeWorks.length - shownActiveWorks.length;
+  const shownArchivedWorks = viewModel.archivedWorks.slice(0, archiveLimit);
+  const hiddenArchivedCount = viewModel.archivedWorks.length - shownArchivedWorks.length;
+
   return (
     <>
       <button
@@ -60,7 +82,10 @@ export function ListView({ store }: ListViewProps) {
         aria-labelledby="list-view-heading"
       >
         <h2 id="list-view-heading">작품 목록</h2>
-        <div className="list-controls">
+        {/* Pinned: scrolling forty works used to carry the search box away
+            with them, so the one control that makes a long list usable was
+            only reachable from the top of it. */}
+        <div className="list-controls is-pinned">
           <label htmlFor="work-search">검색</label>
           <input
             id="work-search"
@@ -91,7 +116,7 @@ export function ListView({ store }: ListViewProps) {
             <EmptyState role="status" title={viewModel.activeWorksEmptyMessage} variant="archive" />
           ) : (
             <ul className="work-list">
-              {viewModel.activeWorks.map((work, index) => (
+              {shownActiveWorks.map((work, index) => (
                 <li className="stagger-in" key={work.id} style={{ '--stagger-i': Math.min(index, 12) } as CSSProperties}>
                   <button
                     type="button"
@@ -108,6 +133,15 @@ export function ListView({ store }: ListViewProps) {
                 </li>
               ))}
             </ul>
+          )}
+          {hiddenActiveCount > 0 && (
+            <button
+              className="section-more"
+              type="button"
+              onClick={() => setActiveLimit((limit) => limit + SECTION_PAGE_SIZE)}
+            >
+              {hiddenActiveCount}편 더 보기
+            </button>
           )}
         </section>
 
@@ -145,7 +179,7 @@ export function ListView({ store }: ListViewProps) {
             <EmptyState role="status" title={viewModel.archiveEmptyMessage} variant="blackhole" />
           ) : (
             <ul className="compact-archive-list">
-              {viewModel.archivedWorks.map((work, index) => (
+              {shownArchivedWorks.map((work, index) => (
                 <li className="stagger-in" key={work.id} style={{ '--stagger-i': Math.min(index, 12) } as CSSProperties}>
                   <strong>{work.title}</strong>
                   <span>{work.director}</span>
@@ -154,6 +188,15 @@ export function ListView({ store }: ListViewProps) {
                 </li>
               ))}
             </ul>
+          )}
+          {hiddenArchivedCount > 0 && (
+            <button
+              className="section-more"
+              type="button"
+              onClick={() => setArchiveLimit((limit) => limit + SECTION_PAGE_SIZE)}
+            >
+              {hiddenArchivedCount}편 더 보기
+            </button>
           )}
         </section>
       </aside>
